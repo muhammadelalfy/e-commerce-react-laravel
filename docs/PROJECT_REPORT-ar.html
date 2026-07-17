@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تقرير إنجاز المشروع · أوفرز</title>
+<style>
+  :root{--brand:#ce4847;--gold:#eaaa08;--ink:#202939;--ink2:#697586;--line:#e3e8ee;--bg:#f7f9fb;--surface:#fff;--ok:#2e9d63}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Tajawal","Cairo","Segoe UI",system-ui,sans-serif;line-height:1.85;font-size:16px}
+  .page{max-width:900px;margin:0 auto;padding:48px 32px;background:var(--surface);box-shadow:0 1px 40px rgba(16,24,40,.06);min-height:100vh}
+  h1{font-size:30px;font-weight:800;margin:0 0 4px}
+  h1 .sub{display:block;font-size:19px;color:var(--brand);font-weight:700;margin-top:6px}
+  h2{font-size:22px;font-weight:800;margin:38px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--gold)}
+  h3{font-size:17px;font-weight:800;margin:22px 0 8px}
+  .meta{background:#fbf5e8;border:1px solid #f0e2bd;border-radius:12px;padding:14px 18px;margin:18px 0 8px;font-size:14.5px}
+  .meta b{color:var(--brand)}
+  .status{display:inline-block;background:#e7f4ec;color:var(--ok);border:1px solid #bfe5cf;font-weight:800;font-size:14px;padding:4px 14px;border-radius:999px;margin-top:8px}
+  hr{border:none;border-top:1px solid var(--line);margin:30px 0}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px}
+  th,td{border:1px solid var(--line);padding:9px 12px;text-align:right}
+  th{background:#f2f5f8;font-weight:800}
+  tr:nth-child(even) td{background:#fafbfc}
+  code{background:#f2f5f8;border-radius:5px;padding:1px 6px;font-family:"Cascadia Code",Consolas,monospace;font-size:13.5px;direction:ltr;display:inline-block}
+  pre{background:#11161d;color:#e6ecf3;border-radius:12px;padding:16px 18px;overflow:auto;direction:ltr;text-align:left;font-size:13px;line-height:1.6}
+  pre code{background:none;color:inherit;padding:0}
+  ul,ol{padding-inline-start:26px}
+  li{margin:5px 0}
+  strong{color:var(--ink)}
+  .ok{color:var(--ok);font-weight:800}
+  @media print{body{background:#fff}.page{box-shadow:none;max-width:none;padding:0}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>تقرير إنجاز المشروع — المرحلة الأولى<span class="sub">أوفرز · Offers — بناء تطبيق الويب</span></h1>
+
+<div class="meta">
+<b>التاريخ:</b> 2026-07-16 &nbsp;·&nbsp; <b>التقنيات:</b> Next.js 14 · React 18 · TypeScript 5 · GSAP 3<br>
+</div>
+<div class="status">✅ مكتمل ومُتحقّق منه ويعمل</div>
+
+<hr>
+
+<h2>1. الهدف</h2>
+<p>بناء تطبيق ويب احترافى</p>
+<h2>2. ما تم تسليمه</h2>
+<h3>2.1 تطبيق كامل — ١٥ واجهة</h3>
+<table>
+<tr><th>المجال</th><th>الواجهات</th></tr>
+<tr><td>واجهة المتجر</td><td>الرئيسية/الخصومات، كتالوج الأقسام، واجهة المتجر، التسوّق</td></tr>
+<tr><td>المزادات</td><td>مزادات مباشرة مع عدّادات ومزايدة</td></tr>
+<tr><td>الاكتشاف</td><td>ريلز، فعاليات وإعلانات، خريطة المتاجر، المفضّلة، الإشعارات</td></tr>
+<tr><td>الحسابات</td><td>المصادقة (عميل + بائع)، تسجيل إضافة متجر</td></tr>
+<tr><td>البائع</td><td>لوحة التحكم (نظرة عامة، منتجات، خصومات، كوبونات، طلبات، اشتراك، إعدادات)</td></tr>
+<tr><td>الإدارة</td><td>لوحة إدارة (نظرة عامة، مستخدمون، متاجر، موافقات، مدن، إعلانات، ريلز، اشتراكات، محتوى)</td></tr>
+<tr><td>تعريفية</td><td>من نحن، الأسعار، الأسئلة الشائعة، تواصل معنا، الوظائف، المدونة، القانونية</td></tr>
+</table>
+
+<h3>2.2 القدرات الأساسية</h3>
+<ul>
+<li><span class="ok">✅</span> <strong>عربي أولاً وثنائي اللغة بالكامل</strong> مع انعكاس تام للاتجاهين.</li>
+<li><span class="ok">✅</span> <strong>سمة فاتحة وداكنة</strong>، محفوظة في <code>localStorage</code>، دون وميض عند التحميل.</li>
+<li><span class="ok">✅</span> <strong>تنقّل داخلي (SPA)</strong> يحاكي نموذج التنقّل الأصلي بانتقالات فورية.</li>
+<li><span class="ok">✅</span> <strong>ميزات تفاعلية حيّة</strong> — عدّادات ومزايدة، مفضّلة، فلاتر، ترتيب، بحث، مفاتيح كوبونات/خصومات، موافقة منتجات، عدّاد زوّار حيّ.</li>
+<li><span class="ok">✅</span> <strong>صور علامة حقيقية</strong> مربوطة بالأقسام والمنتجات.</li>
+</ul>
+
+<h3>2.3 حركة GSAP (المكتبة المطلوبة)</h3>
+<p>تم استبدال تأثيرات CSS <code>@keyframes</code> بحركة تعتمد على GSAP (<code>lib/gsap.ts</code>):</p>
+<ul>
+<li><strong>رسم العروض في الترويسة</strong> — حلقات دوّارة، شارة «٪» نابضة، وسوم خصم منجرفة، ولمعات متلألئة.</li>
+<li><strong>شريط العروض الساخنة</strong> — تمرير لانهائي متصل، يتوقّف عند التمرير فوقه.</li>
+<li><strong>كشف عند التمرير</strong> — ظهور متدرّج للعروض والمتاجر والريلز عبر ScrollTrigger.</li>
+<li>يحترم <code>prefers-reduced-motion</code> (تقليل الحركة).</li>
+</ul>
+
+<h2>3. الأصول — دمج الصور الحقيقية</h2>
+<p>تم استيراد ٣١ صورة حقيقية من ملف Figma «Store mobile app» وربطها في التطبيق (<code>public/img/</code>):</p>
+<table>
+<tr><th>القسم في التطبيق</th><th>الصورة</th></tr>
+<tr><td>إلكترونيات</td><td>سماعات رأس</td></tr>
+<tr><td>العطور/الجمال</td><td>أحمر شفاه</td></tr>
+<tr><td>الأزياء</td><td>قميص بولو</td></tr>
+<tr><td>المطاعم</td><td>طبق طعام</td></tr>
+<tr><td>الكتب</td><td>دفتر</td></tr>
+<tr><td>الأثاث والأجهزة</td><td>غسّالة</td></tr>
+<tr><td>المنتجات</td><td>مضرب، مستحضرات، أدوات مكتبية</td></tr>
+</table>
+<p>إضافةً إلى ٨ صور أقسام إضافية وأيقونة العلامة الأصلية. ولأن هذه صور كتالوج بخلفية بيضاء، أُعيد تنسيق <strong>الترويسة وبطاقات الأقسام وترويسة صفحة القسم</strong> لعرضها بشكل نظيف، وضُبط تحجيم صورة الترويسة لتُعرض بحجم قريب من الأصل (<strong>بلا ضبابية</strong>).</p>
+
+<h2>4. البنية المعمارية</h2>
+<pre><code>mashhoor-next/
+├── app/                # موجّه Next.js: layout, page, globals.css (متغيّرات التصميم)
+├── components/
+│   ├── App.tsx         # الحالة + موجّه SPA (السمة، اللغة، الصفحة، المفضّلة)
+│   ├── Shell.tsx       # الشريط العلوي، الترويسة، التذييل، بطاقة المنتج
+│   ├── ui.tsx          # الأيقونات، النجوم، الأزرار، Thumb، Chip، money()
+│   └── pages/          # الرئيسية، الكتالوج، المزادات، اللوحة، الإدارة…
+├── lib/
+│   ├── data.ts         # بيانات ثنائية اللغة مكتوبة النوع
+│   ├── AppContext.tsx  # سياق حالة التطبيق
+│   └── gsap.ts         # خطّافات GSAP (كشف، شريط متحرّك، حركة العروض)
+├── public/img/         # صور المنتجات والأقسام الحقيقية
+└── docs/               # SRS-ar · PROJECT_REPORT-ar</code></pre>
+<ul>
+<li>TypeScript صارم مع مسارات <code>@/</code>.</li>
+<li>طبقة البيانات معزولة في <code>lib/data.ts</code> → جاهزة للربط بواجهة برمجية دون تغيير الواجهة.</li>
+</ul>
+
+<h2>5. التحقّق</h2>
+<table>
+<tr><th>الفحص</th><th>النتيجة</th></tr>
+<tr><td>فحص الأنواع (<code>tsc --noEmit</code>)</td><td class="ok">✅ ٠ أخطاء</td></tr>
+<tr><td>البناء التطويري</td><td class="ok">✅ يُصرَّف (~٤٩٦ وحدة) في ثوانٍ</td></tr>
+<tr><td>وحدة التحكّم (Console)</td><td class="ok">✅ لا أخطاء؛ تحذير الترطيب مُصلَح</td></tr>
+<tr><td>ظهور كل الصفحات</td><td class="ok">✅ الـ١٥ واجهة</td></tr>
+<tr><td>مبدّل اللغة عربي⇄إنجليزي</td><td class="ok">✅ يقلب المحتوى والاتجاه</td></tr>
+<tr><td>السمة فاتح⇄داكن</td><td class="ok">✅ يُطبَّق ويُحفَظ</td></tr>
+<tr><td>الصور الحقيقية</td><td class="ok">✅ تُحمّل، ٠ مكسورة</td></tr>
+<tr><td>ضبابية صورة الترويسة</td><td class="ok">✅ مُصلَحة (تكبير ~١٫٠٩×)</td></tr>
+</table>
+<p style="font-size:14px;color:var(--ink2);background:#f2f5f8;padding:12px 16px;border-radius:10px">
+<strong>ملاحظة:</strong> تنتهي لقطات الشاشة الآلية بمهلة في هذه البيئة لأن حركة GSAP المستمرّة تُبقي المُركّب مشغولاً — هذا قيد في أداة الالتقاط وليس عيباً في التطبيق. تمّ التحقّق عبر فحص DOM/Console والتفاعل البرمجي.
+</p>
+
+<h2>6. طريقة التشغيل</h2>
+<pre><code>cd "Arabic slides with animations/mashhoor-next"
+npm install      # المرة الأولى فقط
+npm run dev
+# افتح http://localhost:3200</code></pre>
+
+<h2>7. القيود المعروفة / الخطوات التالية</h2>
+<ul>
+<li><strong>لا يوجد خادم خلفي بعد</strong> — المصادقة والمدفوعات وتخزين الكتالوج والمزادات اللحظية واجهات مكتملة تجريبياً؛ طبقة البيانات جاهزة للربط.</li>
+<li><strong>الإشعارات الفورية (FCM)</strong> — نموذج الإشعارات موجود؛ ربطه بخدمة حقيقية مهمّة مستقبلية.</li>
+<li><strong>شعار الترويسة</strong> — أيقونة أوفرز الأصلية + كلمة أوفرز؛ الأصول متوفّرة في <code>public/</code>.</li>
+<li><strong>المدفوعات</strong> — مدى/Apple Pay/Visa تظهر كشارات؛ الدفع الحقيقي يتطلّب تكامل مزوّد دفع.</li>
+</ul>
+
+<h2>8. الخلاصة</h2>
+<p>إعادة بناء كاملة لسوق «أوفرز» بلغة Next.js — ثنائية اللغة، بسمات، وحركة GSAP — تشمل الواجهات الـ١٥ وصوراً حقيقية للعلامة، مُتحقَّق منها وتعمل بلا أخطاء. الشيفرة مكتوبة النوع، مقسّمة إلى مكوّنات، وجاهزة للربط بخادم.</p>
+
+</div>
+</body>
+</html>

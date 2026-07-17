@@ -1,0 +1,46 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# next.js
+/.next/
+/out/
+next-env.d.ts
+
+# production build
+/build
+/dist
+
+# misc
+.DS_Store
+*.pem
+Thumbs.db
+
+# debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# local env files
+.env
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+# editor / OS
+.vscode/
+.idea/
+
+# unrelated presentation project & raw asset dumps (not part of the app)
+/deck-stage.js
+/support.js
+/presentation.zip
+/.thumbnail
+/assets/
+/uploads/
+/Store mobile app/
+/new logo/
+/.claude/

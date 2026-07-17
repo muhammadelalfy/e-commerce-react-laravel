@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تقرير المكوّنات · أوفرز</title>
+<style>
+  :root{--brand:#ce4847;--gold:#eaaa08;--ink:#202939;--ink2:#697586;--line:#e3e8ee;--bg:#f7f9fb;--surface:#fff}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Tajawal","Cairo","Segoe UI",system-ui,sans-serif;line-height:1.85;font-size:16px}
+  .page{max-width:920px;margin:0 auto;padding:48px 32px;background:var(--surface);box-shadow:0 1px 40px rgba(16,24,40,.06);min-height:100vh}
+  h1{font-size:30px;font-weight:800;margin:0 0 4px}
+  h1 .sub{display:block;font-size:18px;color:var(--brand);font-weight:700;margin-top:6px}
+  h2{font-size:22px;font-weight:800;margin:38px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--gold)}
+  h3{font-size:16.5px;font-weight:800;margin:22px 0 8px;color:var(--ink)}
+  h3 code, h2 code{font-size:.82em}
+  .meta{background:#fbf5e8;border:1px solid #f0e2bd;border-radius:12px;padding:14px 18px;margin:18px 0 8px;font-size:14.5px}
+  .meta b{color:var(--brand)}
+  hr{border:none;border-top:1px solid var(--line);margin:30px 0}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px}
+  th,td{border:1px solid var(--line);padding:9px 12px;text-align:right;vertical-align:top}
+  th{background:#f2f5f8;font-weight:800}
+  tr:nth-child(even) td{background:#fafbfc}
+  code{background:#f2f5f8;border-radius:5px;padding:1px 6px;font-family:"Cascadia Code",Consolas,monospace;font-size:13px;direction:ltr;unicode-bidi:isolate;display:inline-block}
+  ul,ol{padding-inline-start:26px}
+  li{margin:5px 0}
+  strong{color:var(--ink)}
+  .file{color:var(--ink2);font-size:13px;font-weight:600}
+  @media print{body{background:#fff}.page{box-shadow:none;max-width:none;padding:0}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>تقرير المكوّنات<span class="sub">أوفرز · Offers — توثيق تفصيلي لكل مكوّن بُني في الموقع</span></h1>
+
+<div class="meta">
+<b>المشروع:</b> أوفرز · Offers &nbsp;·&nbsp; <b>التقنيات:</b> Next.js 14 · React 18 · TypeScript · GSAP<br>
+<b>النطاق:</b> كل مكوّنات الواجهة — شريط التنقّل، الأشرطة الجانبية، التذييل، العناصر المشتركة، وكل الصفحات — مع وصف لكل مكوّن.
+</div>
+
+<hr>
+
+<h2>0. هيكل التطبيق والتوجيه</h2>
+
+<h3><code>App</code> <span class="file">— components/App.tsx</span></h3>
+<p>المكوّن الجذر وقلب التطبيق. يحمل كل الحالة العامة ويعمل كموجّه لتطبيق أحادي الصفحة (SPA).</p>
+<ul>
+<li><strong>الحالة التي يملكها:</strong> <code>lang</code> (عربي/إنجليزي، العربية افتراضياً)، <code>theme</code> (فاتح/داكن)، <code>page</code> + <code>param</code>، <code>favs</code> (المفضّلة)، <code>query</code> (البحث).</li>
+<li><strong>الحفظ:</strong> يكتب <code>lang</code> و<code>theme</code> في <code>localStorage</code>، ويطبّق <code>dir</code>/<code>lang</code>/<code>data-theme</code> على <code>&lt;html&gt;</code>.</li>
+<li><strong>الموجّه:</strong> دالة <code>go(page, id)</code> تبدّل الواجهة وتمرّر للأعلى؛ سلسلة <code>if/else</code> تربط مفتاح الصفحة → مكوّنها.</li>
+<li><strong>يوفّر السياق:</strong> يغلّف كل شيء بـ <code>AppCtx.Provider</code> (النصوص، اللغة، السمة، التنقّل، المفضّلة).</li>
+<li><strong>يعرض:</strong> <code>TopBar</code> ← <code>Header</code> ← <code>main</code> ← <code>Footer</code>.</li>
+</ul>
+
+<h3>سياق التطبيق <span class="file">— lib/AppContext.tsx</span></h3>
+<p>سياق React باسم <code>AppCtx</code> مع خطّاف <code>useApp()</code>. كل مكوّن يسحب اللغة والسمة والتنقّل والمفضّلة عبره بدل تمرير الخصائص يدوياً.</p>
+
+<h3>طبقة البيانات <span class="file">— lib/data.ts</span></h3>
+<p>وحدة بيانات ثنائية اللغة مكتوبة النوع: النصوص، الأقسام، المتاجر، المنتجات، المزادات، الإشعارات، الريلز، الفعاليات، الكوبونات، المدن، الباقات، ودالّة <code>money()</code>. جاهزة للربط بخادم دون مسّ الواجهة.</p>
+
+<h3>خطّافات حركة GSAP <span class="file">— lib/gsap.ts</span></h3>
+<ul>
+<li><strong><code>useReveal</code></strong> — ظهور متدرّج لعناصر الحاوية عند التمرير (ScrollTrigger).</li>
+<li><strong><code>useFadeUp</code></strong> — ظهور صعودي لعنصر واحد عند دخوله الشاشة.</li>
+<li><strong><code>useMarquee</code></strong> — تمرير أفقي لانهائي متصل؛ يتوقّف عند المرور.</li>
+<li><strong><code>useOffersMotion</code></strong> — رسم العروض: حلقات دوّارة، شارة نابضة، وسوم منجرفة، لمعات.</li>
+<li>الجميع يحترم <code>prefers-reduced-motion</code>.</li>
+</ul>
+
+<hr>
+
+<h2>1. شريط التنقّل (العلوي)</h2>
+<p>يتكوّن أعلى كل صفحة من شريطين متراكبين.</p>
+
+<h3><code>TopBar</code> <span class="file">— components/Shell.tsx</span></h3>
+<p>الشريط الترويجي الرفيع فوق الترويسة (خلفية كحلية).</p>
+<ul>
+<li><strong>جهة:</strong> رقم الهاتف مع أيقونة هاتف.</li>
+<li><strong>الوسط:</strong> الرسالة الترويجية (مثل «خصم حتى ٥٠٪…»).</li>
+<li><strong>جهة:</strong> زر <strong>تبديل اللغة</strong> (الكرة الأرضية ← عربي⇄إنجليزي) والمدينة الحالية.</li>
+</ul>
+
+<h3><code>Header</code> <span class="file">— components/Shell.tsx</span></h3>
+<p>شريط التنقّل الرئيسي الثابت. ينكمش ويكتسب خلفية شفافة ضبابية عند التمرير.</p>
+<ul>
+<li><strong><code>Logo</code></strong> — شعار أوفرز؛ النقر عليه يعيد للرئيسية.</li>
+<li><strong>روابط التنقّل:</strong> خصومات أوفرز · مزادات أوفرز · تسوّق مع أوفرز · ريلز · الفعاليات · خريطة المتاجر. الرابط النشط مميّز بلون العلامة.</li>
+<li><strong>صندوق البحث:</strong> بحث حيّ يُرشّح شبكة العروض في الرئيسية.</li>
+<li><strong>مبدّل السمة:</strong> أيقونة شمس/قمر ← فاتح⇄داكن.</li>
+<li><strong>زر الإشعارات:</strong> جرس مع شارة عدد غير المقروء؛ يفتح <code>NotifDropdown</code>.</li>
+<li><strong>زر المفضّلة:</strong> قلب مع شارة العدد المحفوظ ← صفحة المفضّلة.</li>
+<li><strong>زر الحساب:</strong> أيقونة مستخدم ← المصادقة.</li>
+</ul>
+
+<h3><code>NotifDropdown</code> <span class="file">— components/Shell.tsx</span></h3>
+<p>اللوحة المنسدلة من الجرس. تعرض آخر ٥ إشعارات (أيقونة النوع، النص، الوقت، نقطة غير مقروء)، وعدد غير المقروء، ورابط «عرض كل الإشعارات».</p>
+
+<h3><code>Logo</code> <span class="file">— components/Shell.tsx</span></h3>
+<p>شعار أفقي: أيقونة أوفرز (<code>/logo-icon.svg</code>) بجانب كلمة «أوفرز». يُعاد استخدامه في الترويسة والتذييل ولوحة المصادقة.</p>
+
+<hr>
+
+<h2>2. الأشرطة الجانبية</h2>
+<p>ثلاثة أشرطة جانبية مميّزة، كل منها عمود فلترة/تنقّل يثبت أعلى الصفحة عند التمرير.</p>
+
+<h3>شريط فلترة الأقسام <span class="file">— داخل CategoryPage (Catalog.tsx)</span></h3>
+<p>العمود الجانبي في أي صفحة قسم/تسوّق:</p>
+<ul>
+<li><strong>قائمة الأقسام</strong> (في وضع «الكل» فقط) — عبر المكوّن الفرعي <code>VOpt</code>.</li>
+<li><strong>شريط تمرير نطاق السعر</strong> (٠–١٠٠٠ ﷼).</li>
+<li><strong>فلتر التقييم</strong> — الكل / ٣+ / ٤+ / ٤٫٥+ مع معاينة نجوم.</li>
+<li><strong>قائمة البائعين</strong> — الفلترة حسب المتجر.</li>
+<li><strong>مربّع «العروض الفعّالة فقط».</strong></li>
+</ul>
+<p>كل الفلاتر تحدّث شبكة المنتجات فورياً.</p>
+
+<h3>شريط لوحة تحكم البائع <span class="file">— داخل Dashboard.tsx</span></h3>
+<ul>
+<li><strong>كتلة هوية المتجر</strong> (شعار المتجر + الاسم + دور «بائع»).</li>
+<li><strong>أزرار التنقّل:</strong> نظرة عامة · المنتجات · الخصومات · الكوبونات · الطلبات · الاشتراك · الإعدادات.</li>
+<li><strong>زر «عرض المتجر»</strong> بالأسفل.</li>
+</ul>
+
+<h3>شريط الإدارة <span class="file">— داخل Admin.tsx</span></h3>
+<ul>
+<li><strong>كتلة هوية الإدارة</strong> (درع + «إدارة أوفرز»).</li>
+<li><strong>أزرار التنقّل:</strong> نظرة عامة · المستخدمون · المتاجر · موافقة المنتجات · المدن · الإعلانات · الريلز · الاشتراكات · محتوى التطبيق.</li>
+<li><strong>زر «خروج»</strong> بالأسفل.</li>
+</ul>
+
+<hr>
+
+<h2>3. التذييل (Footer)</h2>
+<h3><code>Footer</code> <span class="file">— components/Shell.tsx</span></h3>
+<p>تذييل الموقع، حاضر في كل صفحة.</p>
+<ul>
+<li><strong>عمود العلامة:</strong> الشعار + الشعار النصّي.</li>
+<li><strong>أربع مجموعات روابط</strong> (ثنائية اللغة، متوافقة مع الاتجاه):
+  <ul>
+  <li><strong>أوفرز:</strong> عن أوفرز · خصومات · مزادات · ريلز · الفعاليات · خريطة المتاجر</li>
+  <li><strong>للبائعين:</strong> أضف متجرك · لوحة التحكم · الأسعار · الدعم</li>
+  <li><strong>المساعدة:</strong> الشحن والتوصيل · الإرجاع والاستبدال · الأسئلة الشائعة · تواصل معنا</li>
+  <li><strong>الشركة:</strong> الشروط والأحكام · سياسة الخصوصية · المدونة · لوحة الإدارة</li>
+  </ul>
+</li>
+<li>كل رابط يوجّه عبر <code>go()</code> للصفحة الصحيحة.</li>
+<li><strong>الشريط السفلي:</strong> حقوق النشر + شارات الدفع (Visa · Mastercard · mada · Apple Pay).</li>
+</ul>
+
+<hr>
+
+<h2>4. العناصر المشتركة <span class="file">— components/ui.tsx</span></h2>
+<table>
+<tr><th>المكوّن</th><th>الوصف</th></tr>
+<tr><td><code>Icon</code></td><td>مجموعة أيقونات SVG داخلية (~٦٠ أيقونة: بحث، سلة، قلب، نجمة، متجر، مطرقة مزاد، وسم، جرس…). الحجم واللون خصائص.</td></tr>
+<tr><td><code>Stars</code></td><td>عرض تقييم بالنجوم (٠–٥) مع عدد تقييمات اختياري.</td></tr>
+<tr><td><code>Btn</code></td><td>زر بأربعة أنماط (primary/outline/soft/ghost) وثلاثة أحجام؛ يخفت عند المرور.</td></tr>
+<tr><td><code>Thumb</code></td><td>مصغّرة منتج — الصورة الحقيقية، أو تدرّج + رمز القسم كبديل.</td></tr>
+<tr><td><code>Chip</code></td><td>حبّة تبديل لفلاتر الأقسام (نشط/غير نشط).</td></tr>
+<tr><td><code>money()</code></td><td>ينسّق الرقم إلى عملة محلّية (<code>﷼</code> عربي، <code>SAR</code> إنجليزي).</td></tr>
+</table>
+
+<hr>
+
+<h2>5. صفحات العرض (منطقة المحتوى الرئيسية)</h2>
+
+<h3>5.1 الرئيسية / الخصومات <span class="file">— Home.tsx</span></h3>
+<ul>
+<li><strong><code>HeroSlider</code></strong> — ترويسة تدور تلقائياً (٤ شرائح) بأسهم ونقاط؛ صورة منتج في بطاقة بيضاء حادّة + عنوان + زر إجراء.</li>
+<li><strong><code>OffersTicker</code></strong> — شريط «عروض ساخنة» أفقي بلا انقطاع (GSAP).</li>
+<li><strong><code>QuickFilters</code></strong> — حبّات فلترة سريعة تُرشّح شبكة العروض.</li>
+<li><strong>الأقسام الشائعة</strong> — ٨ أزرار أقسام دائرية.</li>
+<li><strong><code>CategoryBanners</code></strong> — شبكة «تسوّق حسب القسم» من ٦ بلاطات (كشف GSAP).</li>
+<li><strong>شبكة العروض</strong> — حبّات + ترتيب + شبكة منتجات (<code>ProductCard</code>).</li>
+<li><strong>المتاجر المميّزة</strong> — شبكة <code>VendorCard</code>.</li>
+<li><strong><code>SectionHead</code></strong> — عنوان قسم بخطّ ذهبي + رابط «عرض الكل».</li>
+<li><strong><code>OffersMotion</code></strong> — شارة العروض المتحرّكة (GSAP).</li>
+</ul>
+
+<h3>5.2 <code>ProductCard</code> <span class="file">— Shell.tsx</span></h3>
+<p>بلاطة المنتج الأساسية (الرئيسية، القسم، المتجر، المفضّلة): صورة، <strong>لافتة خصم</strong> (فعّال أحمر / منتهٍ رمادي)، الاسم، السعر مع الأصلي المشطوب، حبّة البائع، تقييم نجوم، و<strong>زر قلب المفضّلة</strong>.</p>
+
+<h3>5.3 <code>VendorCard</code> <span class="file">— Home.tsx</span></h3>
+<p>بطاقة متجر: لافتة + شعار + اسم + تقييم + عدد متابعين. ترتفع عند المرور وتفتح واجهة المتجر.</p>
+
+<h3>5.4 كتالوج الأقسام <span class="file">— Catalog.tsx</span></h3>
+<ul>
+<li><strong><code>CategoryPage</code></strong> — ترويسة قسم + شريط الفلترة الجانبي + شبكة منتجات قابلة للترتيب/الفلترة + «تصفّح أقساماً أخرى». تخدم أيضاً «التسوّق».</li>
+<li><strong><code>VOpt</code></strong> — صف زر اختيار مخصّص لفلاتر الشريط.</li>
+<li><strong><code>Vendor</code></strong> — واجهة المتجر: لافتة، شعار، شارة توثيق، التقييم/المتابعون/المدينة/سنة الانضمام، نبذة، شبكة منتجات.</li>
+</ul>
+
+<h3>5.5 المزادات <span class="file">— Auctions.tsx</span></h3>
+<ul>
+<li><strong><code>Auctions</code></strong> — مزاد مباشر مميّز (مزايدة + عدّاد حيّ + زر) وشبكة بطاقات، كل منها عدّاد حيّ وعدد مزايدات وزر (معطّل عند الانتهاء).</li>
+<li><strong><code>Countdown</code> / <code>CountdownLight</code></strong> — عدّادات الساعة:الدقيقة:الثانية (نسختان).</li>
+</ul>
+
+<h3>5.6 لوحة تحكم البائع <span class="file">— Dashboard.tsx</span></h3>
+<ul>
+<li><strong><code>StatCard</code></strong> — بلاطة مؤشّر (زوار حيّ، مبيعات، خصومات فعّالة، طلبات).</li>
+<li><strong>جدول المنتجات/الخصومات</strong> — مصغّرة، سعر، خصم، حالة، ومفتاح <code>Toggle</code>.</li>
+<li><strong><code>OrdersPanel</code></strong> — جدول طلبات بحبّات حالة ملوّنة.</li>
+<li><strong><code>CouponsPanel</code></strong> — كوبونات بشريط تقدّم ومفتاح تفعيل.</li>
+<li><strong><code>SubscriptionPanel</code></strong> — بطاقات الباقات الثلاث.</li>
+<li><strong><code>SettingsPanel</code></strong> — نموذج إعدادات المتجر.</li>
+<li><strong><code>AddActivityModal</code></strong> — نافذة «إضافة نشاط جديد» (حقول <code>DField</code>)؛ تدخل «قيد الموافقة».</li>
+<li><strong><code>Toggle</code></strong> — مفتاح تشغيل/إيقاف للخصومات والكوبونات.</li>
+</ul>
+
+<h3>5.7 لوحة الإدارة <span class="file">— Admin.tsx</span></h3>
+<ul>
+<li><strong><code>AdminOverview</code></strong> — مؤشّرات + رسم أعمدة للمبيعات + أعلى الأقسام.</li>
+<li><strong><code>AdminApproval</code></strong> — طابور موافقة المنتجات (قبول/رفض).</li>
+<li><strong><code>AdminUsers</code></strong> — جدول المستخدمين والبائعين.</li>
+<li><strong><code>AdminVendors</code></strong> — شبكة بطاقات المتاجر.</li>
+<li><strong><code>AdminCities</code></strong> — شبكة المدن بعدد المتاجر.</li>
+<li><strong><code>AdminAds</code></strong> — قائمة الإعلانات/الفعاليات.</li>
+<li><strong><code>AdminReels</code></strong> — شبكة إدارة الريلز.</li>
+<li><strong><code>AdminSubs</code></strong> — جدول الاشتراكات.</li>
+<li><strong><code>AdminContent</code></strong> — صفحات محتوى التطبيق.</li>
+<li><strong><code>Head</code></strong> — شريط عنوان اللوحة المشترك.</li>
+</ul>
+
+<h3>5.8 صفحات الاكتشاف <span class="file">— Features.tsx</span></h3>
+<ul>
+<li><strong><code>Notifications</code></strong> — صفحة إشعارات بعلامات تبويب و«تعليم الكل كمقروء».</li>
+<li><strong><code>Reels</code></strong> — بلاطات ريلز عمودية ٩:١٦ (كشف GSAP).</li>
+<li><strong><code>Events</code></strong> — بطاقات فعاليات متبادلة بشارات «مباشر».</li>
+<li><strong><code>StoresMap</code></strong> — منتقي مدن + قائمة متاجر + خريطة تفاعلية بعلامات.</li>
+<li><strong><code>Favorites</code></strong> — شبكة المفضّلة (أو حالة فارغة).</li>
+<li><strong><code>PageWrap</code></strong> — غلاف عنوان مشترك لهذه الصفحات.</li>
+</ul>
+
+<h3>5.9 المصادقة <span class="file">— Auth.tsx</span></h3>
+<ul>
+<li><strong><code>Auth</code></strong> — دخول/تسجيل موحّد للعملاء والبائعين: مبدّل فئة، علامات وضع، نسيان كلمة المرور، أزرار نفاذ/تواصل اجتماعي، توجيه حسب الدور.</li>
+<li><strong><code>AField</code></strong> — حقل إدخال معنون بأيقونة أمامية.</li>
+</ul>
+
+<h3>5.10 إضافة متجر <span class="file">— AddStore.tsx</span></h3>
+<ul>
+<li><strong><code>AddStore</code></strong> — ترويسة تسويقية + خطوات «كيف تبدأ» + نموذج تسجيل؛ ثم شاشة نجاح/قيد الموافقة.</li>
+<li><strong><code>SField</code></strong> — حقل إدخال/قائمة معنون.</li>
+</ul>
+
+<h3>5.11 الصفحات التعريفية <span class="file">— Info.tsx</span></h3>
+<ul>
+<li><strong><code>About</code></strong> — أعمدة أوفرز الأربعة، إحصاءات، زر «أضف متجرك».</li>
+<li><strong><code>Pricing</code></strong> — ٣ بطاقات باقات (أساسي/احترافي/متاجر).</li>
+<li><strong><code>FAQ</code></strong> — أكورديون الأسئلة الشائعة.</li>
+<li><strong><code>Contact</code></strong> — قنوات تواصل + نموذج رسالة بحالة نجاح.</li>
+<li><strong><code>Careers</code></strong> — الوظائف المتاحة.</li>
+<li><strong><code>Blog</code></strong> — بطاقات مقالات.</li>
+<li><strong><code>Legal</code></strong> — الشروط / الخصوصية / الشحن / الإرجاع.</li>
+<li><strong><code>PageHead</code></strong> — ترويسة مشتركة لهذه الصفحات.</li>
+</ul>
+
+<hr>
+
+<h2>6. ملخّص عدد المكوّنات</h2>
+<table>
+<tr><th>المجموعة</th><th>المكوّنات</th></tr>
+<tr><td>الهيكل والتوجيه</td><td>App، AppContext، طبقة البيانات، ٤ خطّافات GSAP</td></tr>
+<tr><td>شريط التنقّل</td><td>TopBar، Header، Logo، NotifDropdown</td></tr>
+<tr><td>الأشرطة الجانبية</td><td>فلتر الأقسام (VOpt)، تنقّل اللوحة، تنقّل الإدارة</td></tr>
+<tr><td>التذييل</td><td>Footer</td></tr>
+<tr><td>العناصر المشتركة</td><td>Icon، Stars، Btn، Thumb، Chip، money</td></tr>
+<tr><td>الرئيسية</td><td>Home، HeroSlider، OffersTicker، QuickFilters، CategoryBanners، VendorCard، SectionHead، OffersMotion، ProductCard</td></tr>
+<tr><td>الكتالوج</td><td>CategoryPage، VOpt، Vendor</td></tr>
+<tr><td>المزادات</td><td>Auctions، Countdown، CountdownLight</td></tr>
+<tr><td>اللوحة</td><td>Dashboard، StatCard، Toggle، DField، OrdersPanel، CouponsPanel، SubscriptionPanel، SettingsPanel، AddActivityModal</td></tr>
+<tr><td>الإدارة</td><td>Admin + ٩ لوحات + Head</td></tr>
+<tr><td>الاكتشاف</td><td>Notifications، Reels، Events، StoresMap، Favorites، PageWrap</td></tr>
+<tr><td>المصادقة / التسجيل</td><td>Auth، AField، AddStore، SField</td></tr>
+<tr><td>التعريفية</td><td>Info، About، Pricing، FAQ، Contact، Careers، Blog، Legal، PageHead، CField</td></tr>
+</table>
+
+<p style="background:#fbf5e8;border:1px solid #f0e2bd;border-radius:12px;padding:14px 18px;font-weight:700">
+الإجمالي: <span style="color:var(--brand)">١٥ واجهة + نحو ٥٥ مكوّناً</span> — جميعها ثنائية اللغة (عربي/إنجليزي)، متوافقة مع الاتجاه، وداعمة للسمة (فاتح/داكن).
+</p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,15 @@
+<svg width="120" height="40" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mashhoor عروض">
+  <defs>
+    <linearGradient id="mg" x1="6" y1="4" x2="34" y2="36" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FBC701"></stop><stop offset="1" stop-color="#EAAA08"></stop>
+    </linearGradient>
+    <linearGradient id="me" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#CA8504"></stop><stop offset="1" stop-color="#A15C07"></stop>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="36" height="36" rx="11" fill="url(#mg)"></rect>
+  <circle cx="13" cy="15" r="3.4" fill="url(#me)"></circle>
+  <circle cx="27" cy="15" r="3.4" fill="url(#me)"></circle>
+  <path d="M9 21a11 11 0 0 0 22 0 2.4 2.4 0 0 0-4.8 0 6.2 6.2 0 0 1-12.4 0A2.4 2.4 0 0 0 9 21Z" fill="#fff"></path>
+  <text x="46" y="26" font-family="Cairo, sans-serif" font-size="20" font-weight="800" fill="currentColor">مشهور</text>
+</svg>
