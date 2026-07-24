@@ -29,10 +29,10 @@ export function AddStore({ go }: { go: Go }) {
   const steps = ar
     ? [["أنشئ حسابك", "سجّل متجرك واحصل على اسم مستخدم وكلمة مرور خاصة بك.", "user"],
       ["أضف نشاطك وعروضك", "أضف منتجاتك، حدّد نسبة الخصم ومدته، وأرفق الصور والروابط.", "tag"],
-      ["موافقة ونشر", "تراجع إدارة مشهور طلبك، وبعد التفعيل يظهر متجرك للزوار.", "check"]]
+      ["موافقة ونشر", "تراجع إدارة أوفرز طلبك، وبعد التفعيل يظهر متجرك للزوار.", "check"]]
     : [["Create your account", "Register your store and get your own username and password.", "user"],
       ["Add activity & offers", "Add products, set the discount % and duration, attach images and links.", "tag"],
-      ["Approval & publish", "Mashhoor reviews your request; once activated your store goes live to visitors.", "check"]];
+      ["Approval & publish", "Offers reviews your request; once activated your store goes live to visitors.", "check"]];
 
   const benefits = ar
     ? [["+٥٠ ألف زائر شهرياً", "eye"], ["عدّاد زوار لكل متجر", "grid"], ["خصومات ومزادات", "gavel"], ["لوحة تحكم كاملة", "box"]]
@@ -43,7 +43,7 @@ export function AddStore({ go }: { go: Go }) {
       <div className="container" style={{ paddingTop: 60, paddingBottom: 60, textAlign: "center", maxWidth: 560 }}>
         <div style={{ width: 84, height: 84, borderRadius: 999, background: "var(--brand-soft)", color: "var(--brand)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}><Icon name="check" size={44} stroke={2.4} /></div>
         <h1 style={{ fontSize: 27, fontWeight: 800, margin: "0 0 10px" }}>{ar ? "تم استلام طلب متجرك" : "Your store request is in"}</h1>
-        <p style={{ color: "var(--text-2)", fontSize: 15 }}>{ar ? "طلبك قيد المراجعة من إدارة مشهور. ستصلك رسالة عند تفعيل المتجر، ويمكنك الآن تجهيز منتجاتك من لوحة التحكم." : "Your request is being reviewed by Mashhoor. You'll be notified when it's activated — meanwhile you can prepare your products in the dashboard."}</p>
+        <p style={{ color: "var(--text-2)", fontSize: 15 }}>{ar ? "طلبك قيد المراجعة من إدارة أوفرز. ستصلك رسالة عند تفعيل المتجر، ويمكنك الآن تجهيز منتجاتك من لوحة التحكم." : "Your request is being reviewed by Offers. You'll be notified when it's activated — meanwhile you can prepare your products in the dashboard."}</p>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 24 }}>
           <Btn size="lg" onClick={() => go("dashboard")}>{ar ? "الذهاب للوحة التحكم" : "Go to dashboard"}</Btn>
           <Btn size="lg" variant="outline" onClick={() => go("home")}>{ar ? "الرئيسية" : "Home"}</Btn>
@@ -58,7 +58,7 @@ export function AddStore({ go }: { go: Go }) {
         <div className="container" style={{ padding: "44px 0 40px", display: "grid", gridTemplateColumns: "1.1fr .9fr", gap: 30, alignItems: "center" }}>
           <div>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,.18)", padding: "5px 12px", borderRadius: 999, fontSize: 12.5, fontWeight: 700 }}><Icon name="store" size={15} />{ar ? "للبائعين" : "For vendors"}</span>
-            <h1 style={{ margin: "16px 0 12px", fontSize: 38, fontWeight: 800, lineHeight: 1.15 }}>{ar ? "أضف متجرك إلى مشهور" : "List your store on Mashhoor"}</h1>
+            <h1 style={{ margin: "16px 0 12px", fontSize: 38, fontWeight: 800, lineHeight: 1.15 }}>{ar ? "أضف متجرك إلى أوفرز" : "List your store on Offers"}</h1>
             <p style={{ margin: 0, fontSize: 16, opacity: .92, maxWidth: 440 }}>{ar ? "انشر خصوماتك ومزاداتك لآلاف الزوار في جميع مدن المملكة. التسجيل مجاني والتفعيل سريع." : "Publish your discounts and auctions to thousands of visitors across the Kingdom. Free to register, fast to activate."}</p>
             <div style={{ display: "flex", gap: 22, marginTop: 22, flexWrap: "wrap" }}>
               {benefits.map(([b, ic]) => (
@@ -88,7 +88,7 @@ export function AddStore({ go }: { go: Go }) {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 18, padding: "14px 16px", background: "var(--surface-2)", borderRadius: "var(--r-md)", color: "var(--text-2)", fontSize: 13 }}>
             <Icon name="shield" size={18} style={{ color: "var(--brand)", flex: "none" }} />
-            {ar ? "كل متجر يخضع للموافقة من إدارة مشهور قبل النشر." : "Every store is subject to Mashhoor approval before publishing."}
+            {ar ? "كل متجر يخضع للموافقة من إدارة أوفرز قبل النشر." : "Every store is subject to Offers approval before publishing."}
           </div>
           <div style={{ marginTop: 18, fontSize: 13.5, color: "var(--text-2)" }}>
             {ar ? "تريد مقارنة الباقات؟ " : "Want to compare plans? "}

@@ -1,4 +1,4 @@
-/* Mashhoor — i18n strings + marketplace data (typed port of data.js) */
+/* Offers — i18n strings + marketplace data (typed port of data.js) */
 
 export type Lang = "ar" | "en";
 
@@ -36,8 +36,8 @@ export const STR = {
     empty: "سلتك فارغة", continueShopping: "متابعة التسوق", backHome: "الرئيسية",
     since: "عضو منذ", stores: "متجر", rating: "التقييم", followers: "متابع",
     multiTenant: "سوق متعدد المتاجر", aboutVendor: "نبذة عن المتجر",
-    orderConfirmed: "تم تأكيد طلبك بنجاح", thankYou: "شكراً لتسوقك من مشهور",
-    auc: { title: "مزادات مشهور", sub: "زايد على أفضل القطع من متاجر موثوقة في جميع مدن المملكة.",
+    orderConfirmed: "تم تأكيد طلبك بنجاح", thankYou: "شكراً لتسوقك من أوفرز",
+    auc: { title: "مزادات أوفرز", sub: "زايد على أفضل القطع من متاجر موثوقة في جميع مدن المملكة.",
       live: "مباشر الآن", current: "المزايدة الحالية", start: "سعر الافتتاح", bids: "مزايدة",
       endsIn: "ينتهي خلال", placeBid: "زايد الآن", yourBid: "مزايدتك", minBid: "أقل مزايدة",
       won: "تمت مزايدتك", ended: "انتهى المزاد", h: "س", m: "د", s: "ث" },
@@ -50,7 +50,7 @@ export const STR = {
       discountPct: "نسبة الخصم %", durationDays: "المدة (أيام)", productName: "اسم المنتج",
       siteLink: "رابط الموقع الإلكتروني", mapLink: "رابط موقع المحل", image: "صورة", video: "فيديو",
       save: "حفظ ونشر", cancel: "إلغاء", yes: "نعم", no: "لا", pending: "بانتظار الموافقة",
-      manager: "يخضع للموافقة من إدارة مشهور", awaiting: "بانتظار التفعيل" },
+      manager: "يخضع للموافقة من إدارة أوفرز", awaiting: "بانتظار التفعيل" },
   },
   en: {
     dir: "ltr", langName: "English", other: "العربية", code: "ع",
@@ -83,8 +83,8 @@ export const STR = {
     empty: "Your cart is empty", continueShopping: "Continue shopping", backHome: "Home",
     since: "Member since", stores: "store", rating: "Rating", followers: "followers",
     multiTenant: "Multi-vendor marketplace", aboutVendor: "About the store",
-    orderConfirmed: "Your order is confirmed", thankYou: "Thank you for shopping with Mashhoor",
-    auc: { title: "Mashhoor Auctions", sub: "Bid on the best pieces from trusted stores across the Kingdom.",
+    orderConfirmed: "Your order is confirmed", thankYou: "Thank you for shopping with Offers",
+    auc: { title: "Offers Auctions", sub: "Bid on the best pieces from trusted stores across the Kingdom.",
       live: "Live now", current: "Current bid", start: "Opening price", bids: "bids",
       endsIn: "Ends in", placeBid: "Place bid", yourBid: "Your bid", minBid: "Min bid",
       won: "Bid placed", ended: "Auction ended", h: "h", m: "m", s: "s" },
@@ -97,7 +97,7 @@ export const STR = {
       discountPct: "Discount %", durationDays: "Duration (days)", productName: "Product name",
       siteLink: "Website link", mapLink: "Store location link", image: "Image", video: "Video",
       save: "Save & publish", cancel: "Cancel", yes: "Yes", no: "No", pending: "Pending approval",
-      manager: "Subject to approval by Mashhoor management", awaiting: "Awaiting activation" },
+      manager: "Subject to approval by Offers management", awaiting: "Awaiting activation" },
   },
 } as const;
 

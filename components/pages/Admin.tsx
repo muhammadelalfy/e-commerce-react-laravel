@@ -33,7 +33,7 @@ export function Admin({ go }: { go: Go }) {
       <aside style={{ ...card, padding: 16, position: "sticky", top: 90 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 6px 16px", borderBottom: "1px solid var(--line)", marginBottom: 12 }}>
           <span style={{ width: 40, height: 40, borderRadius: 11, background: "var(--topbar)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}><Icon name="shield" size={20} /></span>
-          <div><div style={{ fontWeight: 800, fontSize: 14 }}>{ar ? "إدارة مشهور" : "Mashhoor Admin"}</div><div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{ar ? "مدير" : "Administrator"}</div></div>
+          <div><div style={{ fontWeight: 800, fontSize: 14 }}>{ar ? "إدارة أوفرز" : "Offers Admin"}</div><div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{ar ? "مدير" : "Administrator"}</div></div>
         </div>
         <nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {nav.map(([k, l, ic]) => (

@@ -1,5 +1,5 @@
 /* ============================================================
-   Mashhoor مشهور — Offers / discounts marketplace
+   Offers أوفرز — Offers / discounts marketplace
    Design system: red/coral primary · gold highlights · navy ink
    Cairo / Tajawal / Noto Sans Arabic · light + dark · RTL/LTR
    Ported to Next.js — animations driven by GSAP (see /lib/gsap).
@@ -8,41 +8,42 @@
 
 :root {
   /* Brand — coral/red (CTAs, active states, prices) */
-  --brand:        #ce4847;
-  --brand-strong: #b23a39;
-  --brand-bright: #e74631;
-  --brand-soft:   #fdecea;
-  --topbar:       #202939;
+  /* Brand — rose/magenta pink (from the OFFERZ logo #c83260) */
+  --brand:        #c83260;
+  --brand-strong: #a82650;
+  --brand-bright: #e0426f;
+  --brand-soft:   #fbe7ee;
+  --topbar:       #1e404b;   /* logo navy-teal */
 
-  /* Gold — section highlights, logo, stars */
-  --gold:      #fbc701;
-  --gold-deep: #eaaa08;
-  --gold-soft: #fef7c3;
-  --star:      #eaaa08;
+  /* Highlight — rose tint (replaces the old gold) */
+  --gold:      #f2c9d6;      /* soft rose highlight behind titles */
+  --gold-deep: #c83260;
+  --gold-soft: #fbe7ee;
+  --star:      #e8a13a;      /* keep a warm amber just for rating stars */
 
   /* Accents */
-  --blue:    #2f69fe;
-  --blue-soft:#d5e5fe;
+  --blue:    #2f6f7e;        /* teal accent drawn from the logo navy */
+  --blue-soft:#d6e6ea;
 
   /* Status */
   --active:    #2e9d63;
   --active-bg: #e7f4ec;
   --expired:   #9aa4b2;
-  --sale:      #ce4847;
+  --sale:      #c83260;
 
   /* Surfaces (light) */
-  --bg:        #eef2f6;
+  --bg:        #f4f1f3;      /* warm rose-grey page */
   --surface:   #ffffff;
-  --surface-2: #eef2f6;
+  --surface-2: #f4eef1;
   --header:    #ffffff;
-  --hero:      #202939;
-  --line:      #e3e8ee;
-  --line-soft: #eef2f6;
+  --hero:      #1e404b;      /* logo navy-teal hero */
+  --line:      #ece4e8;
+  --line-soft: #f4eef1;
 
   /* Text */
-  --text:   #202939;
-  --text-2: #697586;
-  --text-3: #9aa4b2;
+  --text:   #1e404b;         /* logo navy-teal ink */
+  --text-2: #5f6b72;
+  --text-3: #9aa1a6;
   --on-brand: #ffffff;
 
   /* Shape */
@@ -51,9 +52,9 @@
   --r-lg: 16px;
   --r-xl: 22px;
   --r-pill: 999px;
-  --shadow-sm: 0 1px 2px rgba(16,24,40,.03), 0 1px 3px rgba(16,24,40,.08);
-  --shadow-md: 0 6px 20px rgba(16,24,40,.08);
-  --shadow-lg: 0 16px 44px rgba(16,24,40,.12);
+  --shadow-sm: 0 1px 2px rgba(30,64,75,.04), 0 1px 3px rgba(30,64,75,.08);
+  --shadow-md: 0 6px 20px rgba(30,64,75,.09);
+  --shadow-lg: 0 16px 44px rgba(30,64,75,.14);
 
   /* Fonts */
   --font:    "Tajawal", "Cairo", "Inter", system-ui, sans-serif;
@@ -65,33 +66,33 @@
 
 /* ---- Dark mode ---- */
 :root[data-theme="dark"] {
-  --brand:        #e0584f;
-  --brand-strong: #ce4847;
-  --brand-bright: #f0584a;
-  --brand-soft:   #2a1a1a;
-  --topbar:       #0d1117;
+  --brand:        #e0426f;   /* brighter rose for dark bg */
+  --brand-strong: #c83260;
+  --brand-bright: #f05585;
+  --brand-soft:   #2c1620;
+  --topbar:       #0e1c21;
 
-  --gold:      #fbc701;
-  --gold-deep: #d9960a;
-  --gold-soft: #2a2410;
+  --gold:      #5a2438;      /* muted rose highlight on dark */
+  --gold-deep: #e0426f;
+  --gold-soft: #2c1620;
   --star:      #f5c542;
 
   --active:    #36c07a;
   --active-bg: #15281d;
   --expired:   #5a6675;
-  --sale:      #e0584f;
+  --sale:      #e0426f;
 
-  --bg:        #0c1016;
-  --surface:   #161c26;
-  --surface-2: #1c2430;
-  --header:    #161c26;
-  --hero:      #161c26;
-  --line:      #2a3340;
-  --line-soft: #1c2430;
+  --bg:        #0e1519;      /* navy-teal-tinted near-black */
+  --surface:   #16232a;
+  --surface-2: #1d2c33;
+  --header:    #16232a;
+  --hero:      #16232a;
+  --line:      #2a3b42;
+  --line-soft: #1d2c33;
 
-  --text:   #eaf0f7;
-  --text-2: #9aa7b8;
-  --text-3: #6b7888;
+  --text:   #eaf1f3;
+  --text-2: #9fb0b6;
+  --text-3: #6d7f86;
   --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
   --shadow-md: 0 6px 20px rgba(0,0,0,.45);
   --shadow-lg: 0 16px 48px rgba(0,0,0,.55);
@@ -118,9 +119,13 @@ img { display: block; max-width: 100%; }
 /* Numbers stay LTR even inside RTL */
 .num { direction: ltr; unicode-bidi: isolate; display: inline-block; }
 
-/* Gold highlight behind section titles */
+/* Rose highlight behind section titles */
 .hl { position: relative; display: inline-block; z-index: 0; }
 .hl::after { content: ""; position: absolute; inset-inline: -6px; bottom: 3px; height: 12px; background: var(--gold); border-radius: 3px; z-index: -1; opacity: .9; }
+
+/* Logo: lift the navy "Z" a touch in dark mode so it stays legible,
+   while keeping the rose-pink brand color intact */
+:root[data-theme="dark"] .mash-logo-img { filter: brightness(1.15) contrast(.95); }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
@@ -132,3 +137,159 @@ img { display: block; max-width: 100%; }
 @media (prefers-reduced-motion: reduce) {
   [class^="mash-anim"], .mash-anim { animation: none !important; }
 }
+
+/* ============================================================
+   RESPONSIVE LAYER
+   The app uses inline styles for layout, so these rules use
+   !important to override them at each breakpoint. They target
+   the structural grids/sidebars used across every page.
+   Breakpoints:  ≤1024 tablet · ≤768 small tablet · ≤560 phone
+   ============================================================ */
+
+/* container padding shrinks on small screens */
+@media (max-width: 768px) {
+  .container { padding-inline: 16px; }
+}
+@media (max-width: 400px) {
+  .container { padding-inline: 12px; }
+}
+
+/* ---- TABLET (≤1024px) ---- */
+@media (max-width: 1024px) {
+  /* 4-col product/vendor grids → 3 cols */
+  [style*="repeat(4, 1fr)"] { grid-template-columns: repeat(3, 1fr) !important; }
+  /* 8-col category circles → wrap to fewer */
+  [style*="repeat(8, 1fr)"] { grid-template-columns: repeat(6, 1fr) !important; }
+}
+
+/* ---- SMALL TABLET (≤768px) ---- */
+@media (max-width: 768px) {
+  /* every multi-col product grid → 2 cols */
+  [style*="repeat(4, 1fr)"],
+  [style*="repeat(3, 1fr)"] { grid-template-columns: repeat(2, 1fr) !important; }
+  [style*="repeat(8, 1fr)"] { grid-template-columns: repeat(4, 1fr) !important; }
+
+  /* two-column page layouts (sidebar + content) → stack */
+  [style*="260px 1fr"],
+  [style*="230px 1fr"],
+  [style*="320px 1fr"],
+  [style*="1fr 1.05fr"],
+  [style*="1fr 1.4fr"],
+  [style*="1.1fr .9fr"],
+  [style*="1.4fr 1fr 1fr 1fr"] { grid-template-columns: 1fr !important; }
+
+  /* sidebars stop being sticky and go full width when stacked */
+  aside[style*="sticky"] { position: static !important; width: auto !important; }
+
+  /* hero / auction / event split panels stack */
+  [style*="1fr 1fr"] { grid-template-columns: 1fr !important; }
+}
+
+/* ---- PHONE (≤560px) ---- */
+@media (max-width: 560px) {
+  /* product grids → single column on phones */
+  [style*="repeat(4, 1fr)"],
+  [style*="repeat(3, 1fr)"],
+  [style*="repeat(2, 1fr)"] { grid-template-columns: repeat(2, 1fr) !important; }
+  /* category circles → 3 across */
+  [style*="repeat(8, 1fr)"] { grid-template-columns: repeat(3, 1fr) !important; }
+
+  /* shrink oversized hero headings */
+  main section h1 { font-size: 26px !important; }
+  h1 { font-size: 24px !important; }
+  h2 { font-size: 19px !important; }
+
+  /* let the sticky header + top bar breathe */
+  .container { gap: 12px; }
+}
+
+/* ---- TOP BAR: hide the promo/city clutter on small screens ---- */
+@media (max-width: 900px) {
+  .mash-topbar-promo { display: none !important; }
+}
+@media (max-width: 640px) {
+  .mash-topbar-city { display: none !important; }
+}
+
+/* ---- HEADER: collapse desktop nav + search into a mobile burger ---- */
+.mash-nav-desktop, .mash-search-desktop { display: flex; }
+.mash-burger { display: none; }
+@media (max-width: 900px) {
+  .mash-nav-desktop { display: none !important; }
+  .mash-search-desktop { display: none !important; }
+  .mash-burger { display: inline-flex !important; }
+}
+
+/* mobile slide-down menu panel */
+.mash-mobile-menu {
+  position: fixed; inset-inline: 0; top: 0; z-index: 80;
+  background: var(--surface); border-bottom: 1px solid var(--line);
+  box-shadow: var(--shadow-lg); padding: 16px;
+  display: flex; flex-direction: column; gap: 6px;
+  max-height: 100vh; overflow-y: auto;
+  animation: mash-slidedown .22s ease;
+}
+@keyframes mash-slidedown { from { transform: translateY(-8px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+
+/* ---- HERO SLIDER responsive ---- */
+@media (max-width: 1024px) {
+  .mash-hero-card { width: 240px !important; height: 240px !important; }
+  .mash-hero-card .mash-hero-img { width: 200px !important; height: 200px !important; }
+}
+@media (max-width: 900px) {
+  .mash-hero { height: 300px !important; }
+  .mash-hero-card { width: 190px !important; height: 190px !important; }
+  .mash-hero-card .mash-hero-img { width: 160px !important; height: 160px !important; }
+  .mash-hero-copy { padding: 0 40px !important; }  /* clearance for arrows */
+}
+@media (max-width: 640px) {
+  /* product card small at the top corner, copy fills width below it */
+  .mash-hero { height: 380px !important; }
+  .mash-hero-card {
+    width: 130px !important; height: 130px !important;
+    inset-inline-end: 14px !important; top: 14px !important;
+    transform: none !important; border-radius: 22px !important;
+  }
+  .mash-hero-card .mash-hero-img { width: 108px !important; height: 108px !important; }
+
+  /* copy sits at the bottom; generous side padding so text NEVER hits the arrows,
+     and bottom padding so it clears the dots */
+  .mash-hero-copy {
+    padding: 0 52px 48px !important;
+    justify-content: flex-end !important;
+    max-width: 100% !important;
+  }
+  .mash-hero-copy h1 { font-size: 22px !important; }
+  .mash-hero-copy p { font-size: 12.5px !important; }
+
+  /* smaller arrows, sitting beside the copy (not over it) */
+  .mash-hero-arrow {
+    width: 32px !important; height: 32px !important;
+    top: auto !important; bottom: 16px !important;
+    transform: none !important;
+    background: rgba(255,255,255,.22) !important;
+  }
+  .mash-hero-arrow svg { width: 16px !important; height: 16px !important; }
+
+  /* dots centered at the very bottom, above everything */
+  .mash-hero-dots {
+    inset-inline: 0 !important;
+    bottom: 16px !important;
+    justify-content: center !important;
+  }
+}
+
+/* ---- FOOTER responsive ---- */
+@media (max-width: 860px) {
+  .mash-footer-grid { grid-template-columns: 1fr 1fr !important; gap: 24px !important; }
+  .mash-footer-brand { grid-column: 1 / -1 !important; }
+}
+@media (max-width: 460px) {
+  .mash-footer-grid { grid-template-columns: 1fr 1fr !important; }
+  .mash-footer-bottom { flex-direction: column !important; align-items: flex-start !important; text-align: start; }
+}
+
+/* horizontal scroll safety — nothing should overflow the viewport width */
+html, body { overflow-x: hidden; max-width: 100%; }
+img, svg, video { max-width: 100%; }
+

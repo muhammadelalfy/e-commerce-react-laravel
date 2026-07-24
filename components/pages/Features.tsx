@@ -67,7 +67,7 @@ export function Reels() {
   const [liked, setLiked] = useState<Record<string, boolean>>({});
   const grid = useReveal<HTMLDivElement>([lang]);
   return (
-    <PageWrap title={ar ? "ريلز مشهور" : "Mashhoor Reels"} sub={ar ? "مقاطع قصيرة من المتاجر — منتجات وعروض وكواليس." : "Short clips from stores — products, offers and behind the scenes."}>
+    <PageWrap title={ar ? "ريلز أوفرز" : "Offers Reels"} sub={ar ? "مقاطع قصيرة من المتاجر — منتجات وعروض وكواليس." : "Short clips from stores — products, offers and behind the scenes."}>
       <div ref={grid} style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 18 }}>
         {REELS.map((r) => {
           const v = VENDORS[r.vendor]; const isLiked = liked[r.id];

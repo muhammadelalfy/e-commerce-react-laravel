@@ -12,6 +12,8 @@ import { AddStore } from "./pages/AddStore";
 import { Auth } from "./pages/Auth";
 import { Notifications, Reels, Events, StoresMap, Favorites } from "./pages/Features";
 import { Admin } from "./pages/Admin";
+import { CountryModal } from "./CountryModal";
+import { useAutoReveal } from "@/lib/gsap";
 
 export default function App() {
   const [lang, setLang] = useState<Lang>("ar"); // Arabic-first by default
@@ -46,6 +48,8 @@ export default function App() {
 
   const ctx: AppState = { t, lang, theme, toggleLang, toggleTheme, go, favs, toggleFav };
   const unread = NOTIFS.filter((n) => !n.read).length;
+  // whole-site scroll reveal — re-scans on every page/param/lang change
+  const mainRef = useAutoReveal<HTMLElement>(page + ":" + param + ":" + lang);
 
   let body: React.ReactNode;
   if (page === "vendor") body = <Vendor id={param!} go={go} />;
@@ -66,9 +70,10 @@ export default function App() {
 
   return (
     <AppCtx.Provider value={ctx}>
+      <CountryModal />
       <TopBar />
       <Header go={go} onSearch={setQuery} cur={page} favCount={favs.length} unread={unread} />
-      <main style={{ minHeight: "60vh", paddingBottom: 20 }}>{body}</main>
+      <main ref={mainRef} style={{ minHeight: "60vh", paddingBottom: 20 }}>{body}</main>
       <Footer />
     </AppCtx.Provider>
   );

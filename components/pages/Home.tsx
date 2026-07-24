@@ -4,7 +4,7 @@ import { useApp } from "@/lib/AppContext";
 import { Icon, Stars, Btn, Chip, money } from "../ui";
 import { ProductCard } from "../Shell";
 import { CATS, VENDORS, PRODUCTS, type Vendor } from "@/lib/data";
-import { useMarquee, useReveal, useOffersMotion } from "@/lib/gsap";
+import { useMarquee, useReveal, useOffersMotion, useHeroImage, useZoomIn, useFlipIn, useSlideIn } from "@/lib/gsap";
 
 type Go = (page: string, id?: string | null) => void;
 
@@ -37,20 +37,25 @@ function QuickFilters({ value, onChange }: { value: number; onChange: (v: number
   );
 }
 
-const HERO_SLIDES: Record<"ar" | "en", { cat: string; img: string; kicker: string; title: string; sub: string; cta: string; to: [string, string] }[]> = {
-  ar: [
-    { cat: "all", img: "/img/cat-electronics.png", kicker: "عروض فعّالة الآن", title: "احصل على خصم حتى ٥٠٪", sub: "على المتاجر المختارة في جميع مناطق المملكة", cta: "تسوّق العروض", to: ["cat", "electronics"] },
-    { cat: "fashion", img: "/img/cat-clothes.png", kicker: "وصل حديثاً", title: "أحدث صيحات الأزياء", sub: "تشكيلة رجالية ونسائية بخصومات تصل إلى ٤٠٪", cta: "تسوّق الأزياء", to: ["cat", "fashion"] },
-    { cat: "perfumes", img: "/img/cat-beauty.png", kicker: "العطور والجمال", title: "عطور تدوم وجمال يبهر", sub: "عود ومسك ومستحضرات فاخرة من متاجر موثوقة", cta: "تسوّق العطور", to: ["cat", "perfumes"] },
-    { cat: "restaurants", img: "/img/cat-food.png", kicker: "ألذ العروض", title: "مطاعم وحلويات بخصومات", sub: "وجبات وبوكسات حلا بأسعار لا تُقاوم", cta: "اطلب الآن", to: ["cat", "restaurants"] },
-  ],
-  en: [
-    { cat: "all", img: "/img/cat-electronics.png", kicker: "Live offers now", title: "Get up to 50% Off", sub: "On selected stores across every region of the Kingdom", cta: "Shop deals", to: ["cat", "electronics"] },
-    { cat: "fashion", img: "/img/cat-clothes.png", kicker: "New arrivals", title: "The latest in fashion", sub: "Men's & women's collections up to 40% off", cta: "Shop fashion", to: ["cat", "fashion"] },
-    { cat: "perfumes", img: "/img/cat-beauty.png", kicker: "Beauty & perfume", title: "Scents that last", sub: "Oud, musk and luxury cosmetics from trusted stores", cta: "Shop perfume", to: ["cat", "perfumes"] },
-    { cat: "restaurants", img: "/img/cat-food.png", kicker: "Tastiest deals", title: "Restaurants & sweets", sub: "Meals and dessert boxes at unbeatable prices", cta: "Order now", to: ["cat", "restaurants"] },
-  ],
+// Hero slider now features STORES (vendors), not products. Each slide showcases
+// a featured store, its logo/banner, rating & city, and links to its storefront.
+const STORE_BANNERS: Record<string, string> = {
+  electronics: "/img/cat-electronics.png", perfumes: "/img/cat-beauty.png",
+  fashion: "/img/cat-clothes.png", restaurants: "/img/cat-food.png",
 };
+interface HeroStore { vendor: string; img: string; color: string; kicker: string; title: string; sub: string; cta: string; }
+function buildHeroStores(lang: "ar" | "en"): HeroStore[] {
+  const ar = lang === "ar";
+  return Object.values(VENDORS).map((v) => ({
+    vendor: v.id,
+    img: STORE_BANNERS[v.cat] || "/img/cat-electronics.png",
+    color: v.color,
+    kicker: ar ? "متجر مميّز" : "Featured store",
+    title: ar ? v.ar : v.en,
+    sub: ar ? v.ar_about : v.en_about,
+    cta: ar ? "زيارة المتجر" : "Visit store",
+  }));
+}
 
 function OffersTicker({ go }: { go: Go }) {
   const { lang } = useApp();
@@ -92,7 +97,7 @@ const heroArrow: React.CSSProperties = { position: "absolute", top: "50%", trans
 
 function HeroSlider({ go }: { go: Go; onCat?: (id: string) => void }) {
   const { lang } = useApp();
-  const slides = HERO_SLIDES[lang === "ar" ? "ar" : "en"];
+  const slides = buildHeroStores(lang === "ar" ? "ar" : "en");
   const rtl = lang === "ar";
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -103,35 +108,47 @@ function HeroSlider({ go }: { go: Go; onCat?: (id: string) => void }) {
     const id = setInterval(() => setI((p) => (p + 1) % n), 4500);
     return () => clearInterval(id);
   }, [paused, n]);
-  const act = (s: (typeof slides)[number]) => { if (s.to[0] === "cat") go("category", s.to[1]); else go(s.to[0], s.to[1]); };
+  const act = (s: HeroStore) => go("vendor", s.vendor);
+  const heroRef = useHeroImage<HTMLElement>(i);
 
   return (
-    <section onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
+    <section ref={heroRef} className="mash-hero" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
       style={{ position: "relative", height: 340, borderRadius: "var(--r-xl)", overflow: "hidden", background: "var(--hero)" }}>
-      {slides.map((s, idx) => (
+      {slides.map((s, idx) => {
+        const v = VENDORS[s.vendor];
+        return (
         <div key={idx} aria-hidden={idx !== i} style={{ position: "absolute", inset: 0, opacity: idx === i ? 1 : 0, transition: "opacity .7s ease", pointerEvents: idx === i ? "auto" : "none" }}>
-          {/* dark ambient wash first (fills the whole hero) */}
+          {/* store banner photo fills the trailing half, dimmed */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={s.img} alt="" style={{ position: "absolute", insetInlineEnd: 0, top: 0, height: "100%", width: "56%", objectFit: "cover" }} />
+          {/* dark + brand-tinted wash */}
           <div style={{ position: "absolute", inset: 0, background: rtl
-            ? "linear-gradient(270deg, #1a222d 0%, #141b24 45%, #10161d 100%)"
-            : "linear-gradient(90deg, #1a222d 0%, #141b24 45%, #10161d 100%)" }} />
-          {/* product photo inside a fixed white card — 256px source is DOWNSCALED
-              into a ≤200px box, so it renders crisp (no upscaling = no blur).
-              Card stays white in both light and dark themes. */}
-          <div style={{ position: "absolute", insetInlineEnd: "6%", top: "50%", transform: "translateY(-50%)", width: 224, height: 224, borderRadius: "var(--r-xl)", background: "linear-gradient(150deg, #ffffff 0%, #eef2f7 100%)", boxShadow: "0 24px 60px rgba(0,0,0,.45)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={s.img} alt="" width={256} height={256} style={{ width: 200, height: 200, objectFit: "contain", transform: idx === i ? "scale(1)" : "scale(1.05)", transition: "transform 5s ease" }} />
+            ? `linear-gradient(270deg, ${s.color}55 0%, rgba(20,27,36,.82) 42%, #10161d 78%)`
+            : `linear-gradient(90deg, ${s.color}55 0%, rgba(20,27,36,.82) 42%, #10161d 78%)` }} />
+          {/* store logo tile in a glowing card */}
+          <div className="mash-hero-card" data-active={idx === i} style={{ position: "absolute", insetInlineEnd: "6%", top: "50%", transform: "translateY(-50%)", width: 200, height: 200, borderRadius: 28, background: `linear-gradient(150deg, ${s.color}, ${s.color}cc)`, boxShadow: "0 30px 70px rgba(0,0,0,.55)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+            <span className="mash-hero-glow" style={{ position: "absolute", inset: "10%", borderRadius: "50%", background: "radial-gradient(circle, rgba(255,255,255,.35) 0%, transparent 65%)", filter: "blur(6px)" }} />
+            <span className="mash-hero-img" style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, color: "#fff" }}>
+              <Icon name="store" size={64} stroke={1.4} />
+              <span style={{ fontWeight: 800, fontSize: 17 }}>{rtl ? v.ar : v.en}</span>
+            </span>
           </div>
-          <div style={{ position: "relative", height: "100%", maxWidth: 560, padding: "0 56px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 16 }}>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(251,199,1,.16)", color: "var(--gold)", padding: "5px 12px", borderRadius: 999, fontSize: 12.5, fontWeight: 700, width: "fit-content" }}><Icon name="tag" size={14} />{s.kicker}</span>
+          <div className="mash-hero-copy" style={{ position: "relative", height: "100%", maxWidth: 560, padding: "0 56px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 14 }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,.14)", color: "#fff", padding: "5px 12px", borderRadius: 999, fontSize: 12.5, fontWeight: 700, width: "fit-content" }}><Icon name="store" size={14} />{s.kicker}</span>
             <h1 style={{ margin: 0, fontSize: 40, fontWeight: 800, lineHeight: 1.15, color: "#fff", fontFamily: "var(--font-display)" }}>{s.title}</h1>
-            <p style={{ margin: 0, fontSize: 15.5, color: "rgba(255,255,255,.8)", maxWidth: 400 }}>{s.sub}</p>
-            <div style={{ marginTop: 4 }}><Btn size="lg" onClick={() => act(s)}>{s.cta}</Btn></div>
+            <div style={{ display: "flex", alignItems: "center", gap: 14, color: "rgba(255,255,255,.85)", fontSize: 13.5 }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="star" size={15} fill="var(--star)" /><b className="num">{v.rating}</b> ({v.reviews})</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="location" size={14} />{rtl ? v.city.ar : v.city.en}</span>
+              <span className="num">{(v.followers / 1000).toFixed(1)}k {rtl ? "متابع" : "followers"}</span>
+            </div>
+            <p style={{ margin: 0, fontSize: 15, color: "rgba(255,255,255,.78)", maxWidth: 400 }}>{s.sub}</p>
+            <div style={{ marginTop: 4 }}><Btn size="lg" onClick={() => act(s)}><Icon name="store" size={17} />{s.cta}</Btn></div>
           </div>
         </div>
-      ))}
-      <button onClick={() => go2(i - 1)} aria-label="prev" style={{ ...heroArrow, insetInlineStart: 16 }}><Icon name="chevron" size={20} style={{ transform: rtl ? "rotate(-90deg)" : "rotate(90deg)" }} /></button>
-      <button onClick={() => go2(i + 1)} aria-label="next" style={{ ...heroArrow, insetInlineEnd: 16 }}><Icon name="chevron" size={20} style={{ transform: rtl ? "rotate(90deg)" : "rotate(-90deg)" }} /></button>
-      <div style={{ position: "absolute", insetInlineStart: 56, bottom: 18, display: "flex", gap: 8 }}>
+      );})}
+      <button className="mash-hero-arrow" onClick={() => go2(i - 1)} aria-label="prev" style={{ ...heroArrow, insetInlineStart: 16 }}><Icon name="chevron" size={20} style={{ transform: rtl ? "rotate(-90deg)" : "rotate(90deg)" }} /></button>
+      <button className="mash-hero-arrow" onClick={() => go2(i + 1)} aria-label="next" style={{ ...heroArrow, insetInlineEnd: 16 }}><Icon name="chevron" size={20} style={{ transform: rtl ? "rotate(90deg)" : "rotate(-90deg)" }} /></button>
+      <div className="mash-hero-dots" style={{ position: "absolute", insetInlineStart: 56, bottom: 18, display: "flex", gap: 8, zIndex: 3 }}>
         {slides.map((_, idx) => (
           <button key={idx} onClick={() => go2(idx)} aria-label={"slide " + (idx + 1)} style={{ width: idx === i ? 26 : 9, height: 9, borderRadius: 999, border: "none", background: idx === i ? "var(--brand)" : "rgba(255,255,255,.45)", transition: "width .25s, background .25s", cursor: "pointer" }} />
         ))}
@@ -184,7 +201,7 @@ const CAT_BANNERS = [
 ];
 function CategoryBanners({ onPick }: { go: Go; onPick: (id: string) => void }) {
   const { t, lang } = useApp();
-  const grid = useReveal<HTMLDivElement>([lang]);
+  const grid = useSlideIn<HTMLDivElement>("right", [lang]);
   return (
     <section style={{ marginTop: 44 }}>
       <SectionHead title={lang === "ar" ? "تسوّق حسب القسم" : "Shop by category"} action={t.viewAll} onAction={() => { const el = document.getElementById("deals-anchor"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
@@ -243,8 +260,8 @@ export function Home({ go, query }: { go: Go; query: string }) {
   const [activeCat, setActiveCat] = useState("all");
   const [quick, setQuick] = useState(-1);
   const [sort, setSort] = useState("featured");
-  const dealsGrid = useReveal<HTMLDivElement>([activeCat, quick, sort, query, lang]);
-  const vendorsGrid = useReveal<HTMLDivElement>([lang]);
+  const dealsGrid = useZoomIn<HTMLDivElement>([activeCat, quick, sort, query, lang]);
+  const vendorsGrid = useFlipIn<HTMLDivElement>([lang]);
   const list = useMemo(() => {
     let l = PRODUCTS;
     if (activeCat !== "all") l = l.filter((p) => p.cat === activeCat);

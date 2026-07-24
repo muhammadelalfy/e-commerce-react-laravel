@@ -24,19 +24,19 @@ function About({ go }: { go: Go }) {
   const { lang } = useApp();
   const ar = lang === "ar";
   const sections: [string, string, string][] = ar
-    ? [["خصومات مشهور", "القسم الأقوى — جميع المتاجر التي لديها خصومات فعّالة في منطقتك، تظهر باللون الأخضر أثناء فعاليتها.", "tag"],
-      ["مزادات مشهور", "مزادات مباشرة على أفضل القطع من متاجر موثوقة في جميع مدن المملكة.", "gavel"],
-      ["تسوّق مع مشهور", "تصفّح وتسوّق من المتاجر حتى بدون عروض، مع توصيل سريع لكل المدن.", "bag"],
+    ? [["خصومات أوفرز", "القسم الأقوى — جميع المتاجر التي لديها خصومات فعّالة في منطقتك، تظهر باللون الأخضر أثناء فعاليتها.", "tag"],
+      ["مزادات أوفرز", "مزادات مباشرة على أفضل القطع من متاجر موثوقة في جميع مدن المملكة.", "gavel"],
+      ["تسوّق مع أوفرز", "تصفّح وتسوّق من المتاجر حتى بدون عروض، مع توصيل سريع لكل المدن.", "bag"],
       ["خدمات أخرى", "معاهد، فصول، غرف زوم وخدمات إضافية يضيفها أصحاب الأنشطة.", "box"]]
-    : [["Mashhoor Discounts", "The strongest section — every store with a live discount in your area, shown in green while active.", "tag"],
-      ["Mashhoor Auctions", "Live auctions on the best pieces from trusted stores across the Kingdom.", "gavel"],
-      ["Shop with Mashhoor", "Browse and buy from stores even without offers, with fast delivery everywhere.", "bag"],
+    : [["Offers Discounts", "The strongest section — every store with a live discount in your area, shown in green while active.", "tag"],
+      ["Offers Auctions", "Live auctions on the best pieces from trusted stores across the Kingdom.", "gavel"],
+      ["Shop with Offers", "Browse and buy from stores even without offers, with fast delivery everywhere.", "bag"],
       ["Other Services", "Institutes, classes, Zoom rooms and extra services added by activity owners.", "box"]];
   const stats: [string, string][] = ar ? [["+٢٤٠", "متجر فعّال"], ["+١٣ مدينة", "في المملكة"], ["+٥٠ ألف", "زائر شهرياً"], ["٤ أقسام", "رئيسية"]]
     : [["240+", "active stores"], ["13+ cities", "in the Kingdom"], ["50k+", "monthly visitors"], ["4 sections", "core"]];
   return (
     <div>
-      <PageHead go={go} title={ar ? "عن مشهور" : "About Mashhoor"} sub={ar ? "مشهور هو سوق متعدد المتاجر يجمع المحلات والمراكز التي لديها خصومات في جميع مناطق المملكة من خلال تحديد الموقع والمنطقة." : "Mashhoor is a multi-vendor marketplace gathering shops and centers with discounts across every region of the Kingdom by location and area."} />
+      <PageHead go={go} title={ar ? "عن أوفرز" : "About Offers"} sub={ar ? "أوفرز هو سوق متعدد المتاجر يجمع المحلات والمراكز التي لديها خصومات في جميع مناطق المملكة من خلال تحديد الموقع والمنطقة." : "Offers is a multi-vendor marketplace gathering shops and centers with discounts across every region of the Kingdom by location and area."} />
       <div className="container" style={{ paddingTop: 36 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 40 }}>
           {stats.map(([v, l]) => (
@@ -46,7 +46,7 @@ function About({ go }: { go: Go }) {
             </div>
           ))}
         </div>
-        <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 18 }}>{ar ? "أقسام مشهور الأربعة" : "The four Mashhoor sections"}</h2>
+        <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 18 }}>{ar ? "أقسام أوفرز الأربعة" : "The four Offers sections"}</h2>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
           {sections.map(([h, p, ic]) => (
             <div key={h} style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", padding: 22, display: "flex", gap: 16 }}>
@@ -56,7 +56,7 @@ function About({ go }: { go: Go }) {
           ))}
         </div>
         <div style={{ background: "linear-gradient(120deg, var(--brand-strong), var(--brand))", borderRadius: "var(--r-xl)", padding: "36px 40px", marginTop: 40, color: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
-          <div><h3 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>{ar ? "هل لديك متجر أو نشاط؟" : "Own a store or activity?"}</h3><p style={{ margin: "8px 0 0", opacity: .9 }}>{ar ? "أضف متجرك وابدأ بنشر عروضك على مشهور." : "List your store and start publishing offers on Mashhoor."}</p></div>
+          <div><h3 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>{ar ? "هل لديك متجر أو نشاط؟" : "Own a store or activity?"}</h3><p style={{ margin: "8px 0 0", opacity: .9 }}>{ar ? "أضف متجرك وابدأ بنشر عروضك على أوفرز." : "List your store and start publishing offers on Offers."}</p></div>
           <Btn variant="outline" onClick={() => go("addstore")} style={{ background: "#fff", color: "var(--brand-strong)", borderColor: "#fff" }}>{ar ? "أضف متجرك" : "List your store"}</Btn>
         </div>
       </div>
@@ -76,7 +76,7 @@ function Pricing({ go }: { go: Go }) {
       ["Enterprise", 499, "For large chains", ["Multiple branches", "Manager account", "API & advanced panel", "Dedicated manager"], false]];
   return (
     <div>
-      <PageHead go={go} title={ar ? "أسعار البائعين" : "Vendor pricing"} sub={ar ? "اختر الباقة المناسبة لمتجرك. كل الباقات تشمل النشر على أقسام مشهور الأربعة." : "Pick the plan that fits your store. All plans publish across the four Mashhoor sections."} />
+      <PageHead go={go} title={ar ? "أسعار البائعين" : "Vendor pricing"} sub={ar ? "اختر الباقة المناسبة لمتجرك. كل الباقات تشمل النشر على أقسام أوفرز الأربعة." : "Pick the plan that fits your store. All plans publish across the four Offers sections."} />
       <div className="container" style={{ paddingTop: 36 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 18, alignItems: "start" }}>
           {plans.map(([name, price, tag, feats, hot]) => (
@@ -105,12 +105,12 @@ function FAQ({ go }: { go: Go }) {
   const ar = lang === "ar";
   const qa: [string, string][] = ar
     ? [["كيف أعرف أن الخصم فعّال؟", "تظهر العروض الفعّالة باللون الأخضر مع عدّاد للمدة المتبقية. عند انتهاء العرض يتحول للون خافت."],
-      ["كيف أضيف متجري إلى مشهور؟", "اضغط «أضف متجرك»، أنشئ حساباً، ثم أضف نشاطاً جديداً وحدّد نوعه وهل يحتوي على خصم. يخضع للموافقة من إدارة مشهور."],
+      ["كيف أضيف متجري إلى أوفرز؟", "اضغط «أضف متجرك»، أنشئ حساباً، ثم أضف نشاطاً جديداً وحدّد نوعه وهل يحتوي على خصم. يخضع للموافقة من إدارة أوفرز."],
       ["هل التسجيل مجاني؟", "نعم، الباقة الأساسية مجانية. تتوفر باقات مدفوعة بمزايا إضافية مثل المزادات وإحصائيات الزوار."],
       ["كيف تعمل المزادات؟", "تضع مزايدتك على القطعة، وترتفع تلقائياً مع كل مزايدة. ينتهي المزاد عند انتهاء العدّاد."],
       ["ما المدن المتوفرة؟", "نغطّي أكثر من ١٣ مدينة في المملكة، ويمكنك تحديد مدينتك من أعلى الصفحة."]]
     : [["How do I know a discount is active?", "Active offers show in green with a countdown of the remaining time. When an offer ends it turns dim."],
-      ["How do I add my store?", "Click 'List your store', create an account, then add a new activity, set its type and whether it has a discount. It's subject to Mashhoor approval."],
+      ["How do I add my store?", "Click 'List your store', create an account, then add a new activity, set its type and whether it has a discount. It's subject to Offers approval."],
       ["Is signing up free?", "Yes, the Basic plan is free. Paid plans add features like auctions and visitor analytics."],
       ["How do auctions work?", "Place your bid on a piece; it rises automatically with each bid and ends when the countdown finishes."],
       ["Which cities are available?", "We cover 13+ cities across the Kingdom — pick yours from the top of the page."]];
@@ -191,7 +191,7 @@ function Careers({ go }: { go: Go }) {
     : [["Frontend Engineer", "Engineering", "Riyadh", "Full-time"], ["Product Manager", "Product", "Remote", "Full-time"], ["Vendor Support Specialist", "Operations", "Jeddah", "Full-time"], ["UX Designer", "Design", "Riyadh", "Remote"]];
   return (
     <div>
-      <PageHead go={go} title={ar ? "الوظائف" : "Careers"} sub={ar ? "انضم إلى فريق مشهور وساعدنا في بناء أكبر سوق للعروض في المملكة." : "Join the Mashhoor team and help build the Kingdom's biggest deals marketplace."} />
+      <PageHead go={go} title={ar ? "الوظائف" : "Careers"} sub={ar ? "انضم إلى فريق أوفرز وساعدنا في بناء أكبر سوق للعروض في المملكة." : "Join the Offers team and help build the Kingdom's biggest deals marketplace."} />
       <div className="container" style={{ paddingTop: 30, maxWidth: 820 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {jobs.map(([title, dep, loc, type]) => (
@@ -219,7 +219,7 @@ function Blog({ go }: { go: Go }) {
     : [["Your guide to the best Ramadan deals", "Shopping", "#e7f0ff"], ["How to choose the right perfume", "Perfumes", "#f3e8ff"], ["Tips for new vendors", "Vendors", "#eef7ee"], ["Secrets to winning auctions", "Auctions", "#fff4e6"], ["2026 fashion trends", "Fashion", "#ffeef0"], ["Top 5 electronics stores", "Electronics", "#e9f6f3"]];
   return (
     <div>
-      <PageHead go={go} title={ar ? "مدونة مشهور" : "Mashhoor Blog"} sub={ar ? "نصائح تسوّق، أدلة العروض، وقصص من متاجرنا." : "Shopping tips, deal guides, and stories from our stores."} />
+      <PageHead go={go} title={ar ? "مدونة أوفرز" : "Offers Blog"} sub={ar ? "نصائح تسوّق، أدلة العروض، وقصص من متاجرنا." : "Shopping tips, deal guides, and stories from our stores."} />
       <div className="container" style={{ paddingTop: 32 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
           {posts.map(([title, cat, color]) => (
@@ -240,8 +240,8 @@ function Blog({ go }: { go: Go }) {
 
 const LEGAL: Record<string, Record<"ar" | "en", [string, [string, string][]]>> = {
   terms: {
-    ar: ["الشروط والأحكام", [["قبول الشروط", "باستخدامك تطبيق مشهور فإنك توافق على هذه الشروط والأحكام لكل من المتاجر والعملاء والمستخدمين."], ["حسابات المتاجر", "لكل متجر حساب مستخدم وكلمة مرور لإضافة الخصومات وتفعيل وقتها. يحق لإدارة مشهور قبول أو رفض الطلب، ويلتزم المتجر بدفع المبلغ المستحق لفتح العرض."], ["المحتوى والعروض", "يتحمل صاحب المتجر مسؤولية دقة العروض والصور والروابط المضافة. تظهر العروض الفعّالة باللون الأخضر وتُخفت عند انتهائها."], ["المدفوعات", "الدفع الإلكتروني آمن ومشفّر، وتُفتح صفحة المتجر فور إتمام الدفع وإشعارنا بذلك."]]],
-    en: ["Terms & Conditions", [["Acceptance of terms", "By using Mashhoor you agree to these terms for stores, customers and users alike."], ["Store accounts", "Each store has a username and password to add discounts and activate their timing. Mashhoor management may accept or reject a request, and the store pays the due amount to open an offer."], ["Content & offers", "The store owner is responsible for the accuracy of added offers, images and links. Active offers show in green and dim when they end."], ["Payments", "Electronic payment is secure and encrypted; the store page opens once payment completes and we're notified."]]],
+    ar: ["الشروط والأحكام", [["قبول الشروط", "باستخدامك تطبيق أوفرز فإنك توافق على هذه الشروط والأحكام لكل من المتاجر والعملاء والمستخدمين."], ["حسابات المتاجر", "لكل متجر حساب مستخدم وكلمة مرور لإضافة الخصومات وتفعيل وقتها. يحق لإدارة أوفرز قبول أو رفض الطلب، ويلتزم المتجر بدفع المبلغ المستحق لفتح العرض."], ["المحتوى والعروض", "يتحمل صاحب المتجر مسؤولية دقة العروض والصور والروابط المضافة. تظهر العروض الفعّالة باللون الأخضر وتُخفت عند انتهائها."], ["المدفوعات", "الدفع الإلكتروني آمن ومشفّر، وتُفتح صفحة المتجر فور إتمام الدفع وإشعارنا بذلك."]]],
+    en: ["Terms & Conditions", [["Acceptance of terms", "By using Offers you agree to these terms for stores, customers and users alike."], ["Store accounts", "Each store has a username and password to add discounts and activate their timing. Offers management may accept or reject a request, and the store pays the due amount to open an offer."], ["Content & offers", "The store owner is responsible for the accuracy of added offers, images and links. Active offers show in green and dim when they end."], ["Payments", "Electronic payment is secure and encrypted; the store page opens once payment completes and we're notified."]]],
   },
   privacy: {
     ar: ["سياسة الخصوصية", [["جمع المعلومات", "نجمع معلومات أساسية لتقديم الخدمة، مثل الموقع والمدينة لعرض المتاجر القريبة منك."], ["عدّاد الزوار", "نحسب عدد الزوار للموقع وللمتجر حتى يتأكد أصحاب المحلات من وصول عروضهم لعدد كبير من الزوار."], ["مشاركة البيانات", "لا نشارك بياناتك الشخصية مع أطراف ثالثة لأغراض تسويقية دون موافقتك."], ["حقوقك", "يمكنك طلب الوصول إلى بياناتك أو حذفها في أي وقت عبر التواصل مع الدعم."]]],

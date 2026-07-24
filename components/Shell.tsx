@@ -5,31 +5,18 @@ import { Icon, Stars, Thumb, money } from "./ui";
 import { NOTIFS, VENDORS, type Product } from "@/lib/data";
 
 export function Logo() {
-  // Horizontal lockup: the أوفرز bag+% icon mark + the أوفرز wordmark.
-  // The source PNG is a stacked lockup; we crop to just the icon via object-fit
-  // and pair it with styled text so it fits the header height cleanly.
+  // OFFERZ / اوفرز brand wordmark (rose-pink + navy). Displayed as a single
+  // image; invert-friendly filter keeps the navy readable in dark mode.
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+    <div style={{ display: "flex", alignItems: "center" }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/logo-icon.svg"
-        alt="أوفرز"
-        width={38}
-        height={38}
-        style={{ height: 38, width: 38, borderRadius: 10 }}
+        src="/logo-offerz.png"
+        alt="أوفرز · OFFERZ"
+        height={30}
+        style={{ height: 30, width: "auto", display: "block" }}
+        className="mash-logo-img"
       />
-      <span
-        style={{
-          fontFamily: "var(--font-display)",
-          fontWeight: 800,
-          fontSize: 22,
-          color: "var(--text)",
-          lineHeight: 1,
-          letterSpacing: "-.5px",
-        }}
-      >
-        أوفرز
-      </span>
     </div>
   );
 }
@@ -42,12 +29,12 @@ export function TopBar() {
         <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
           <Icon name="phone" size={14} /><span className="num">{t.phone}</span>
         </div>
-        <div style={{ flex: 1, textAlign: "center", fontWeight: 600, color: "#fff" }}>{t.promo}</div>
+        <div className="mash-topbar-promo" style={{ flex: 1, textAlign: "center", fontWeight: 600, color: "#fff" }}>{t.promo}</div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <button onClick={toggleLang} style={{ background: "transparent", border: "none", color: "#fff", display: "flex", alignItems: "center", gap: 6, fontWeight: 700, fontSize: 12.5 }}>
             <Icon name="globe" size={14} />{t.other}
           </button>
-          <span style={{ display: "flex", alignItems: "center", gap: 6 }}><Icon name="location" size={14} />{t.city}</span>
+          <span className="mash-topbar-city" style={{ display: "flex", alignItems: "center", gap: 6 }}><Icon name="location" size={14} />{t.city}</span>
         </div>
       </div>
     </div>
@@ -93,6 +80,7 @@ export function Header({ go, onSearch, cur, favCount = 0, unread = 0 }: { go: (p
   const { t, theme, toggleTheme, lang } = useApp();
   const [scrolled, setScrolled] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
@@ -105,6 +93,12 @@ export function Header({ go, onSearch, cur, favCount = 0, unread = 0 }: { go: (p
     window.addEventListener("click", close);
     return () => window.removeEventListener("click", close);
   }, [notifOpen]);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = () => setMenuOpen(false);
+    window.addEventListener("click", close);
+    return () => window.removeEventListener("click", close);
+  }, [menuOpen]);
   const navs = [
     { k: "discounts", page: "home" }, { k: "auctions", page: "auctions" },
     { k: "shop", page: "shop" },
@@ -116,8 +110,12 @@ export function Header({ go, onSearch, cur, favCount = 0, unread = 0 }: { go: (p
   return (
     <header style={{ background: scrolled ? navBg : "var(--header)", backdropFilter: scrolled ? "saturate(180%) blur(12px)" : "none", WebkitBackdropFilter: scrolled ? "saturate(180%) blur(12px)" : "none", borderBottom: "1px solid var(--line)", boxShadow: scrolled ? "0 6px 20px rgba(16,24,40,0.10)" : "none", position: "sticky", top: 0, zIndex: 30, transition: "box-shadow .25s ease, background-color .25s ease, border-color .25s ease" }}>
       <div className="container" style={{ height: scrolled ? 62 : 70, display: "flex", alignItems: "center", gap: 22, transition: "height .25s ease" }}>
+        {/* burger (mobile only, via CSS) */}
+        <button className="mash-burger" onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o); }} title="menu" style={{ ...iconBtn, display: "none" }}>
+          <Icon name={menuOpen ? "arrow" : "menu"} size={20} />
+        </button>
         <a href="#" onClick={(e) => { e.preventDefault(); go("home"); }}><Logo /></a>
-        <nav style={{ display: "flex", gap: 2 }}>
+        <nav className="mash-nav-desktop" style={{ display: "flex", gap: 2 }}>
           {navs.map((n, i) => (
             <a key={n.k} href="#" onClick={(e) => { e.preventDefault(); go(n.page); }}
               style={{ padding: "8px 10px", fontSize: 13.5, fontWeight: 600, whiteSpace: "nowrap", color: (cur === n.page && i !== 0) || (i === 0 && cur === "home") ? "var(--brand)" : "var(--text-2)", borderRadius: 8 }}>
@@ -125,7 +123,7 @@ export function Header({ go, onSearch, cur, favCount = 0, unread = 0 }: { go: (p
             </a>
           ))}
         </nav>
-        <div style={{ flex: 1, position: "relative", maxWidth: 320 }}>
+        <div className="mash-search-desktop" style={{ flex: 1, position: "relative", maxWidth: 320 }}>
           <span style={{ position: "absolute", insetInlineStart: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-3)" }}><Icon name="search" size={18} /></span>
           <input placeholder={t.search} onChange={(e) => onSearch && onSearch(e.target.value)}
             style={{ width: "100%", height: 42, paddingInlineStart: 42, paddingInlineEnd: 16, borderRadius: "var(--r-pill)", border: "1.5px solid var(--line)", background: "var(--surface-2)", color: "var(--text)", fontSize: 14, fontFamily: "inherit" }} />
@@ -144,10 +142,30 @@ export function Header({ go, onSearch, cur, favCount = 0, unread = 0 }: { go: (p
             {favCount > 0 && <span className="num" style={badge}>{favCount}</span>}
           </button>
           <button onClick={() => go("auth")} style={iconBtnText}>
-            <Icon name="user" size={19} /><span style={{ fontSize: 13, fontWeight: 600 }}>{t.account}</span>
+            <Icon name="user" size={19} /><span className="mash-topbar-city" style={{ fontSize: 13, fontWeight: 600 }}>{t.account}</span>
           </button>
         </div>
       </div>
+
+      {/* mobile slide-down menu */}
+      {menuOpen && (
+        <div className="mash-mobile-menu" onClick={(e) => e.stopPropagation()}>
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <button onClick={() => setMenuOpen(false)} style={{ ...iconBtn }}><Icon name="arrow" size={20} /></button>
+          </div>
+          <div style={{ position: "relative", marginBottom: 6 }}>
+            <span style={{ position: "absolute", insetInlineStart: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-3)" }}><Icon name="search" size={18} /></span>
+            <input placeholder={t.search} onChange={(e) => onSearch && onSearch(e.target.value)}
+              style={{ width: "100%", height: 44, paddingInlineStart: 42, paddingInlineEnd: 16, borderRadius: "var(--r-pill)", border: "1.5px solid var(--line)", background: "var(--surface-2)", color: "var(--text)", fontSize: 14, fontFamily: "inherit" }} />
+          </div>
+          {navs.map((n) => (
+            <a key={n.k} href="#" onClick={(e) => { e.preventDefault(); setMenuOpen(false); go(n.page); }}
+              style={{ padding: "12px 10px", fontSize: 15.5, fontWeight: 700, color: "var(--text)", borderRadius: 10, borderBottom: "1px solid var(--line-soft)" }}>
+              {"lbl" in n && n.lbl ? n.lbl[t.dir === "rtl" ? "ar" : "en"] : t.nav[n.k as keyof typeof t.nav]}
+            </a>
+          ))}
+        </div>
+      )}
     </header>
   );
 }
@@ -156,11 +174,11 @@ export function Footer() {
   const { t, go } = useApp();
   type Target = string | [string, string];
   const data: Record<"ar" | "en", [string, [string, Target][]][]> = {
-    ar: [["مشهور", [["عن مشهور", ["info", "about"]], ["خصومات مشهور", "home"], ["مزادات مشهور", "auctions"], ["ريلز", "reels"], ["الفعاليات", "events"], ["خريطة المتاجر", "map"]]],
+    ar: [["أوفرز", [["عن أوفرز", ["info", "about"]], ["خصومات أوفرز", "home"], ["مزادات أوفرز", "auctions"], ["ريلز", "reels"], ["الفعاليات", "events"], ["خريطة المتاجر", "map"]]],
       ["للبائعين", [["أضف متجرك", "addstore"], ["لوحة التحكم", "dashboard"], ["الأسعار", ["info", "pricing"]], ["الدعم", ["info", "contact"]]]],
       ["المساعدة", [["الشحن والتوصيل", ["info", "shipping"]], ["الإرجاع والاستبدال", ["info", "returns"]], ["الأسئلة الشائعة", ["info", "faq"]], ["تواصل معنا", ["info", "contact"]]]],
       ["الشركة", [["الشروط والأحكام", ["info", "terms"]], ["سياسة الخصوصية", ["info", "privacy"]], ["المدونة", ["info", "blog"]], ["لوحة الإدارة", "admin"]]]],
-    en: [["Mashhoor", [["About", ["info", "about"]], ["Discounts", "home"], ["Auctions", "auctions"], ["Reels", "reels"], ["Events", "events"], ["Stores map", "map"]]],
+    en: [["Offers", [["About", ["info", "about"]], ["Discounts", "home"], ["Auctions", "auctions"], ["Reels", "reels"], ["Events", "events"], ["Stores map", "map"]]],
       ["For vendors", [["List your store", "addstore"], ["Dashboard", "dashboard"], ["Pricing", ["info", "pricing"]], ["Support", ["info", "contact"]]]],
       ["Help", [["Shipping & delivery", ["info", "shipping"]], ["Returns & exchange", ["info", "returns"]], ["FAQ", ["info", "faq"]], ["Contact us", ["info", "contact"]]]],
       ["Company", [["Terms", ["info", "terms"]], ["Privacy policy", ["info", "privacy"]], ["Blog", ["info", "blog"]], ["Admin panel", "admin"]]]],
@@ -169,8 +187,8 @@ export function Footer() {
   const nav = (target: Target) => Array.isArray(target) ? go(target[0], target[1]) : go(target);
   return (
     <footer style={{ background: "var(--header)", borderTop: "1px solid var(--line)", marginTop: 64 }}>
-      <div className="container" style={{ padding: "48px 0 28px", display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr 1fr", gap: 28 }}>
-        <div>
+      <div className="container mash-footer-grid" style={{ padding: "48px 0 28px", display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr 1fr", gap: 28 }}>
+        <div className="mash-footer-brand">
           <Logo />
           <p style={{ color: "var(--text-2)", fontSize: 13.5, marginTop: 14, maxWidth: 260 }}>{t.tagline}. {t.multiTenant}.</p>
         </div>
@@ -183,9 +201,9 @@ export function Footer() {
           </div>
         ))}
       </div>
-      <div className="container" style={{ padding: "18px 0", borderTop: "1px solid var(--line)", display: "flex", justifyContent: "space-between", color: "var(--text-3)", fontSize: 12.5 }}>
+      <div className="container mash-footer-bottom" style={{ padding: "18px 0", borderTop: "1px solid var(--line)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, color: "var(--text-3)", fontSize: 12.5, flexWrap: "wrap" }}>
         <span>© 2026 {t.brand}. {t.dir === "rtl" ? "جميع الحقوق محفوظة." : "All rights reserved."}</span>
-        <span style={{ display: "flex", gap: 16 }}><span>Visa</span><span>Mastercard</span><span>mada</span><span>Apple Pay</span></span>
+        <span style={{ display: "flex", gap: 16, flexWrap: "wrap" }}><span>Visa</span><span>Mastercard</span><span>mada</span><span>Apple Pay</span></span>
       </div>
     </footer>
   );

@@ -34,7 +34,7 @@ export function CategoryPage({ id, go }: { id: string; go: Go }) {
   const isAll = id === "all" || id === "shop";
   const cat = isAll ? null : (CATS.find((c) => c.id === id) || CATS[0]);
   const all = isAll ? PRODUCTS : PRODUCTS.filter((p) => p.cat === cat!.id);
-  const title = isAll ? (ar ? "تسوّق مع مشهور" : "Shop with Mashhoor") : (ar ? cat!.ar : cat!.en);
+  const title = isAll ? (ar ? "تسوّق مع أوفرز" : "Shop with Offers") : (ar ? cat!.ar : cat!.en);
   const heroImg = isAll ? "/img/cat-clothes.png" : CAT_HERO[cat!.id];
   const vendorsIn = Array.from(new Set(all.map((p) => p.vendor)));
   const [sort, setSort] = useState("featured");
