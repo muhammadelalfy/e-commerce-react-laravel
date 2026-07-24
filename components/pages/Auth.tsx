@@ -19,19 +19,26 @@ function AField({ label, icon, cn, ...rest }: { label: string; icon: string; cn?
 }
 
 export function Auth({ param, go }: { param: string | null; go: Go }) {
-  const { lang } = useApp();
+  const { lang, signIn } = useApp();
   const ar = lang === "ar";
-  const initAud = /vendor/.test(param || "") ? "vendor" : "customer";
+  type Aud = "vendor" | "customer" | "reels";
+  const initAud: Aud = /reel/.test(param || "") ? "reels" : /vendor/.test(param || "") ? "vendor" : "customer";
   const initMode = /register/.test(param || "") ? "register" : "login";
-  const [aud, setAud] = useState<"vendor" | "customer">(initAud);
+  const [aud, setAud] = useState<Aud>(initAud);
   const [mode, setMode] = useState(initMode);
+  const [ident, setIdent] = useState(initAud === "reels" ? "مشهور" : "");
+  const [crFile, setCrFile] = useState("");
 
   const submit = () => {
-    if (aud === "vendor") go(mode === "register" ? "addstore" : "dashboard");
-    else go("home");
+    const id = ident.trim();
+    if (aud === "reels") { signIn({ name: id || "مشهور", role: "reels" }); go("reels-studio"); return; }
+    if (aud === "vendor") { signIn({ name: id || "vendor", role: "vendor" }); go(mode === "register" ? "addstore" : "dashboard"); return; }
+    signIn({ name: id || "guest", role: "customer" }); go("home");
   };
 
-  const bullets = aud === "vendor"
+  const bullets = aud === "reels"
+    ? (ar ? ["أضف مقاطع ريلز جديدة", "تابع مشاهدات وإعجابات مقاطعك", "محتوى ترويجي للمتاجر"] : ["Add new reels clips", "Track views & likes", "Promote stores with content"])
+    : aud === "vendor"
     ? (ar ? ["عدّاد زوار لكل متجر", "أضف خصوماتك ومزاداتك", "+٥٠ ألف زائر شهرياً"] : ["Per-store visitor counter", "Add discounts & auctions", "50k+ monthly visitors"])
     : (ar ? ["تتبّع طلباتك بسهولة", "احفظ مفضّلاتك وعروضك", "عروض حصرية للأعضاء"] : ["Track your orders easily", "Save favourites & deals", "Members-only offers"]);
 
@@ -41,10 +48,10 @@ export function Auth({ param, go }: { param: string | null; go: Go }) {
         <div style={{ background: "linear-gradient(150deg, var(--brand-strong), var(--brand))", color: "#fff", padding: "40px 34px", display: "flex", flexDirection: "column", gap: 18 }}>
           <div style={{ filter: "brightness(0) invert(1)" }}><Logo /></div>
           <h2 style={{ margin: "8px 0 0", fontSize: 26, fontWeight: 800, lineHeight: 1.2 }}>
-            {aud === "vendor" ? (ar ? "بوابة التجّار" : "Vendor portal") : (ar ? "أهلاً بك في أوفرز" : "Welcome to Offers")}
+            {aud === "reels" ? (ar ? "استوديو الريلز" : "Reels Studio") : aud === "vendor" ? (ar ? "بوابة التجّار" : "Vendor portal") : (ar ? "أهلاً بك في أوفرز" : "Welcome to Offers")}
           </h2>
           <p style={{ margin: 0, opacity: .9, fontSize: 14.5, lineHeight: 1.6 }}>
-            {aud === "vendor" ? (ar ? "أدِر متجرك وخصوماتك ومزاداتك من مكان واحد." : "Manage your store, discounts and auctions in one place.") : (ar ? "وجهتك للعروض والخصومات في جميع مدن المملكة." : "Your destination for deals across the Kingdom.")}
+            {aud === "reels" ? (ar ? "حساب مخصّص لإضافة مقاطع الريلز فقط." : "A dedicated account to add reels only.") : aud === "vendor" ? (ar ? "أدِر متجرك وخصوماتك ومزاداتك من مكان واحد." : "Manage your store, discounts and auctions in one place.") : (ar ? "وجهتك للعروض والخصومات في جميع مدن المملكة." : "Your destination for deals across the Kingdom.")}
           </p>
           <ul style={{ listStyle: "none", margin: "10px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: 13 }}>
             {bullets.map((b) => <li key={b} style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 14 }}><span style={{ width: 22, height: 22, borderRadius: 999, background: "rgba(255,255,255,.2)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Icon name="check" size={13} stroke={2.6} /></span>{b}</li>)}
@@ -58,9 +65,9 @@ export function Auth({ param, go }: { param: string | null; go: Go }) {
 
         <div style={{ padding: "34px 34px 30px" }}>
           <div style={{ display: "flex", gap: 6, background: "var(--surface-2)", padding: 4, borderRadius: "var(--r-pill)", marginBottom: 22 }}>
-            {([["customer", ar ? "عميل" : "Customer", "user"], ["vendor", ar ? "تاجر" : "Vendor", "store"]] as const).map(([k, l, ic]) => (
-              <button key={k} onClick={() => setAud(k)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, padding: 9, borderRadius: 999, border: "none", fontSize: 13.5, fontWeight: 700, background: aud === k ? "var(--surface)" : "transparent", color: aud === k ? "var(--brand)" : "var(--text-2)", boxShadow: aud === k ? "var(--shadow-sm)" : "none" }}>
-                <Icon name={ic} size={16} />{l}
+            {([["customer", ar ? "عميل" : "Customer", "user"], ["vendor", ar ? "تاجر" : "Vendor", "store"], ["reels", ar ? "مشهور" : "Mashhoor", "reel"]] as const).map(([k, l, ic]) => (
+              <button key={k} onClick={() => { setAud(k); if (k === "reels") setIdent("مشهور"); else if (ident === "مشهور") setIdent(""); }} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: 9, borderRadius: 999, border: "none", fontSize: 13, fontWeight: 700, background: aud === k ? "var(--surface)" : "transparent", color: aud === k ? "var(--brand)" : "var(--text-2)", boxShadow: aud === k ? "var(--shadow-sm)" : "none" }}>
+                <Icon name={ic} size={15} />{l}
               </button>
             ))}
           </div>
@@ -98,9 +105,24 @@ export function Auth({ param, go }: { param: string | null; go: Go }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {mode === "register" && aud === "vendor" && <AField label={ar ? "اسم المتجر" : "Store name"} icon="store" placeholder={ar ? "مثال: تك زون" : "e.g. Tech Zone"} />}
               {mode === "register" && aud === "customer" && <AField label={ar ? "الاسم الكامل" : "Full name"} icon="user" placeholder={ar ? "محمد العتيبي" : "Mohammed Al-Otaibi"} />}
-              <AField label={ar ? "البريد الإلكتروني" : "Email"} icon="globe" type="email" placeholder={aud === "vendor" ? "you@store.sa" : "you@email.com"} cn="num" />
+              <AField label={ar ? "البريد الإلكتروني أو اسم المستخدم" : "Email or username"} icon="globe" placeholder={aud === "vendor" ? "you@store.sa" : "you@email.com"} value={ident} onChange={(e) => setIdent(e.target.value)} />
               {mode === "register" && <AField label={ar ? "رقم الجوال" : "Mobile"} icon="phone" placeholder="05x xxx xxxx" cn="num" />}
               <AField label={ar ? "كلمة المرور" : "Password"} icon="shield" type="password" placeholder="••••••••" cn="num" />
+
+              {/* Commercial registration — vendor registration only */}
+              {mode === "register" && aud === "vendor" && (
+                <>
+                  <AField label={ar ? "رقم السجل التجاري" : "Commercial registration no."} icon="filePdf" placeholder={ar ? "١٠xxxxxxxx" : "10xxxxxxxx"} cn="num" />
+                  <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-2)" }}>{ar ? "ملف مصادقة السجل من الغرفة التجارية" : "Chamber-of-commerce authentication file"}</span>
+                    <label style={{ display: "flex", alignItems: "center", gap: 10, border: "1.5px dashed " + (crFile ? "var(--brand)" : "var(--line)"), borderRadius: 10, padding: "12px 14px", cursor: "pointer", background: crFile ? "var(--brand-soft)" : "var(--surface-2)", color: crFile ? "var(--brand)" : "var(--text-3)", fontSize: 13 }}>
+                      <Icon name={crFile ? "check" : "filePdf"} size={18} style={{ flex: "none" }} />
+                      <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{crFile || (ar ? "ارفع ملف السجل (PDF أو صورة)" : "Upload registration file (PDF or image)")}</span>
+                      <input type="file" accept=".pdf,image/*" onChange={(e) => setCrFile(e.target.files?.[0]?.name || "")} style={{ display: "none" }} />
+                    </label>
+                  </label>
+                </>
+              )}
 
               {mode === "login" ? (
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12.5 }}>

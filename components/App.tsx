@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { AppCtx, type AppState } from "@/lib/AppContext";
+import { AppCtx, type AppState, type AppUser } from "@/lib/AppContext";
 import { STR, NOTIFS, type Lang } from "@/lib/data";
 import { TopBar, Header, Footer } from "./Shell";
 import { Home } from "./pages/Home";
@@ -12,6 +12,7 @@ import { AddStore } from "./pages/AddStore";
 import { Auth } from "./pages/Auth";
 import { Notifications, Reels, Events, StoresMap, Favorites } from "./pages/Features";
 import { Admin } from "./pages/Admin";
+import { ReelsStudio } from "./pages/ReelsStudio";
 import { CountryModal } from "./CountryModal";
 import { useAutoReveal } from "@/lib/gsap";
 
@@ -22,6 +23,7 @@ export default function App() {
   const [param, setParam] = useState<string | null>(null);
   const [favs, setFavs] = useState<string[]>([]);
   const [query, setQuery] = useState("");
+  const [user, setUser] = useState<AppUser | null>(null);
   const t = STR[lang];
 
   // hydrate persisted prefs on mount (client only)
@@ -30,6 +32,8 @@ export default function App() {
     const savedLang = localStorage.getItem("mash_lang") as Lang | null;
     if (savedTheme) setTheme(savedTheme);
     if (savedLang) setLang(savedLang);
+    const savedUser = localStorage.getItem("mash_user");
+    if (savedUser) { try { setUser(JSON.parse(savedUser)); } catch {} }
   }, []);
 
   useEffect(() => {
@@ -45,8 +49,10 @@ export default function App() {
   const toggleLang = () => setLang((l) => (l === "ar" ? "en" : "ar"));
   const toggleTheme = () => setTheme((th) => (th === "light" ? "dark" : "light"));
   const toggleFav = (id: string) => setFavs((f) => (f.includes(id) ? f.filter((x) => x !== id) : [...f, id]));
+  const signIn = (u: AppUser) => { setUser(u); localStorage.setItem("mash_user", JSON.stringify(u)); };
+  const signOut = () => { setUser(null); localStorage.removeItem("mash_user"); go("home"); };
 
-  const ctx: AppState = { t, lang, theme, toggleLang, toggleTheme, go, favs, toggleFav };
+  const ctx: AppState = { t, lang, theme, toggleLang, toggleTheme, go, favs, toggleFav, user, signIn, signOut };
   const unread = NOTIFS.filter((n) => !n.read).length;
   // whole-site scroll reveal — re-scans on every page/param/lang change
   const mainRef = useAutoReveal<HTMLElement>(page + ":" + param + ":" + lang);
@@ -61,6 +67,7 @@ export default function App() {
   else if (page === "addstore") body = <AddStore go={go} />;
   else if (page === "auth") body = <Auth param={param} go={go} />;
   else if (page === "notifications") body = <Notifications />;
+  else if (page === "reels-studio") body = <ReelsStudio go={go} />;
   else if (page === "reels") body = <Reels />;
   else if (page === "events") body = <Events go={go} />;
   else if (page === "map") body = <StoresMap go={go} />;

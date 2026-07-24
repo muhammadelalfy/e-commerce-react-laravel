@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useApp } from "@/lib/AppContext";
 import { Icon, Btn, Thumb, money } from "../ui";
-import { PRODUCTS, VENDORS, COUPONS, PLANS, CATS } from "@/lib/data";
+import { PRODUCTS, VENDORS, COUPONS, PLANS, CATS, CITIES } from "@/lib/data";
 
 type Go = (page: string, id?: string | null) => void;
 
@@ -53,8 +53,8 @@ export function Dashboard({ go }: { go: Go }) {
   const toggle = (id: string) => setRows((r) => r.map((x) => x.id === id ? { ...x, active: !x.active } : x));
   const activeCount = rows.filter((x) => x.active).length;
 
-  const nav: [string, string][] = [["overview", "grid"], ["products", "box"], ["discounts", "tag"], ["coupons", "ticket"], ["orders", "bag"], ["subscription", "ticket"], ["settings", "settings"]];
-  const navLabel: Record<string, string> = { ...(d as any), coupons: lang === "ar" ? "الكوبونات" : "Coupons", subscription: lang === "ar" ? "الاشتراك" : "Subscription" };
+  const nav: [string, string][] = [["overview", "grid"], ["products", "box"], ["discounts", "tag"], ["coupons", "ticket"], ["orders", "bag"], ["locations", "pin"], ["subscription", "ticket"], ["settings", "settings"]];
+  const navLabel: Record<string, string> = { ...(d as any), coupons: lang === "ar" ? "الكوبونات" : "Coupons", locations: lang === "ar" ? "مواقع المتجر" : "Store locations", subscription: lang === "ar" ? "الاشتراك" : "Subscription" };
 
   return (
     <div className="container" style={{ paddingTop: 24, display: "grid", gridTemplateColumns: "230px 1fr", gap: 24, alignItems: "start" }}>
@@ -85,7 +85,7 @@ export function Dashboard({ go }: { go: Go }) {
           <Btn onClick={() => setModal(true)}><Icon name="plus" size={17} />{d.addProduct}</Btn>
         </div>
 
-        {dtab === "coupons" ? <CouponsPanel lang={lang} /> : dtab === "subscription" ? <SubscriptionPanel lang={lang} go={go} /> : dtab === "orders" ? <OrdersPanel lang={lang} /> : dtab === "settings" ? <SettingsPanel lang={lang} vendor={vendor} /> : (<>
+        {dtab === "locations" ? <LocationsPanel lang={lang} vendor={vendor} /> : dtab === "coupons" ? <CouponsPanel lang={lang} /> : dtab === "subscription" ? <SubscriptionPanel lang={lang} go={go} /> : dtab === "orders" ? <OrdersPanel lang={lang} /> : dtab === "settings" ? <SettingsPanel lang={lang} vendor={vendor} /> : (<>
 
           {dtab === "overview" && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
@@ -154,6 +154,103 @@ function OrdersPanel({ lang }: { lang: string }) {
             <span><span style={{ background: stCol(st) + "1a", color: stCol(st), fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 999 }}>{st}</span></span>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+interface StoreLoc { id: string; name: string; city: string; address: string; x: number; y: number; }
+function LocationsPanel({ lang, vendor }: { lang: string; vendor: (typeof VENDORS)[string] }) {
+  const ar = lang === "ar";
+  const [locs, setLocs] = useState<StoreLoc[]>([
+    { id: "l1", name: ar ? `${vendor.ar} — الفرع الرئيسي` : `${vendor.en} — Main branch`, city: ar ? vendor.city.ar : vendor.city.en, address: ar ? "شارع الملك فهد" : "King Fahd Rd", x: 56, y: 46 },
+  ]);
+  const [modal, setModal] = useState(false);
+  const [picking, setPicking] = useState<{ x: number; y: number } | null>(null);
+
+  const onMapClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const x = Math.round(((e.clientX - r.left) / r.width) * 100);
+    const y = Math.round(((e.clientY - r.top) / r.height) * 100);
+    setPicking({ x, y });
+    setModal(true);
+  };
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 10 }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{ar ? "مواقع المتجر على الخريطة" : "Store locations on the map"}</h2>
+          <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-3)" }}>{ar ? "أضف أكثر من فرع/موقع لمتجرك — اضغط على الخريطة لتحديد موقع جديد." : "Add multiple branches — click the map to drop a new location."}</p>
+        </div>
+        <Btn size="sm" onClick={() => { setPicking(null); setModal(true); }}><Icon name="plus" size={15} />{ar ? "إضافة موقع" : "Add location"}</Btn>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 18, alignItems: "start", marginTop: 16 }}>
+        {/* list of locations */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-3)" }}>{ar ? `${locs.length} موقع` : `${locs.length} locations`}</div>
+          {locs.map((l) => (
+            <div key={l.id} style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-md)", padding: 12, display: "flex", gap: 10, alignItems: "center" }}>
+              <span style={{ width: 38, height: 38, borderRadius: 10, background: vendor.color, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Icon name="store" size={18} /></span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: 13.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.name}</div>
+                <div style={{ fontSize: 12, color: "var(--text-3)", display: "flex", gap: 5, alignItems: "center" }}><Icon name="pin" size={12} />{l.city} · {l.address}</div>
+              </div>
+              <button onClick={() => setLocs((s) => s.filter((x) => x.id !== l.id))} title="delete" style={{ background: "transparent", border: "none", color: "var(--sale)" }}><Icon name="trash" size={16} /></button>
+            </div>
+          ))}
+        </div>
+
+        {/* interactive map */}
+        <div onClick={onMapClick} style={{ position: "relative", height: 420, borderRadius: "var(--r-lg)", overflow: "hidden", border: "1px solid var(--line)", background: "linear-gradient(135deg, #dce7e0 0%, #cdddd4 100%)", cursor: "crosshair" }}>
+          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: .5 }} preserveAspectRatio="none">
+            <defs><pattern id="dgrid" width="44" height="44" patternUnits="userSpaceOnUse"><path d="M44 0H0V44" fill="none" stroke="#a9c2b5" strokeWidth="1" /></pattern></defs>
+            <rect width="100%" height="100%" fill="url(#dgrid)" />
+            <path d="M0,180 Q200,120 420,210 T900,160" fill="none" stroke="#9fbcae" strokeWidth="6" />
+          </svg>
+          {locs.map((l) => (
+            <span key={l.id} style={{ position: "absolute", left: l.x + "%", top: l.y + "%", transform: "translate(-50%,-100%)", pointerEvents: "none", display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <span style={{ background: vendor.color, color: "#fff", borderRadius: 999, padding: "3px 9px", fontSize: 11, fontWeight: 800, whiteSpace: "nowrap", boxShadow: "var(--shadow-md)", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis" }}>{l.name}</span>
+              <Icon name="pin" size={26} fill={vendor.color} style={{ color: vendor.color, marginTop: -2 }} />
+            </span>
+          ))}
+          <div style={{ position: "absolute", insetInlineEnd: 12, bottom: 12, background: "var(--surface)", borderRadius: 8, padding: "6px 11px", fontSize: 11.5, color: "var(--text-2)", boxShadow: "var(--shadow-sm)", pointerEvents: "none" }}>{ar ? "اضغط لإضافة موقع" : "Click to add a location"}</div>
+        </div>
+      </div>
+
+      {modal && (
+        <LocationModal ar={ar} pos={picking} onClose={() => { setModal(false); setPicking(null); }}
+          onSave={(v) => { setLocs((s) => [...s, { id: "l" + Date.now(), name: v.name || (ar ? "فرع جديد" : "New branch"), city: v.city, address: v.address, x: picking?.x ?? 50, y: picking?.y ?? 50 }]); setModal(false); setPicking(null); }} />
+      )}
+    </div>
+  );
+}
+function LocationModal({ ar, pos, onClose, onSave }: { ar: boolean; pos: { x: number; y: number } | null; onClose: () => void; onSave: (v: { name: string; city: string; address: string }) => void }) {
+  const [name, setName] = useState("");
+  const [city, setCity] = useState(ar ? CITIES[0].ar : CITIES[0].en);
+  const [address, setAddress] = useState("");
+  const inp: React.CSSProperties = { height: 44, padding: "0 14px", borderRadius: 10, border: "1.5px solid var(--line)", background: "var(--surface-2)", color: "var(--text)", fontSize: 14, fontFamily: "inherit", width: "100%" };
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(8,16,20,.6)", backdropFilter: "blur(3px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--surface)", borderRadius: "var(--r-xl)", width: "min(480px, 100%)", boxShadow: "var(--shadow-lg)", border: "1px solid var(--line)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid var(--line)" }}>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{ar ? "إضافة موقع متجر" : "Add store location"}</h3>
+          <button onClick={onClose} style={{ background: "transparent", border: "none", fontSize: 24, color: "var(--text-3)", lineHeight: 1 }}>×</button>
+        </div>
+        <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 14 }}>
+          {pos && <div style={{ fontSize: 12, color: "var(--brand)", background: "var(--brand-soft)", padding: "8px 12px", borderRadius: 8, display: "flex", gap: 6, alignItems: "center" }}><Icon name="pin" size={14} />{ar ? `الإحداثيات المحددة: ${pos.x}٪ , ${pos.y}٪` : `Picked point: ${pos.x}% , ${pos.y}%`}</div>}
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-2)" }}>{ar ? "اسم الفرع" : "Branch name"}</span><input value={name} onChange={(e) => setName(e.target.value)} placeholder={ar ? "مثال: فرع العليا" : "e.g. Olaya branch"} style={inp} /></label>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-2)" }}>{ar ? "المدينة" : "City"}</span><select value={city} onChange={(e) => setCity(e.target.value)} style={inp}>{CITIES.map((c) => <option key={c.id} value={ar ? c.ar : c.en}>{ar ? c.ar : c.en}</option>)}</select></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-2)" }}>{ar ? "العنوان" : "Address"}</span><input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={ar ? "الحي / الشارع" : "District / street"} style={inp} /></label>
+          </div>
+          <div style={{ fontSize: 12, color: "var(--text-3)" }}>{ar ? "أو اضغط على الخريطة لتحديد الموقع بدقّة." : "Or click the map to pick the exact spot."}</div>
+        </div>
+        <div style={{ display: "flex", gap: 12, padding: "16px 24px", borderTop: "1px solid var(--line)" }}>
+          <Btn variant="outline" onClick={onClose} style={{ flex: 1 }}>{ar ? "إلغاء" : "Cancel"}</Btn>
+          <Btn onClick={() => onSave({ name, city, address })} style={{ flex: 2 }}><Icon name="check" size={16} />{ar ? "حفظ الموقع" : "Save location"}</Btn>
+        </div>
       </div>
     </div>
   );

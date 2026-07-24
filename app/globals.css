@@ -126,6 +126,8 @@ img { display: block; max-width: 100%; }
 /* Logo: lift the navy "Z" a touch in dark mode so it stays legible,
    while keeping the rose-pink brand color intact */
 :root[data-theme="dark"] .mash-logo-img { filter: brightness(1.15) contrast(.95); }
+/* slightly smaller logo on phones so it fits the shorter header */
+@media (max-width: 640px) { .mash-logo-img { height: 46px !important; } }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
@@ -243,6 +245,9 @@ img { display: block; max-width: 100%; }
   .mash-hero-copy { padding: 0 40px !important; }  /* clearance for arrows */
 }
 @media (max-width: 640px) {
+  /* snappier slide crossfade on mobile */
+  .mash-hero-slide { transition: opacity .3s ease !important; }
+
   /* product card small at the top corner, copy fills width below it */
   .mash-hero { height: 380px !important; }
   .mash-hero-card {

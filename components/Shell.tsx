@@ -13,8 +13,8 @@ export function Logo() {
       <img
         src="/logo-offerz.png"
         alt="أوفرز · OFFERZ"
-        height={30}
-        style={{ height: 30, width: "auto", display: "block" }}
+        height={58}
+        style={{ height: 58, width: "auto", display: "block" }}
         className="mash-logo-img"
       />
     </div>
@@ -109,7 +109,7 @@ export function Header({ go, onSearch, cur, favCount = 0, unread = 0 }: { go: (p
   const navBg = theme === "dark" ? "rgba(22,28,38,0.82)" : "rgba(255,255,255,0.85)";
   return (
     <header style={{ background: scrolled ? navBg : "var(--header)", backdropFilter: scrolled ? "saturate(180%) blur(12px)" : "none", WebkitBackdropFilter: scrolled ? "saturate(180%) blur(12px)" : "none", borderBottom: "1px solid var(--line)", boxShadow: scrolled ? "0 6px 20px rgba(16,24,40,0.10)" : "none", position: "sticky", top: 0, zIndex: 30, transition: "box-shadow .25s ease, background-color .25s ease, border-color .25s ease" }}>
-      <div className="container" style={{ height: scrolled ? 62 : 70, display: "flex", alignItems: "center", gap: 22, transition: "height .25s ease" }}>
+      <div className="container" style={{ height: scrolled ? 72 : 84, display: "flex", alignItems: "center", gap: 22, transition: "height .25s ease" }}>
         {/* burger (mobile only, via CSS) */}
         <button className="mash-burger" onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o); }} title="menu" style={{ ...iconBtn, display: "none" }}>
           <Icon name={menuOpen ? "arrow" : "menu"} size={20} />

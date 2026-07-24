@@ -117,7 +117,7 @@ function HeroSlider({ go }: { go: Go; onCat?: (id: string) => void }) {
       {slides.map((s, idx) => {
         const v = VENDORS[s.vendor];
         return (
-        <div key={idx} aria-hidden={idx !== i} style={{ position: "absolute", inset: 0, opacity: idx === i ? 1 : 0, transition: "opacity .7s ease", pointerEvents: idx === i ? "auto" : "none" }}>
+        <div key={idx} className="mash-hero-slide" aria-hidden={idx !== i} style={{ position: "absolute", inset: 0, opacity: idx === i ? 1 : 0, transition: "opacity .7s ease", pointerEvents: idx === i ? "auto" : "none" }}>
           {/* store banner photo fills the trailing half, dimmed */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={s.img} alt="" style={{ position: "absolute", insetInlineEnd: 0, top: 0, height: "100%", width: "56%", objectFit: "cover" }} />
@@ -231,6 +231,7 @@ const VENDOR_BANNERS: Record<string, string> = {
   restaurants: "/img/cat-food.png",
   books: "/img/cat-books.png",
   furniture: "/img/cat-kitchen.png",
+  realestate: "/img/cat-kitchen.png",
 };
 export function VendorCard({ v, go }: { v: Vendor; go: Go }) {
   const { t, lang } = useApp();

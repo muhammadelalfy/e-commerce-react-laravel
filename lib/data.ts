@@ -113,6 +113,7 @@ export const CATS: Cat[] = [
   { id: "restaurants", icon: "utensils",   img: IMG + "cat-food.png",        ar: "المطاعم",    en: "Restaurants", count: 210, tint: "#fdeede" },
   { id: "gold",        icon: "gem",        img: null,                        ar: "الذهب",      en: "Gold",        count: 64,  tint: "#fff7da" },
   { id: "books",       icon: "book",       img: IMG + "cat-books.png",       ar: "الكتب",      en: "Books",       count: 150, tint: "#e9f6f3" },
+  { id: "realestate",  icon: "building",   img: null,                        ar: "العقارات",   en: "Real Estate", count: 128, tint: "#e6eef7" },
 ];
 
 export interface Vendor {
@@ -128,6 +129,8 @@ export const VENDORS: Record<string, Vendor> = {
     ar_about: "أحدث صيحات الموضة الرجالية والنسائية.", en_about: "The latest in men's and women's fashion." },
   nakhba:   { id: "nakhba", ar: "النخبة", en: "Al-Nakhba", cat: "restaurants", color: "#ce4847", rating: 4.6, reviews: 2100, since: 2015, followers: 42000, city: { ar: "الدمام", en: "Dammam" },
     ar_about: "أشهى المأكولات والحلويات بخصومات يومية.", en_about: "Delicious food and sweets with daily discounts." },
+  diyar:    { id: "diyar", ar: "ديار العقارية", en: "Diyar Realty", cat: "realestate", color: "#2f6f7e", rating: 4.7, reviews: 640, since: 2014, followers: 15600, city: { ar: "الرياض", en: "Riyadh" },
+    ar_about: "شقق وفلل وأراضٍ سكنية وتجارية بعروض تمويل مرنة.", en_about: "Residential and commercial apartments, villas and land with flexible financing." },
 };
 
 export interface Product {
@@ -151,6 +154,9 @@ export const PRODUCTS: Product[] = [
   P("watch",    "anaqa", "watches", "ساعة كلاسيك", "Classic Watch", "ستانلس ستيل مقاوم للماء", "Stainless steel, water resistant", 145, 260, 4.5, 76, 6, false, "#e9e2d2", null),
   P("dessert",  "nakhba", "restaurants", "بوكس حلا فاخر", "Luxury Sweets Box", "تشكيلة حلويات شرقية", "Assorted oriental sweets", 49, 89, 4.8, 410, 1, true, "#fbe6cf", IMG + "cat-food.png"),
   P("meal",     "nakhba", "restaurants", "وجبة مشاوي", "Grill Combo", "وجبة عائلية كاملة", "Full family grill meal", 99, 149, 4.6, 320, 2, true, "#f6dcc6", IMG + "cat-food.png"),
+  P("villa",    "diyar", "realestate", "فيلا مودرن ٤ غرف", "Modern 4-BR Villa", "حي راقٍ، تشطيب فاخر، مع مسبح", "Upscale district, luxury finish, private pool", 1250000, 1400000, 4.8, 42, 9, true, "#dce6ef", IMG + "cat-kitchen.png"),
+  P("apartment","diyar", "realestate", "شقة تمليك ٣ غرف", "3-BR Apartment", "موقع مركزي قريب من الخدمات", "Central location near amenities", 640000, 720000, 4.6, 68, 12, true, "#e6eef7", IMG + "cat-kitchen.png"),
+  P("land",     "diyar", "realestate", "أرض سكنية ٥٠٠م²", "Residential Land 500m²", "مخطط معتمد، على شارعين", "Approved plan, corner plot", 480000, 540000, 4.5, 30, 6, true, "#e9eef4", null),
 ];
 
 export interface Auction { id: string; vendor: string; cat: string; ar: string; en: string; current: number; start: number; bids: number; endH: number; color: string; }
@@ -191,6 +197,7 @@ export const EVENTS: EventItem[] = [
   { id: "e2", ar: "أسبوع العطور والجمال", en: "Beauty & Perfume Week", ar_d: "عروض حصرية من أفخر متاجر العطور والعناية.", en_d: "Exclusive deals from top perfume and beauty stores.", city: { ar: "جدة", en: "Jeddah" }, date: { ar: "١–٧ أغسطس", en: "Aug 1–7" }, tint: "#1a1216", img: IMG + "cat-beauty.png", live: false },
   { id: "e3", ar: "معرض الأزياء الشتوي", en: "Winter Fashion Expo", ar_d: "أحدث صيحات الموضة بأسعار المعرض.", en_d: "The latest fashion trends at expo prices.", city: { ar: "الرياض", en: "Riyadh" }, date: { ar: "١٠–١٤ أغسطس", en: "Aug 10–14" }, tint: "#e7eaed", img: IMG + "cat-clothes.png", live: false },
   { id: "e4", ar: "ليالي المطاعم", en: "Restaurant Nights", ar_d: "تجارب طعام وخصومات في أفضل المطاعم.", en_d: "Dining experiences and discounts at the best restaurants.", city: { ar: "الدمام", en: "Dammam" }, date: { ar: "٢٠–٢٥ أغسطس", en: "Aug 20–25" }, tint: "#f1ece6", img: IMG + "cat-food.png", live: false },
+  { id: "e5", ar: "معرض العقارات", en: "Real Estate Expo", ar_d: "شقق وفلل وأراضٍ بعروض تمويل حصرية من أفضل المطوّرين.", en_d: "Apartments, villas and land with exclusive financing offers from top developers.", city: { ar: "الرياض", en: "Riyadh" }, date: { ar: "٥–١٠ سبتمبر", en: "Sep 5–10" }, tint: "#e6eef7", img: IMG + "cat-kitchen.png", live: true },
 ];
 
 export interface Coupon { id: string; code: string; ar: string; en: string; pct: number; used: number; limit: number; active: boolean; until: { ar: string; en: string }; }

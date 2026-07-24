@@ -33,6 +33,7 @@ export const PATHS: Record<string, string> = {
   gem: "M6 4h12l3 5-9 11L3 9z M3 9h18M9 4l-1 5 4 11 4-11-1-5",
   book: "M5 4h11a2 2 0 012 2v14H7a2 2 0 01-2-2zM5 17h13",
   store: "M4 9l1-5h14l1 5M4 9v10h16V9M4 9h16M9 19v-5h6v5",
+  building: "M3 21h18M5 21V5a1 1 0 011-1h8a1 1 0 011 1v16M15 21V9h3a1 1 0 011 1v11M8 7h2M8 11h2M8 15h2",
   gavel: "M13 10l-7 7-2-2 7-7M14 4l6 6-3 3-6-6zM3 21h9",
   clock: "M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3 2",
   box: "M3 7l9-4 9 4-9 4zM3 7v10l9 4 9-4V7M12 11v10",

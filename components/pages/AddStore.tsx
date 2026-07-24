@@ -23,8 +23,9 @@ export function AddStore({ go }: { go: Go }) {
   const ar = lang === "ar";
   const [step, setStep] = useState(0);
   const cats = CATS;
-  const [form, setForm] = useState({ store: "", type: "electronics", city: ar ? "الرياض" : "Riyadh", owner: "", mobile: "", email: "", pass: "" });
+  const [form, setForm] = useState({ store: "", type: "electronics", city: ar ? "الرياض" : "Riyadh", owner: "", mobile: "", email: "", pass: "", cr: "" });
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const [crFile, setCrFile] = useState<string>("");
 
   const steps = ar
     ? [["أنشئ حسابك", "سجّل متجرك واحصل على اسم مستخدم وكلمة مرور خاصة بك.", "user"],
@@ -113,6 +114,21 @@ export function AddStore({ go }: { go: Go }) {
               <SField label={ar ? "البريد" : "Email"} value={form.email} onChange={set("email")} placeholder="you@store.sa" cn="num" />
             </div>
             <SField label={ar ? "كلمة المرور" : "Password"} type="password" value={form.pass} onChange={set("pass")} placeholder="••••••••" cn="num" />
+
+            {/* Commercial registration (السجل التجاري) — number + chamber-of-commerce document */}
+            <SField label={ar ? "رقم السجل التجاري" : "Commercial registration no."} value={form.cr} onChange={set("cr")} placeholder={ar ? "١٠xxxxxxxx" : "10xxxxxxxx"} cn="num" />
+            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-2)" }}>{ar ? "ملف مصادقة السجل من الغرفة التجارية" : "Chamber-of-commerce authentication file"}</span>
+              <label style={{ display: "flex", alignItems: "center", gap: 10, border: "1.5px dashed " + (crFile ? "var(--brand)" : "var(--line)"), borderRadius: 10, padding: "14px 16px", cursor: "pointer", background: crFile ? "var(--brand-soft)" : "var(--surface-2)", color: crFile ? "var(--brand)" : "var(--text-3)", fontSize: 13 }}>
+                <Icon name={crFile ? "check" : "filePdf"} size={20} style={{ flex: "none" }} />
+                <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {crFile ? crFile : (ar ? "ارفع ملف السجل التجاري (PDF أو صورة)" : "Upload the commercial-registration file (PDF or image)")}
+                </span>
+                <input type="file" accept=".pdf,image/*" onChange={(e) => setCrFile(e.target.files?.[0]?.name || "")} style={{ display: "none" }} />
+              </label>
+              <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>{ar ? "يخضع للتحقق من إدارة أوفرز قبل التفعيل." : "Verified by Offers before activation."}</span>
+            </label>
+
             <label style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 12.5, color: "var(--text-2)", cursor: "pointer" }}>
               <input type="checkbox" defaultChecked style={{ marginTop: 2, accentColor: "var(--brand)" }} />
               <span>{ar ? "أوافق على " : "I agree to the "}<a href="#" onClick={(e) => { e.preventDefault(); go("info", "terms"); }} style={{ color: "var(--brand)", fontWeight: 700 }}>{ar ? "الشروط والأحكام" : "Terms & Conditions"}</a></span>

@@ -10,12 +10,12 @@ type Go = (page: string, id?: string | null) => void;
 const CAT_HERO: Record<string, string> = {
   electronics: "/img/cat-electronics.png", perfumes: "/img/cat-beauty.png",
   fashion: "/img/cat-clothes.png", restaurants: "/img/cat-food.png",
-  books: "/img/cat-books.png", furniture: "/img/cat-kitchen.png",
+  books: "/img/cat-books.png", furniture: "/img/cat-kitchen.png", realestate: "/img/cat-kitchen.png",
 };
 const VENDOR_BANNERS: Record<string, string> = {
   electronics: "/img/cat-electronics.png", perfumes: "/img/cat-beauty.png",
   fashion: "/img/cat-clothes.png", restaurants: "/img/cat-food.png",
-  books: "/img/cat-books.png", furniture: "/img/cat-kitchen.png",
+  books: "/img/cat-books.png", furniture: "/img/cat-kitchen.png", realestate: "/img/cat-kitchen.png",
 };
 
 const fHead: React.CSSProperties = { fontWeight: 800, fontSize: 13.5, marginBottom: 10, color: "var(--text)" };
@@ -61,13 +61,15 @@ export function CategoryPage({ id, go }: { id: string; go: Go }) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={banner} alt="" style={{ maxWidth: "80%", maxHeight: "80%", objectFit: "contain" }} />
         </span>}
-        <span style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, var(--hero), rgba(16,22,29,.35))" }} />
+        {/* dark scrim guarantees the white title is readable in both themes,
+            even if the banner image (light product photo) bleeds through */}
+        <span style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, rgba(16,22,29,.9) 0%, rgba(16,22,29,.72) 55%, rgba(16,22,29,.4) 100%)" }} />
         <div className="container" style={{ position: "relative", height: "100%", display: "flex", flexDirection: "column", justifyContent: "center", gap: 8 }}>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,.7)", display: "flex", gap: 8 }}>
-            <a href="#" onClick={(e) => { e.preventDefault(); go("home"); }} style={{ color: "rgba(255,255,255,.7)" }}>{t.backHome}</a><span>/</span><span style={{ color: "#fff" }}>{title}</span>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,.8)", display: "flex", gap: 8, textShadow: "0 1px 3px rgba(0,0,0,.5)" }}>
+            <a href="#" onClick={(e) => { e.preventDefault(); go("home"); }} style={{ color: "rgba(255,255,255,.8)" }}>{t.backHome}</a><span>/</span><span style={{ color: "#fff" }}>{title}</span>
           </div>
-          <h1 style={{ margin: 0, fontSize: 34, fontWeight: 800, color: "#fff", fontFamily: "var(--font-display)" }}>{title}</h1>
-          <p className="num" style={{ margin: 0, color: "rgba(255,255,255,.8)", fontSize: 14 }}>{all.length} {t.itemsAvailable}</p>
+          <h1 style={{ margin: 0, fontSize: 34, fontWeight: 800, color: "#fff", fontFamily: "var(--font-display)", textShadow: "0 2px 8px rgba(0,0,0,.55)" }}>{title}</h1>
+          <p className="num" style={{ margin: 0, color: "rgba(255,255,255,.85)", fontSize: 14, textShadow: "0 1px 3px rgba(0,0,0,.5)" }}>{all.length} {t.itemsAvailable}</p>
         </div>
       </div>
 
