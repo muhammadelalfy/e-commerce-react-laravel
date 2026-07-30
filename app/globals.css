@@ -119,6 +119,11 @@ img { display: block; max-width: 100%; }
 .num { direction: ltr; unicode-bidi: isolate; display: inline-block; }
 
 /* Rose highlight behind section titles */
+/* rich-text editor: show placeholder + tidy list/link styling */
+.mash-richtext:empty::before { content: attr(data-placeholder); color: var(--text-3); pointer-events: none; }
+.mash-richtext ul, .mash-richtext ol { margin: 4px 0; padding-inline-start: 22px; }
+.mash-richtext a { color: var(--brand); text-decoration: underline; }
+
 .hl { position: relative; display: inline-block; z-index: 0; }
 .hl::after { content: ""; position: absolute; inset-inline: -6px; bottom: 3px; height: 12px; background: var(--gold); border-radius: 3px; z-index: -1; opacity: .9; }
 

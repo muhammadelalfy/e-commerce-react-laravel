@@ -4,6 +4,7 @@ import { useApp } from "@/lib/AppContext";
 import { Icon, Stars, Btn } from "../ui";
 import { ProductCard } from "../Shell";
 import { CATS, VENDORS, PRODUCTS } from "@/lib/data";
+import { useCatStore } from "@/lib/catStore";
 
 type Go = (page: string, id?: string | null) => void;
 
@@ -31,12 +32,26 @@ function VOpt({ on, onClick, label }: { on: boolean; onClick: () => void; label:
 export function CategoryPage({ id, go }: { id: string; go: Go }) {
   const { t, lang } = useApp();
   const ar = lang === "ar";
-  const isAll = id === "all" || id === "shop";
-  const cat = isAll ? null : (CATS.find((c) => c.id === id) || CATS[0]);
+  const catStore = useCatStore();
+  // id can be "electronics" (show sub-categories) or "electronics~phones" (show stores in that sub-category)
+  const [catId, subId] = id.split("~");
+  const isAll = catId === "all" || catId === "shop";
+  const cat = isAll ? null : (CATS.find((c) => c.id === catId) || CATS[0]);
+  const subCats = cat ? catStore.subsOf(cat.id) : [];
+  const activeSub = subId ? subCats.find((s) => s.id === subId) : undefined;
+  // browse state: which step of Category → Sub-cats → Stores → Products we're on
+  const showSubcats = !isAll && !subId;        // step 1: sub-category tiles
+  const showStores = !isAll && !!subId;        // step 2: stores in the sub-category
+
   const all = isAll ? PRODUCTS : PRODUCTS.filter((p) => p.cat === cat!.id);
-  // stores that belong to this department (category → stores step of the cycle)
-  const storesIn = isAll ? [] : Object.values(VENDORS).filter((v) => v.cat === cat!.id);
-  const title = isAll ? (ar ? "تسوّق مع أوفرز" : "Shop with Offers") : (ar ? cat!.ar : cat!.en);
+  // stores in this sub-category = stores that have ≥1 product tagged with it
+  const storeIdsInSub = subId ? Array.from(new Set(PRODUCTS.filter((p) => p.cat === cat!.id && p.subcat === subId).map((p) => p.vendor))) : [];
+  const storesIn = subId
+    ? storeIdsInSub.map((vid) => VENDORS[vid]).filter(Boolean)
+    : (cat ? Object.values(VENDORS).filter((v) => v.cat === cat.id) : []);
+  const title = isAll ? (ar ? "تسوّق مع أوفرز" : "Shop with Offers")
+    : activeSub ? (ar ? activeSub.ar : activeSub.en)
+    : (ar ? cat!.ar : cat!.en);
   const heroImg = isAll ? "/img/cat-clothes.png" : CAT_HERO[cat!.id];
   const vendorsIn = Array.from(new Set(all.map((p) => p.vendor)));
   const [sort, setSort] = useState("featured");
@@ -67,8 +82,10 @@ export function CategoryPage({ id, go }: { id: string; go: Go }) {
             even if the banner image (light product photo) bleeds through */}
         <span style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, rgba(16,22,29,.9) 0%, rgba(16,22,29,.72) 55%, rgba(16,22,29,.4) 100%)" }} />
         <div className="container" style={{ position: "relative", height: "100%", display: "flex", flexDirection: "column", justifyContent: "center", gap: 8 }}>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,.8)", display: "flex", gap: 8, textShadow: "0 1px 3px rgba(0,0,0,.5)" }}>
-            <a href="#" onClick={(e) => { e.preventDefault(); go("home"); }} style={{ color: "rgba(255,255,255,.8)" }}>{t.backHome}</a><span>/</span><span style={{ color: "#fff" }}>{title}</span>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,.8)", display: "flex", gap: 8, textShadow: "0 1px 3px rgba(0,0,0,.5)", flexWrap: "wrap" }}>
+            <a href="#" onClick={(e) => { e.preventDefault(); go("home"); }} style={{ color: "rgba(255,255,255,.8)" }}>{t.backHome}</a>
+            {activeSub && cat && <><span>/</span><a href="#" onClick={(e) => { e.preventDefault(); go("category", cat.id); window.scrollTo({ top: 0 }); }} style={{ color: "rgba(255,255,255,.8)" }}>{ar ? cat.ar : cat.en}</a></>}
+            <span>/</span><span style={{ color: "#fff" }}>{title}</span>
           </div>
           <h1 style={{ margin: 0, fontSize: 34, fontWeight: 800, color: "#fff", fontFamily: "var(--font-display)", textShadow: "0 2px 8px rgba(0,0,0,.55)" }}>{title}</h1>
           <p className="num" style={{ margin: 0, color: "rgba(255,255,255,.85)", fontSize: 14, textShadow: "0 1px 3px rgba(0,0,0,.5)" }}>{all.length} {t.itemsAvailable}</p>
@@ -116,8 +133,37 @@ export function CategoryPage({ id, go }: { id: string; go: Go }) {
         </aside>
 
         <div>
-          {/* SPECIFIC CATEGORY → show the STORES in it (click a store to see its products) */}
-          {!isAll ? (
+          {/* STEP 1 — CATEGORY → show its SUB-CATEGORIES */}
+          {showSubcats ? (
+            <>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18, flexWrap: "wrap", gap: 12 }}>
+                <span className="num" style={{ color: "var(--text-2)", fontSize: 14 }}>{subCats.length} {ar ? "قسم فرعي" : "sub-categories"}</span>
+                <span style={{ fontSize: 13, color: "var(--text-3)" }}>{ar ? "اختر قسماً فرعياً لعرض متاجره" : "Pick a sub-category to see its stores"}</span>
+              </div>
+              {subCats.length ? (
+                <div className="mash-store-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14 }}>
+                  {subCats.map((s) => {
+                    const storeCount = Array.from(new Set(PRODUCTS.filter((p) => p.cat === cat!.id && p.subcat === s.id).map((p) => p.vendor))).length;
+                    return (
+                      <button key={s.id} onClick={() => { go("category", cat!.id + "~" + s.id); window.scrollTo({ top: 0 }); }}
+                        style={{ textAlign: "start", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-sm)", padding: "16px 18px", display: "flex", gap: 12, alignItems: "center", cursor: "pointer" }}>
+                        <span style={{ width: 42, height: 42, borderRadius: 12, flex: "none", background: cat!.tint, color: "var(--brand)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name={cat!.icon} size={20} /></span>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 700, fontSize: 14.5 }}>{ar ? s.ar : s.en}</div>
+                          <div style={{ fontSize: 12, color: "var(--text-3)", marginTop: 2 }}><span className="num">{storeCount}</span> {ar ? "متجر" : "stores"}</div>
+                        </div>
+                        <Icon name="arrow" size={18} style={{ color: "var(--brand)", transform: ar ? "scaleX(-1)" : "none" }} />
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-3)" }}>
+                  <Icon name="grid" size={40} /><p style={{ marginTop: 12 }}>{ar ? "لا توجد أقسام فرعية لهذا القسم" : "No sub-categories for this category"}</p>
+                </div>
+              )}
+            </>
+          ) : showStores ? (
             <>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18, flexWrap: "wrap", gap: 12 }}>
                 <span className="num" style={{ color: "var(--text-2)", fontSize: 14 }}>{storesIn.length} {ar ? "متجر" : "stores"}</span>
@@ -126,7 +172,7 @@ export function CategoryPage({ id, go }: { id: string; go: Go }) {
               {storesIn.length ? (
                 <div className="mash-store-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 18 }}>
                   {storesIn.map((v) => {
-                    const count = PRODUCTS.filter((p) => p.vendor === v.id).length;
+                    const count = PRODUCTS.filter((p) => p.vendor === v.id && p.subcat === subId).length;
                     return (
                       <button key={v.id} onClick={() => { go("vendor", v.id); window.scrollTo({ top: 0 }); }}
                         style={{ textAlign: "start", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-sm)", padding: 18, display: "flex", gap: 14, alignItems: "center", cursor: "pointer" }}>
@@ -146,7 +192,7 @@ export function CategoryPage({ id, go }: { id: string; go: Go }) {
                 </div>
               ) : (
                 <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-3)" }}>
-                  <Icon name="store" size={40} /><p style={{ marginTop: 12 }}>{ar ? "لا توجد متاجر في هذا القسم بعد" : "No stores in this category yet"}</p>
+                  <Icon name="store" size={40} /><p style={{ marginTop: 12 }}>{ar ? "لا توجد متاجر في هذا القسم الفرعي" : "No stores in this sub-category"}</p>
                 </div>
               )}
             </>

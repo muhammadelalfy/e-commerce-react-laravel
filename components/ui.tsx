@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import { CATS, money } from "@/lib/data";
 
 export { money };
@@ -136,5 +136,50 @@ export function Chip({ children, active, ...rest }: React.ButtonHTMLAttributes<H
       borderColor: active ? "var(--brand)" : "var(--line)" }}>
       {children}
     </button>
+  );
+}
+
+/* ---- Lightweight rich-text editor (CKEditor-style, no external deps) ----
+   Uses a contentEditable surface + document.execCommand for formatting.
+   Emits HTML via onChange. Self-contained so it works offline / under CSP. */
+export function RichText({ value, onChange, dir = "rtl", minHeight = 140, placeholder }: { value: string; onChange: (html: string) => void; dir?: "rtl" | "ltr"; minHeight?: number; placeholder?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  // set initial HTML once; afterwards the DOM is the source of truth (avoids caret jumps)
+  useEffect(() => {
+    if (ref.current && ref.current.innerHTML !== value) ref.current.innerHTML = value || "";
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const exec = (cmd: string, arg?: string) => {
+    ref.current?.focus();
+    document.execCommand(cmd, false, arg);
+    onChange(ref.current?.innerHTML ?? "");
+  };
+  const tool = (label: React.ReactNode, cmd: string, title: string, arg?: string) => (
+    <button type="button" title={title} onMouseDown={(e) => { e.preventDefault(); exec(cmd, arg); }}
+      style={{ minWidth: 32, height: 30, padding: "0 8px", borderRadius: 7, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--text-2)", fontSize: 13.5, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>{label}</button>
+  );
+  return (
+    <div style={{ border: "1.5px solid var(--line)", borderRadius: 10, overflow: "hidden", background: "var(--surface-2)" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: 8, borderBottom: "1px solid var(--line)", background: "var(--surface)" }}>
+        {tool(<b>B</b>, "bold", "Bold")}
+        {tool(<i>I</i>, "italic", "Italic")}
+        {tool(<u>U</u>, "underline", "Underline")}
+        {tool("• قائمة", "insertUnorderedList", "Bulleted list")}
+        {tool("1. قائمة", "insertOrderedList", "Numbered list")}
+        <button type="button" title="Add link" onMouseDown={(e) => { e.preventDefault(); const url = window.prompt("URL:", "https://"); if (url) exec("createLink", url); }}
+          style={{ minWidth: 32, height: 30, padding: "0 8px", borderRadius: 7, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--text-2)", fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>🔗</button>
+        {tool("✕", "removeFormat", "Clear formatting")}
+      </div>
+      <div
+        ref={ref}
+        contentEditable
+        suppressContentEditableWarning
+        dir={dir}
+        onInput={() => onChange(ref.current?.innerHTML ?? "")}
+        data-placeholder={placeholder || ""}
+        className="mash-richtext"
+        style={{ minHeight, padding: "12px 14px", fontSize: 14, lineHeight: 1.7, color: "var(--text)", outline: "none" }}
+      />
+    </div>
   );
 }

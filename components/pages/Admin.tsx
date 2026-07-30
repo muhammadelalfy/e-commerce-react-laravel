@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useApp } from "@/lib/AppContext";
-import { Icon, Btn, Thumb, money } from "../ui";
+import { Icon, Btn, Thumb, money, RichText } from "../ui";
 import { VENDORS, PRODUCTS, CITIES, REELS, EVENTS, CATS, PLANS, type Cat, type Plan } from "@/lib/data";
 import { useCouponStore } from "@/lib/couponStore";
 import { useGeoStore } from "@/lib/geoStore";
@@ -739,20 +739,24 @@ function AdminReels({ ar }: { ar: boolean }) {
 /* ---- Packages (subscription plans) CRUD ---- */
 function AdminPackages({ ar, lang }: { ar: boolean; lang: string }) {
   const [rows, setRows] = useState<Plan[]>(PLANS.map((p) => ({ ...p })));
-  const [modal, setModal] = useState(false);
+  const [editing, setEditing] = useState<Plan | null>(null); // the plan being edited (or a blank new one)
   return (
     <div>
       <Head title={ar ? "الباقات" : "Packages"}
-        action={<Btn size="sm" onClick={() => setModal(true)}><Icon name="plus" size={15} />{ar ? "باقة جديدة" : "New package"}</Btn>} />
+        action={<Btn size="sm" onClick={() => setEditing({ id: "", ar: "", en: "", price: 0, active: true, desc: "" })}><Icon name="plus" size={15} />{ar ? "باقة جديدة" : "New package"}</Btn>} />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
         {rows.map((p) => (
-          <div key={p.id} style={{ ...card, padding: 20, position: "relative", border: "2px solid " + (p.active ? "var(--brand)" : "var(--line)") }}>
-            <button onClick={() => setRows((r) => r.filter((x) => x.id !== p.id))} title="delete" style={{ position: "absolute", top: 12, insetInlineEnd: 12, background: "transparent", border: "none", color: "var(--sale)", cursor: "pointer" }}><Icon name="trash" size={16} /></button>
+          <div key={p.id} style={{ ...card, padding: 20, position: "relative", border: "2px solid " + (p.active ? "var(--brand)" : "var(--line)"), display: "flex", flexDirection: "column" }}>
+            <div style={{ position: "absolute", top: 12, insetInlineEnd: 12, display: "flex", gap: 6 }}>
+              <button onClick={() => setEditing(p)} title="edit" style={{ background: "transparent", border: "none", color: "var(--brand)", cursor: "pointer" }}><Icon name="edit" size={16} /></button>
+              <button onClick={() => setRows((r) => r.filter((x) => x.id !== p.id))} title="delete" style={{ background: "transparent", border: "none", color: "var(--sale)", cursor: "pointer" }}><Icon name="trash" size={16} /></button>
+            </div>
             <div style={{ fontSize: 17, fontWeight: 800 }}>{ar ? p.ar : p.en}</div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 6, margin: "12px 0 16px" }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6, margin: "12px 0 14px" }}>
               <span className="num" style={{ fontSize: 30, fontWeight: 800 }}>{p.price === 0 ? (ar ? "مجاني" : "Free") : money(p.price, lang as any)}</span>
               {p.price !== 0 && <span style={{ color: "var(--text-3)", fontSize: 12.5 }}>/{ar ? "شهرياً" : "mo"}</span>}
             </div>
+            {p.desc && <div className="mash-richtext" style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 14, flex: 1 }} dangerouslySetInnerHTML={{ __html: p.desc }} />}
             <button onClick={() => setRows((r) => r.map((x) => x.id === p.id ? { ...x, active: !x.active } : x))}
               style={{ width: "100%", padding: "8px 0", borderRadius: 10, border: "1.5px solid " + (p.active ? "var(--brand)" : "var(--line)"), background: p.active ? "var(--brand-soft)" : "var(--surface)", color: p.active ? "var(--brand)" : "var(--text-2)", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>
               {p.active ? (ar ? "مفعّلة ✓" : "Active ✓") : (ar ? "غير مفعّلة" : "Inactive")}
@@ -760,21 +764,69 @@ function AdminPackages({ ar, lang }: { ar: boolean; lang: string }) {
           </div>
         ))}
       </div>
-      {modal && (
-        <AdminModal ar={ar} title={ar ? "باقة جديدة" : "New package"} onClose={() => setModal(false)}
-          onSave={(v) => {
-            const name = v.name.trim();
-            const id = (v.en || name).toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8) + Date.now().toString().slice(-3);
-            setRows((r) => [...r, { id, ar: name, en: (v.en || name).trim(), price: Number(v.price) || 0, active: true }]);
-            setModal(false);
-          }}
-          fields={[
-            { key: "name", label: ar ? "اسم الباقة (عربي)" : "Package name (AR)", placeholder: ar ? "مثال: بريميوم" : "e.g. Premium" },
-            { key: "en", label: ar ? "الاسم بالإنجليزية" : "Package name (EN)", placeholder: "e.g. Premium" },
-            { key: "price", label: ar ? "السعر الشهري (﷼)" : "Monthly price (SAR)", type: "number", required: false },
-          ]} />
+      {editing && (
+        <PackageModal ar={ar} plan={editing} onClose={() => setEditing(null)}
+          onSave={(p) => {
+            setRows((r) => {
+              if (p.id && r.some((x) => x.id === p.id)) return r.map((x) => x.id === p.id ? p : x); // update
+              const id = p.id || ((p.en || p.ar).toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8) || "plan") + Date.now().toString().slice(-3);
+              return [...r, { ...p, id }]; // create
+            });
+            setEditing(null);
+          }} />
       )}
     </div>
+  );
+}
+
+/** Dedicated package editor with a rich-text (CKEditor-style) description. */
+function PackageModal({ ar, plan, onClose, onSave }: { ar: boolean; plan: Plan; onClose: () => void; onSave: (p: Plan) => void }) {
+  const [name, setName] = useState(plan.ar);
+  const [en, setEn] = useState(plan.en);
+  const [price, setPrice] = useState(String(plan.price));
+  const [desc, setDesc] = useState(plan.desc ?? "");
+  const [showErr, setShowErr] = useState(false);
+  const save = () => {
+    if (!name.trim()) { setShowErr(true); return; }
+    onSave({ id: plan.id, ar: name.trim(), en: (en || name).trim(), price: Number(price) || 0, active: plan.active, desc });
+  };
+  const fld = (bad: boolean): React.CSSProperties => ({ height: 44, padding: "0 14px", borderRadius: 10, border: "1.5px solid " + (bad ? "var(--sale)" : "var(--line)"), background: "var(--surface-2)", color: "var(--text)", fontSize: 14, fontFamily: "inherit", width: "100%" });
+  const lab: React.CSSProperties = { fontSize: 12.5, fontWeight: 600, color: "var(--text-2)" };
+  return (
+    <Portal>
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(8,16,20,.6)", backdropFilter: "blur(3px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--surface)", borderRadius: "var(--r-xl)", width: "min(600px, 100%)", maxHeight: "90vh", overflow: "auto", boxShadow: "var(--shadow-lg)", border: "1px solid var(--line)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid var(--line)" }}>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{plan.id ? (ar ? "تعديل الباقة" : "Edit package") : (ar ? "باقة جديدة" : "New package")}</h3>
+          <button onClick={onClose} style={{ background: "transparent", border: "none", fontSize: 24, color: "var(--text-3)", lineHeight: 1, cursor: "pointer" }}>×</button>
+        </div>
+        <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={lab}>{ar ? "اسم الباقة (عربي)" : "Name (AR)"}<span style={{ color: "var(--sale)", marginInlineStart: 4 }}>*</span></span>
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder={ar ? "مثال: بريميوم" : "e.g. Premium"} style={fld(showErr && !name.trim())} />
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={lab}>{ar ? "الاسم بالإنجليزية" : "Name (EN)"}</span>
+              <input value={en} onChange={(e) => setEn(e.target.value)} placeholder="e.g. Premium" style={fld(false)} />
+            </label>
+          </div>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6, maxWidth: 240 }}>
+            <span style={lab}>{ar ? "السعر الشهري (﷼)" : "Monthly price (SAR)"}</span>
+            <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} style={fld(false)} />
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={lab}>{ar ? "وصف الباقة" : "Description"}</span>
+            <RichText value={desc} onChange={setDesc} dir={ar ? "rtl" : "ltr"} placeholder={ar ? "اكتب وصف الباقة ومميزاتها…" : "Describe the package and its features…"} />
+          </label>
+        </div>
+        <div style={{ display: "flex", gap: 12, padding: "16px 24px", borderTop: "1px solid var(--line)" }}>
+          <Btn variant="outline" onClick={onClose} style={{ flex: 1 }}>{ar ? "إلغاء" : "Cancel"}</Btn>
+          <Btn onClick={save} style={{ flex: 2 }}><Icon name="check" size={16} />{ar ? "حفظ" : "Save"}</Btn>
+        </div>
+      </div>
+    </div>
+    </Portal>
   );
 }
 

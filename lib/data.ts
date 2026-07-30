@@ -161,12 +161,20 @@ export const VENDORS: Record<string, Vendor> = {
 };
 
 export interface Product {
-  id: string; vendor: string; cat: string; ar: string; en: string; ar_d: string; en_d: string;
+  id: string; vendor: string; cat: string; subcat?: string; ar: string; en: string; ar_d: string; en_d: string;
   price: number; old: number; rating: number; reviews: number; days: number; active: boolean;
   color: string; img: string | null; discount: number;
 }
+// deterministically pick a sub-category for a product from its category's subs,
+// so every product maps to one (spreads products across the category's subs).
+let _pIdx = 0;
+const pickSub = (cat: string): string | undefined => {
+  const subs = SUBCATS.filter((s) => s.cat === cat);
+  if (subs.length === 0) return undefined;
+  return subs[_pIdx++ % subs.length].id;
+};
 const P = (id: string, vendor: string, cat: string, ar: string, en: string, ar_d: string, en_d: string, price: number, old: number, rating: number, reviews: number, days: number, active: boolean, color: string, img: string | null): Product =>
-  ({ id, vendor, cat, ar, en, ar_d, en_d, price, old, rating, reviews, days, active, color, img, discount: Math.round((1 - price / old) * 100) });
+  ({ id, vendor, cat, subcat: pickSub(cat), ar, en, ar_d, en_d, price, old, rating, reviews, days, active, color, img, discount: Math.round((1 - price / old) * 100) });
 
 export const PRODUCTS: Product[] = [
   P("airpods",  "techzone", "electronics", "آيربودز ماكس", "AirPods Max", "توازن مثالي وصوت عالي الدقة", "A perfect balance of high-fidelity audio", 559, 749, 5.0, 121, 3, true,  "#f3d9d2", IMG + "cat-electronics.png"),
@@ -244,11 +252,11 @@ export const CITIES: City[] = [
   { id: "abha", ar: "أبها", en: "Abha", stores: 21, x: 40, y: 80 },
 ];
 
-export interface Plan { id: string; ar: string; en: string; price: number; active: boolean; }
+export interface Plan { id: string; ar: string; en: string; price: number; active: boolean; desc?: string; }
 export const PLANS: Plan[] = [
-  { id: "basic", ar: "أساسي", en: "Basic", price: 0, active: false },
-  { id: "pro", ar: "احترافي", en: "Pro", price: 199, active: true },
-  { id: "enterprise", ar: "متاجر", en: "Enterprise", price: 499, active: false },
+  { id: "basic", ar: "أساسي", en: "Basic", price: 0, active: false, desc: "<ul><li>متجر واحد</li><li>حتى ٥ منتجات</li><li>دعم عبر البريد</li></ul>" },
+  { id: "pro", ar: "احترافي", en: "Pro", price: 199, active: true, desc: "<p><b>الأكثر شيوعاً</b></p><ul><li>منتجات غير محدودة</li><li>خصومات ومزادات</li><li>إحصائيات الزوار</li></ul>" },
+  { id: "enterprise", ar: "متاجر", en: "Enterprise", price: 499, active: false, desc: "<ul><li>فروع متعددة</li><li>حساب مدير</li><li>مدير حساب مخصص</li></ul>" },
 ];
 
 export function money(n: number, lang: Lang): string {

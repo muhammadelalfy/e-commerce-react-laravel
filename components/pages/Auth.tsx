@@ -111,7 +111,7 @@ export function Auth({ param, go }: { param: string | null; go: Go }) {
     <div className="container" style={{ paddingTop: 40, paddingBottom: 56, display: "flex", justifyContent: "center" }}>
       <div style={{ width: "min(940px, 100%)", display: "grid", gridTemplateColumns: "1fr 1.05fr", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-xl)", overflow: "hidden", boxShadow: "var(--shadow-md)" }}>
         <div style={{ background: "linear-gradient(150deg, var(--brand-strong), var(--brand))", color: "#fff", padding: "40px 34px", display: "flex", flexDirection: "column", gap: 18 }}>
-          <div style={{ filter: "brightness(0) invert(1)" }}><Logo /></div>
+          <div style={{ alignSelf: "flex-start" }}><Logo /></div>
           <h2 style={{ margin: "8px 0 0", fontSize: 26, fontWeight: 800, lineHeight: 1.2 }}>
             {aud === "reels" ? (ar ? "استوديو الريلز" : "Reels Studio") : aud === "vendor" ? (ar ? "بوابة التجّار" : "Vendor portal") : (ar ? "أهلاً بك في أوفرز" : "Welcome to Offers")}
           </h2>
