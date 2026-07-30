@@ -4,7 +4,10 @@ import { createPortal } from "react-dom";
 import { useApp } from "@/lib/AppContext";
 import { Icon, Btn, Thumb, money } from "../ui";
 import { VENDORS, PRODUCTS, CITIES, REELS, EVENTS, CATS } from "@/lib/data";
-import { GULF_COUNTRIES } from "../CountryModal";
+import { useCouponStore } from "@/lib/couponStore";
+import { useGeoStore } from "@/lib/geoStore";
+import { fetchCities } from "../CountryModal";
+import { GULF_COUNTRIES } from "@/lib/countries";
 
 type Go = (page: string, id?: string | null) => void;
 
@@ -28,11 +31,14 @@ export function Admin({ go }: { go: Go }) {
   const { lang } = useApp();
   const ar = lang === "ar";
   const [tab, setTab] = useState("overview");
-  const nav: [string, string, string][] = [
+  const store = useCouponStore();
+  const unread = store.notices.filter((n) => !n.read).length;
+  const nav: [string, string, string, number?][] = [
     ["overview", ar ? "نظرة عامة" : "Overview", "grid"],
     ["users", ar ? "المستخدمون" : "Users", "users"],
     ["vendors", ar ? "المتاجر" : "Vendors", "store"],
     ["approval", ar ? "موافقة المنتجات" : "Approvals", "check"],
+    ["coupons", ar ? "كوبونات الخصم" : "Coupons", "tag", unread],
     ["countries", ar ? "الدول" : "Countries", "globe"],
     ["cities", ar ? "المدن" : "Cities", "pin"],
     ["ads", ar ? "الإعلانات" : "Ads", "calendar"],
@@ -49,9 +55,10 @@ export function Admin({ go }: { go: Go }) {
           <div><div style={{ fontWeight: 800, fontSize: 14 }}>{ar ? "إدارة أوفرز" : "Offers Admin"}</div><div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{ar ? "مدير" : "Administrator"}</div></div>
         </div>
         <nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          {nav.map(([k, l, ic]) => (
+          {nav.map(([k, l, ic, badge]) => (
             <button key={k} onClick={() => setTab(k)} style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 12px", borderRadius: 10, border: "none", textAlign: "start", fontSize: 13.5, fontWeight: 600, background: tab === k ? "var(--brand-soft)" : "transparent", color: tab === k ? "var(--brand)" : "var(--text-2)" }}>
-              <Icon name={ic} size={17} />{l}
+              <Icon name={ic} size={17} /><span style={{ flex: 1 }}>{l}</span>
+              {!!badge && badge > 0 && <span className="num" style={{ minWidth: 20, height: 20, padding: "0 6px", borderRadius: 999, background: "var(--brand)", color: "#fff", fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{badge}</span>}
             </button>
           ))}
         </nav>
@@ -60,6 +67,7 @@ export function Admin({ go }: { go: Go }) {
       <div>
         {tab === "overview" && <AdminOverview ar={ar} lang={lang} />}
         {tab === "approval" && <AdminApproval ar={ar} lang={lang} />}
+        {tab === "coupons" && <AdminCoupons ar={ar} />}
         {tab === "users" && <AdminUsers ar={ar} />}
         {tab === "vendors" && <AdminVendors ar={ar} go={go} />}
         {tab === "countries" && <AdminCountries ar={ar} />}
@@ -159,6 +167,79 @@ function AdminApproval({ ar, lang }: { ar: boolean; lang: string }) {
 }
 
 interface UserRow { name: string; role: string; city: string; status: string; }
+function timeAgo(ts: number, ar: boolean): string {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return ar ? "الآن" : "just now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return ar ? `منذ ${m} د` : `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return ar ? `منذ ${h} س` : `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return ar ? `منذ ${d} ي` : `${d}d ago`;
+}
+
+function AdminCoupons({ ar }: { ar: boolean }) {
+  const store = useCouponStore();
+  const vName = (id: string) => { const v = VENDORS[id]; return v ? (ar ? v.ar : v.en) : id; };
+  const notices = store.notices;
+  return (
+    <div>
+      <Head title={ar ? "كوبونات الخصم" : "Discount coupons"}
+        action={notices.some((n) => !n.read) ? <Btn size="sm" variant="outline" onClick={() => store.markNoticesRead()}><Icon name="check" size={15} />{ar ? "تعليم الكل كمقروء" : "Mark all read"}</Btn> : undefined} />
+
+      {/* Notifications: which vendor added which coupon */}
+      {notices.length > 0 && (
+        <div style={{ ...card, overflow: "hidden", marginBottom: 18 }}>
+          <div style={{ padding: "12px 18px", borderBottom: "1px solid var(--line)", fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
+            <Icon name="bell" size={16} style={{ color: "var(--brand)" }} />{ar ? "إشعارات كوبونات التجّار" : "Vendor coupon notifications"}
+          </div>
+          {notices.map((n) => (
+            <div key={n.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 18px", borderBottom: "1px solid var(--line-soft)", background: n.read ? "transparent" : "var(--brand-soft)" }}>
+              <span style={{ width: 36, height: 36, borderRadius: 10, flex: "none", background: "var(--brand-soft)", color: "var(--brand)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="tag" size={18} /></span>
+              <div style={{ flex: 1, fontSize: 13.5 }}>
+                {ar
+                  ? <>التاجر <b>{vName(n.vendor)}</b> أضاف كود خصم <span className="num" style={{ fontWeight: 800 }}>{n.code}</span> بنسبة <span className="num">{n.pct}%</span></>
+                  : <>Vendor <b>{vName(n.vendor)}</b> added coupon <span className="num" style={{ fontWeight: 800 }}>{n.code}</span> — <span className="num">{n.pct}%</span> off</>}
+              </div>
+              <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>{timeAgo(n.time, ar)}</span>
+              {!n.read && <span style={{ width: 9, height: 9, borderRadius: 999, background: "var(--brand)", flex: "none" }} />}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* All coupons across every vendor */}
+      <div style={{ ...card, overflow: "hidden" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1.6fr .8fr 1.2fr 1fr .8fr", gap: 12, padding: "12px 18px", borderBottom: "1px solid var(--line)", fontSize: 12, fontWeight: 800, color: "var(--text-3)" }}>
+          <span>{ar ? "المتجر" : "Store"}</span>
+          <span>{ar ? "الكود" : "Code"}</span>
+          <span>{ar ? "الخصم" : "Discount"}</span>
+          <span>{ar ? "الاستخدام" : "Usage"}</span>
+          <span>{ar ? "حتى" : "Until"}</span>
+          <span style={{ textAlign: "end" }}>{ar ? "الحالة" : "Status"}</span>
+        </div>
+        {store.coupons.map((c) => (
+          <div key={c.id} style={{ display: "grid", gridTemplateColumns: "1.4fr 1.6fr .8fr 1.2fr 1fr .8fr", gap: 12, alignItems: "center", padding: "13px 18px", borderBottom: "1px solid var(--line-soft)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+              <span style={{ width: 28, height: 28, borderRadius: 8, flex: "none", background: VENDORS[c.vendor]?.color || "var(--surface-2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}><Icon name="store" size={14} /></span>
+              <span style={{ fontSize: 13, fontWeight: 700 }}>{vName(c.vendor)}</span>
+            </div>
+            <span className="num" style={{ fontWeight: 800, fontSize: 13.5, letterSpacing: ".5px", border: "1.5px dashed var(--line)", borderRadius: 6, padding: "3px 10px", justifySelf: "start" }}>{c.code}</span>
+            <span className="num" style={{ fontWeight: 800, color: "var(--brand)" }}>{c.pct}%</span>
+            <div style={{ fontSize: 12.5 }}><span className="num">{c.used}/{c.limit}</span><div style={{ height: 5, borderRadius: 999, background: "var(--surface-2)", marginTop: 4 }}><div style={{ width: Math.round(c.used / c.limit * 100) + "%", height: "100%", borderRadius: 999, background: "var(--brand)" }} /></div></div>
+            <span className="num" style={{ fontSize: 12.5, color: "var(--text-2)" }}>{ar ? c.until.ar : c.until.en}</span>
+            <button onClick={() => store.toggleCoupon(c.id)} title={c.active ? (ar ? "إيقاف" : "Disable") : (ar ? "تفعيل" : "Enable")}
+              style={{ justifySelf: "end", background: c.active ? "var(--active-bg)" : "var(--surface-2)", color: c.active ? "var(--active)" : "var(--text-3)", fontSize: 11.5, fontWeight: 800, padding: "5px 10px", borderRadius: 999, border: "none", cursor: "pointer" }}>
+              {c.active ? (ar ? "فعّال" : "Active") : (ar ? "موقوف" : "Off")}
+            </button>
+          </div>
+        ))}
+        {store.coupons.length === 0 && <div style={{ padding: 40, textAlign: "center", color: "var(--text-3)" }}>{ar ? "لا توجد كوبونات" : "No coupons"}</div>}
+      </div>
+    </div>
+  );
+}
+
 function AdminUsers({ ar }: { ar: boolean }) {
   const seed: UserRow[] = ar
     ? [{ name: "محمد العتيبي", role: "USER", city: "الرياض", status: "نشط" }, { name: "متجر تك زون", role: "VENDOR", city: "الرياض", status: "نشط" }, { name: "سارة القحطاني", role: "USER", city: "جدة", status: "نشط" }, { name: "العربية للعود", role: "VENDOR", city: "جدة", status: "نشط" }, { name: "خالد الشهري", role: "USER", city: "أبها", status: "موقوف" }, { name: "النخبة", role: "VENDOR", city: "الدمام", status: "نشط" }]
@@ -216,63 +297,205 @@ function AdminVendors({ ar, go }: { ar: boolean; go: Go }) {
   );
 }
 
-interface CountryRow { id: string; ar: string; en: string; flag: string; dial: string; }
 function AdminCountries({ ar }: { ar: boolean }) {
-  const [rows, setRows] = useState<CountryRow[]>(GULF_COUNTRIES.map((c) => ({ id: c.id, ar: c.ar, en: c.en, flag: c.flag, dial: c.dial })));
+  const geo = useGeoStore();
   const [modal, setModal] = useState(false);
+  const [open, setOpen] = useState<string | null>(null);
   return (
     <div>
       <Head title={ar ? "الدول" : "Countries"} action={<Btn size="sm" onClick={() => setModal(true)}><Icon name="plus" size={15} />{ar ? "دولة جديدة" : "New country"}</Btn>} />
+      <p style={{ margin: "-8px 0 16px", fontSize: 13, color: "var(--text-3)" }}>{ar ? "اضغط على أي دولة لعرض مدنها." : "Click a country to view its cities."}</p>
       <div style={{ ...card, overflow: "hidden" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "0.6fr 2fr 1fr 0.8fr", gap: 12, padding: "13px 18px", borderBottom: "1px solid var(--line)", fontSize: 12, fontWeight: 700, color: "var(--text-3)" }}>
-          <span>{ar ? "العلم" : "Flag"}</span><span>{ar ? "الدولة" : "Country"}</span><span>{ar ? "رمز الاتصال" : "Dial code"}</span><span></span>
+        <div style={{ display: "grid", gridTemplateColumns: "0.6fr 2fr 1fr 0.8fr 0.6fr", gap: 12, padding: "13px 18px", borderBottom: "1px solid var(--line)", fontSize: 12, fontWeight: 700, color: "var(--text-3)" }}>
+          <span>{ar ? "العلم" : "Flag"}</span><span>{ar ? "الدولة" : "Country"}</span><span>{ar ? "رمز الاتصال" : "Dial code"}</span><span>{ar ? "المدن" : "Cities"}</span><span></span>
         </div>
-        {rows.map((c) => (
-          <div key={c.id} style={{ display: "grid", gridTemplateColumns: "0.6fr 2fr 1fr 0.8fr", gap: 12, padding: "13px 18px", borderBottom: "1px solid var(--line-soft)", alignItems: "center" }}>
-            <span style={{ fontSize: 24 }}>{c.flag}</span>
-            <span style={{ fontWeight: 700, fontSize: 14 }}>{ar ? c.ar : c.en}</span>
-            <span className="num" style={{ fontSize: 13, color: "var(--text-2)" }}>{c.dial}</span>
-            <button onClick={() => setRows((r) => r.filter((x) => x.id !== c.id))} title="delete" style={{ background: "transparent", border: "none", color: "var(--sale)", justifySelf: "end" }}><Icon name="trash" size={16} /></button>
-          </div>
-        ))}
+        {geo.countries.map((c) => {
+          const cs = geo.citiesOf(c.id);
+          const isOpen = open === c.id;
+          return (
+            <div key={c.id} style={{ borderBottom: "1px solid var(--line-soft)" }}>
+              <div onClick={() => setOpen(isOpen ? null : c.id)} style={{ display: "grid", gridTemplateColumns: "0.6fr 2fr 1fr 0.8fr 0.6fr", gap: 12, padding: "13px 18px", alignItems: "center", cursor: "pointer", background: isOpen ? "var(--brand-soft)" : "transparent" }}>
+                <span style={{ fontSize: 24 }}>{c.flag}</span>
+                <span style={{ fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
+                  <Icon name="chevron" size={15} style={{ transform: isOpen ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform .2s", color: "var(--text-3)" }} />
+                  {ar ? c.ar : c.en}
+                </span>
+                <span className="num" style={{ fontSize: 13, color: "var(--text-2)" }}>{c.dial}</span>
+                <span className="num" style={{ fontSize: 12.5, fontWeight: 700, color: "var(--brand)" }}>{cs.length}</span>
+                <button onClick={(e) => { e.stopPropagation(); geo.removeCountry(c.id); }} title="delete" style={{ background: "transparent", border: "none", color: "var(--sale)", justifySelf: "end" }}><Icon name="trash" size={16} /></button>
+              </div>
+              {isOpen && (
+                <div style={{ padding: "4px 18px 16px 46px", display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {cs.length === 0 && <span style={{ fontSize: 12.5, color: "var(--text-3)" }}>{ar ? "لا توجد مدن لهذه الدولة بعد — أضفها من تبويب المدن." : "No cities yet — add them from the Cities tab."}</span>}
+                  {cs.map((ct) => (
+                    <span key={ct.id} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, background: "var(--surface-2)", border: "1px solid var(--line)", borderRadius: 999, padding: "5px 12px" }}>
+                      <Icon name="pin" size={13} style={{ color: "var(--brand)" }} />{ar ? ct.ar : ct.en}
+                      <span className="num" style={{ color: "var(--text-3)" }}>· {ct.stores}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
-      {modal && (
-        <AdminModal ar={ar} title={ar ? "دولة جديدة" : "New country"} onClose={() => setModal(false)}
-          onSave={(v) => { const name = v.name || (ar ? "دولة" : "Country"); setRows((r) => [...r, { id: "c" + Date.now(), ar: name, en: v.en || name, flag: v.flag || "🏳️", dial: v.dial || "+" }]); setModal(false); }}
-          fields={[
-            { key: "name", label: ar ? "اسم الدولة (عربي)" : "Country name (AR)", placeholder: ar ? "مثال: مصر" : "e.g. Egypt" },
-            { key: "en", label: ar ? "الاسم بالإنجليزية" : "Country name (EN)", placeholder: "e.g. Egypt" },
-            { key: "flag", label: ar ? "العلم (إيموجي)" : "Flag (emoji)", placeholder: "🇪🇬" },
-            { key: "dial", label: ar ? "رمز الاتصال" : "Dial code", placeholder: "+20" },
-          ]} />
-      )}
+      {modal && <NewCountryModal ar={ar} onClose={() => setModal(false)} onSave={(c, cityNames) => { geo.addCountryWithCities(c, cityNames); setModal(false); }} />}
     </div>
   );
 }
 
-interface CityRow { ar: string; en: string; stores: number; }
+/** Dedicated New-Country modal: pick a Gulf country (Arabic) → it auto-fills the
+ *  name/flag/dial and fetches that country's cities to save with it. */
+function NewCountryModal({ ar, onClose, onSave }: { ar: boolean; onClose: () => void; onSave: (c: { id: string; ar: string; en: string; flag: string; dial: string }, cityNames: string[]) => void }) {
+  const [countryId, setCountryId] = useState("");   // selected Gulf country id
+  const [name, setName] = useState("");             // AR name
+  const [en, setEn] = useState("");                 // EN name (drives city fetch)
+  const [flag, setFlag] = useState("");
+  const [dial, setDial] = useState("");
+  const [cities, setCities] = useState<string[]>([]);
+  const [previewCity, setPreviewCity] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
+
+  // when a Gulf country is chosen, fill AR name / EN name / flag / dial
+  const pickCountry = (id: string) => {
+    const c = GULF_COUNTRIES.find((x) => x.id === id);
+    setCountryId(id);
+    setName(c?.ar ?? "");
+    setEn(c?.en ?? "");
+    setFlag(c?.flag ?? "🏳️");
+    setDial(c?.dial ?? "+");
+  };
+
+  // debounce-fetch cities whenever the English name changes
+  useEffect(() => {
+    const q = en.trim();
+    setCities([]); setPreviewCity(""); setErr(false);
+    if (q.length < 3) { setLoading(false); return; }
+    const ctrl = new AbortController();
+    const t = setTimeout(() => {
+      setLoading(true);
+      fetchCities(q, ctrl.signal)
+        .then((list) => { setCities(list); if (list.length === 0) setErr(true); })
+        .catch((e) => { if (e?.name !== "AbortError") setErr(true); })
+        .finally(() => setLoading(false));
+    }, 500);
+    return () => { clearTimeout(t); ctrl.abort(); };
+  }, [en]);
+
+  const missingName = !name.trim();
+  const missingEn = !en.trim();
+  const save = () => {
+    if (missingName || missingEn) { setShowErrors(true); return; }
+    const id = en.trim().toLowerCase().replace(/[^a-z]/g, "").slice(0, 4) + Date.now().toString().slice(-4);
+    onSave({ id, ar: name.trim(), en: en.trim(), flag: flag.trim() || "🏳️", dial: dial.trim() || "+" }, cities);
+  };
+
+  const fld = (bad: boolean): React.CSSProperties => ({ height: 44, padding: "0 14px", borderRadius: 10, border: "1.5px solid " + (bad ? "var(--sale)" : "var(--line)"), background: "var(--surface-2)", color: "var(--text)", fontSize: 14, fontFamily: "inherit", width: "100%" });
+  const lab: React.CSSProperties = { fontSize: 12.5, fontWeight: 600, color: "var(--text-2)" };
+  const req = <span style={{ color: "var(--sale)", marginInlineStart: 4 }}>*</span>;
+
+  return (
+    <Portal>
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(8,16,20,.6)", backdropFilter: "blur(3px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--surface)", borderRadius: "var(--r-xl)", width: "min(520px, 100%)", maxHeight: "90vh", overflow: "auto", boxShadow: "var(--shadow-lg)", border: "1px solid var(--line)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid var(--line)" }}>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{ar ? "دولة جديدة" : "New country"}</h3>
+          <button onClick={onClose} style={{ background: "transparent", border: "none", fontSize: 24, color: "var(--text-3)", lineHeight: 1 }}>×</button>
+        </div>
+        <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={{ ...lab, display: "flex", alignItems: "center", gap: 8 }}>
+              <Icon name="globe" size={15} style={{ color: "var(--brand)" }} />
+              {ar ? "الدولة (دول الخليج)" : "Country (Gulf)"}{req}
+            </span>
+            <select value={countryId} onChange={(e) => pickCountry(e.target.value)}
+              style={{ ...fld(showErrors && missingEn), appearance: "none" }}>
+              <option value="">{ar ? "اختر الدولة" : "Select a country"}</option>
+              {GULF_COUNTRIES.map((c) => <option key={c.id} value={c.id}>{c.flag} {ar ? c.ar : c.en} ({c.dial})</option>)}
+            </select>
+            <span style={{ fontSize: 11, color: "var(--text-3)" }}>{ar ? "تُجلب المدن تلقائياً عند اختيار الدولة." : "Cities are fetched automatically when you pick a country."}</span>
+            {showErrors && missingEn && <span style={{ fontSize: 11.5, color: "var(--sale)" }}>{ar ? "اختر دولة" : "Select a country"}</span>}
+          </label>
+          <div style={{ display: "flex", gap: 12 }}>
+            <label style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={lab}>{ar ? "العلم (إيموجي)" : "Flag (emoji)"}</span>
+              <input value={flag} onChange={(e) => setFlag(e.target.value)} placeholder="🇪🇬" style={fld(false)} />
+            </label>
+            <label style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={lab}>{ar ? "رمز الاتصال" : "Dial code"}</span>
+              <input value={dial} onChange={(e) => setDial(e.target.value)} placeholder="+20" style={fld(false)} />
+            </label>
+          </div>
+
+          {/* live cities dropdown fetched from CountriesNow API */}
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={{ ...lab, display: "flex", alignItems: "center", gap: 8 }}>
+              <Icon name="pin" size={15} style={{ color: "var(--brand)" }} />
+              {ar ? "مدن الدولة" : "Cities"}
+              {loading && <span style={{ fontSize: 11, color: "var(--text-3)", fontWeight: 600 }}>{ar ? "…جارٍ الجلب" : "loading…"}</span>}
+              {!loading && cities.length > 0 && <span style={{ fontSize: 11, color: "var(--brand)", fontWeight: 700 }}>{cities.length} {ar ? "مدينة" : "cities"}</span>}
+            </span>
+            <select value={previewCity} onChange={(e) => setPreviewCity(e.target.value)} disabled={cities.length === 0}
+              style={{ height: 44, padding: "0 14px", borderRadius: 10, border: "1.5px solid var(--line)", background: "var(--surface-2)", color: cities.length ? "var(--text)" : "var(--text-3)", fontSize: 14, width: "100%", appearance: "none" }}>
+              <option value="">
+                {loading ? (ar ? "جارٍ جلب المدن…" : "Fetching cities…")
+                  : err ? (ar ? "تعذّر جلب المدن" : "Couldn't load cities")
+                  : cities.length === 0 ? (ar ? "اكتب اسم الدولة بالإنجليزية أولاً" : "Type the English name first")
+                  : (ar ? `معاينة ${cities.length} مدينة` : `Preview ${cities.length} cities`)}
+              </option>
+              {cities.map((ct) => <option key={ct} value={ct}>{ct}</option>)}
+            </select>
+            {cities.length > 0 && <span style={{ fontSize: 11, color: "var(--text-3)" }}>{ar ? "ستُحفظ كل هذه المدن تحت الدولة." : "All these cities will be saved under the country."}</span>}
+          </label>
+        </div>
+        <div style={{ display: "flex", gap: 12, padding: "16px 24px", borderTop: "1px solid var(--line)" }}>
+          <Btn variant="outline" onClick={onClose} style={{ flex: 1 }}>{ar ? "إلغاء" : "Cancel"}</Btn>
+          <Btn onClick={save} style={{ flex: 2 }}><Icon name="check" size={16} />{ar ? "حفظ" : "Save"}</Btn>
+        </div>
+      </div>
+    </div>
+    </Portal>
+  );
+}
+
 function AdminCities({ ar }: { ar: boolean }) {
-  const [rows, setRows] = useState<CityRow[]>(CITIES.map((c) => ({ ar: c.ar, en: c.en, stores: c.stores })));
+  const geo = useGeoStore();
   const [modal, setModal] = useState(false);
+  const countryName = (id: string) => { const c = geo.countries.find((x) => x.id === id); return c ? (ar ? c.ar : c.en) : "—"; };
+  const countryFlag = (id: string) => geo.countries.find((x) => x.id === id)?.flag || "🏳️";
   return (
     <div>
       <Head title={ar ? "المدن والدول" : "Cities & countries"} action={<Btn size="sm" onClick={() => setModal(true)}><Icon name="plus" size={15} />{ar ? "مدينة جديدة" : "New city"}</Btn>} />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
-        {rows.map((c, i) => (
-          <div key={(ar ? c.ar : c.en) + i} style={{ ...card, padding: 18, display: "flex", alignItems: "center", gap: 12 }}>
+        {geo.cities.map((c) => (
+          <div key={c.id} style={{ ...card, padding: 18, display: "flex", alignItems: "center", gap: 12 }}>
             <span style={{ width: 40, height: 40, borderRadius: 11, background: "var(--brand-soft)", color: "var(--brand)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="pin" size={20} /></span>
-            <div style={{ flex: 1 }}><div style={{ fontWeight: 700 }}>{ar ? c.ar : c.en}</div><div className="num" style={{ fontSize: 12, color: "var(--text-3)" }}>{c.stores} {ar ? "متجر" : "stores"}</div></div>
-            <button onClick={() => setRows((r) => r.filter((x) => x !== c))} title="delete" style={{ background: "transparent", border: "none", color: "var(--sale)" }}><Icon name="trash" size={16} /></button>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700 }}>{ar ? c.ar : c.en}</div>
+              <div style={{ fontSize: 12, color: "var(--text-3)", display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                <span>{countryFlag(c.country)}</span><span>{countryName(c.country)}</span>
+                <span style={{ color: "var(--line)" }}>·</span><span className="num">{c.stores} {ar ? "متجر" : "stores"}</span>
+              </div>
+            </div>
+            <button onClick={() => geo.removeCity(c.id)} title="delete" style={{ background: "transparent", border: "none", color: "var(--sale)" }}><Icon name="trash" size={16} /></button>
           </div>
         ))}
       </div>
       {modal && (
         <AdminModal ar={ar} title={ar ? "مدينة جديدة" : "New city"} onClose={() => setModal(false)}
-          onSave={(v) => { const name = v.name || (ar ? "مدينة" : "City"); setRows((r) => [{ ar: name, en: v.en || name, stores: Number(v.stores) || 0 }, ...r]); setModal(false); }}
+          onSave={(v) => {
+            const name = v.name || (ar ? "مدينة" : "City");
+            const country = geo.countries.find((x) => (ar ? x.ar : x.en) === v.country) || geo.countries[0];
+            geo.addCity({ id: "ct" + Date.now(), ar: name, en: v.en || name, stores: Number(v.stores) || 0, country: country?.id ?? "sa" });
+            setModal(false);
+          }}
           fields={[
+            { key: "country", label: ar ? "الدولة" : "Country", type: "select", options: geo.countries.map((c) => (ar ? c.ar : c.en)) },
             { key: "name", label: ar ? "اسم المدينة (عربي)" : "City name (AR)", placeholder: ar ? "مثال: تبوك" : "e.g. Tabuk" },
-            { key: "en", label: ar ? "الاسم بالإنجليزية" : "City name (EN)", placeholder: "e.g. Tabuk" },
-            { key: "stores", label: ar ? "عدد المتاجر" : "Stores count", type: "number" },
+            { key: "en", label: ar ? "الاسم بالإنجليزية" : "City name (EN)", placeholder: "e.g. Tabuk", required: false },
+            { key: "stores", label: ar ? "عدد المتاجر" : "Stores count", type: "number", required: false },
           ]} />
       )}
     </div>
@@ -604,12 +827,21 @@ function RoleModal({ ar, role, perms, groups, onClose, onSave }: { ar: boolean; 
 }
 
 /* ---- Shared admin form modal (used by Users / Cities / Ads add buttons) ---- */
-interface ModalField { key: string; label: string; placeholder?: string; type?: "text" | "number" | "select"; options?: string[]; }
+interface ModalField { key: string; label: string; placeholder?: string; type?: "text" | "number" | "select"; options?: string[]; required?: boolean; }
 function AdminModal({ ar, title, fields, onClose, onSave }: { ar: boolean; title: string; fields: ModalField[]; onClose: () => void; onSave: (values: Record<string, string>) => void }) {
   const [values, setValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(fields.map((f) => [f.key, f.type === "select" ? (f.options?.[0] ?? "") : ""])));
+  const [showErrors, setShowErrors] = useState(false);
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setValues((v) => ({ ...v, [k]: e.target.value }));
-  const fld: React.CSSProperties = { height: 44, padding: "0 14px", borderRadius: 10, border: "1.5px solid var(--line)", background: "var(--surface-2)", color: "var(--text)", fontSize: 14, fontFamily: "inherit", width: "100%" };
+  // a field is required by default for text fields unless required===false; selects always have a value
+  const isRequired = (f: ModalField) => f.type !== "select" && f.required !== false;
+  const missing = (f: ModalField) => isRequired(f) && !values[f.key]?.trim();
+  const hasMissing = fields.some(missing);
+  const trySave = () => {
+    if (hasMissing) { setShowErrors(true); return; }
+    onSave(values);
+  };
+  const fld = (bad: boolean): React.CSSProperties => ({ height: 44, padding: "0 14px", borderRadius: 10, border: "1.5px solid " + (bad ? "var(--sale)" : "var(--line)"), background: "var(--surface-2)", color: "var(--text)", fontSize: 14, fontFamily: "inherit", width: "100%" });
   return (
     <Portal>
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(8,16,20,.6)", backdropFilter: "blur(3px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
@@ -619,22 +851,26 @@ function AdminModal({ ar, title, fields, onClose, onSave }: { ar: boolean; title
           <button onClick={onClose} style={{ background: "transparent", border: "none", fontSize: 24, color: "var(--text-3)", lineHeight: 1 }}>×</button>
         </div>
         <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
-          {fields.map((f) => (
-            <label key={f.key} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-2)" }}>{f.label}</span>
-              {f.type === "select" ? (
-                <select value={values[f.key]} onChange={set(f.key)} style={fld}>
-                  {f.options?.map((o) => <option key={o} value={o}>{o}</option>)}
-                </select>
-              ) : (
-                <input type={f.type === "number" ? "number" : "text"} value={values[f.key]} onChange={set(f.key)} placeholder={f.placeholder} style={fld} />
-              )}
-            </label>
-          ))}
+          {fields.map((f) => {
+            const bad = showErrors && missing(f);
+            return (
+              <label key={f.key} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-2)" }}>{f.label}{isRequired(f) && <span style={{ color: "var(--sale)", marginInlineStart: 4 }}>*</span>}</span>
+                {f.type === "select" ? (
+                  <select value={values[f.key]} onChange={set(f.key)} style={fld(false)}>
+                    {f.options?.map((o) => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                ) : (
+                  <input type={f.type === "number" ? "number" : "text"} value={values[f.key]} onChange={set(f.key)} placeholder={f.placeholder} style={fld(bad)} />
+                )}
+                {bad && <span style={{ fontSize: 11.5, color: "var(--sale)" }}>{ar ? "هذا الحقل مطلوب" : "This field is required"}</span>}
+              </label>
+            );
+          })}
         </div>
         <div style={{ display: "flex", gap: 12, padding: "16px 24px", borderTop: "1px solid var(--line)" }}>
           <Btn variant="outline" onClick={onClose} style={{ flex: 1 }}>{ar ? "إلغاء" : "Cancel"}</Btn>
-          <Btn onClick={() => onSave(values)} style={{ flex: 2 }}><Icon name="check" size={16} />{ar ? "حفظ" : "Save"}</Btn>
+          <Btn onClick={trySave} style={{ flex: 2 }}><Icon name="check" size={16} />{ar ? "حفظ" : "Save"}</Btn>
         </div>
       </div>
     </div>

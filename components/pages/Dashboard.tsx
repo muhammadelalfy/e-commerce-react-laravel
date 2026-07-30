@@ -1,8 +1,10 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useApp } from "@/lib/AppContext";
 import { Icon, Btn, Thumb, money } from "../ui";
-import { PRODUCTS, VENDORS, COUPONS, PLANS, CATS, CITIES } from "@/lib/data";
+import { PRODUCTS, VENDORS, PLANS, CATS, CITIES, type Coupon } from "@/lib/data";
+import { useCouponStore } from "@/lib/couponStore";
 
 type Go = (page: string, id?: string | null) => void;
 
@@ -85,7 +87,7 @@ export function Dashboard({ go }: { go: Go }) {
           <Btn onClick={() => setModal(true)}><Icon name="plus" size={17} />{d.addProduct}</Btn>
         </div>
 
-        {dtab === "locations" ? <LocationsPanel lang={lang} vendor={vendor} /> : dtab === "coupons" ? <CouponsPanel lang={lang} /> : dtab === "subscription" ? <SubscriptionPanel lang={lang} go={go} /> : dtab === "orders" ? <OrdersPanel lang={lang} /> : dtab === "settings" ? <SettingsPanel lang={lang} vendor={vendor} /> : (<>
+        {dtab === "locations" ? <LocationsPanel lang={lang} vendor={vendor} /> : dtab === "coupons" ? <CouponsPanel lang={lang} vendorId="techzone" /> : dtab === "subscription" ? <SubscriptionPanel lang={lang} go={go} /> : dtab === "orders" ? <OrdersPanel lang={lang} /> : dtab === "settings" ? <SettingsPanel lang={lang} vendor={vendor} /> : (<>
 
           {dtab === "overview" && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
@@ -286,14 +288,17 @@ function SettingsPanel({ lang, vendor }: { lang: string; vendor: (typeof VENDORS
   );
 }
 
-function CouponsPanel({ lang }: { lang: string }) {
+function CouponsPanel({ lang, vendorId }: { lang: string; vendorId: string }) {
   const ar = lang === "ar";
-  const [rows, setRows] = useState(COUPONS.map((c) => ({ ...c })));
+  const store = useCouponStore();
+  const [modal, setModal] = useState(false);
+  // show only THIS vendor's coupons in the vendor dashboard
+  const rows = store.coupons.filter((c) => c.vendor === vendorId);
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{ar ? "كوبونات الخصم" : "Discount coupons"}</h2>
-        <Btn size="sm"><Icon name="plus" size={15} />{ar ? "كوبون جديد" : "New coupon"}</Btn>
+        <Btn size="sm" onClick={() => setModal(true)}><Icon name="plus" size={15} />{ar ? "كوبون جديد" : "New coupon"}</Btn>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {rows.map((c) => (
@@ -313,11 +318,69 @@ function CouponsPanel({ lang }: { lang: string }) {
               <div style={{ fontSize: 11, color: "var(--text-3)" }}>{ar ? "استُخدم" : "redeemed"}</div>
               <div style={{ height: 6, borderRadius: 999, background: "var(--surface-2)", marginTop: 6 }}><div style={{ width: Math.round(c.used / c.limit * 100) + "%", height: "100%", borderRadius: 999, background: "var(--brand)" }} /></div>
             </div>
-            <Toggle on={c.active} onClick={() => setRows((r) => r.map((x) => x.id === c.id ? { ...x, active: !x.active } : x))} />
+            <Toggle on={c.active} onClick={() => store.toggleCoupon(c.id)} />
           </div>
         ))}
+        {rows.length === 0 && <div style={{ padding: 40, textAlign: "center", color: "var(--text-3)", background: "var(--surface)", border: "1px dashed var(--line)", borderRadius: "var(--r-lg)" }}>{ar ? "لا توجد كوبونات بعد — أضف كوبونك الأول." : "No coupons yet — add your first one."}</div>}
       </div>
+      {modal && <NewCouponModal lang={lang} vendorId={vendorId} onClose={() => setModal(false)} onAdd={(c) => { store.addVendorCoupon(c); setModal(false); }} />}
     </div>
+  );
+}
+
+function NewCouponModal({ lang, vendorId, onClose, onAdd }: { lang: string; vendorId: string; onClose: () => void; onAdd: (c: Coupon) => void }) {
+  const ar = lang === "ar";
+  const v = VENDORS[vendorId];
+  const vName = v ? (ar ? v.ar : v.en) : vendorId;
+  const [code, setCode] = useState("");
+  const [pct, setPct] = useState(10);
+  const [limit, setLimit] = useState(100);
+  const [until, setUntil] = useState("");
+  const submit = () => {
+    const c = (code || "CODE" + Math.floor(Math.random() * 900 + 100)).toUpperCase().replace(/\s+/g, "");
+    let untilAr = "غير محدّد", untilEn = "Open";
+    if (until) {
+      const d = new Date(until + "T00:00:00");
+      untilAr = d.toLocaleDateString("ar-EG", { day: "numeric", month: "long", year: "numeric" });
+      untilEn = d.toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });
+    }
+    onAdd({
+      id: "c" + Date.now(),
+      code: c,
+      vendor: vendorId,
+      ar: `خصم ${pct}٪ — ${vName}`,
+      en: `${pct}% off — ${vName}`,
+      pct,
+      used: 0,
+      limit,
+      active: true,
+      until: { ar: untilAr, en: untilEn },
+    });
+  };
+  const field: React.CSSProperties = { width: "100%", padding: "10px 12px", borderRadius: 10, border: "1.5px solid var(--line)", background: "var(--surface)", color: "var(--text)", fontSize: 14 };
+  const label: React.CSSProperties = { fontSize: 12.5, fontWeight: 700, color: "var(--text-2)", marginBottom: 6, display: "block" };
+  return createPortal(
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(10,12,16,.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div onClick={(e) => e.stopPropagation()} dir={ar ? "rtl" : "ltr"} style={{ width: "100%", maxWidth: 440, background: "var(--surface)", borderRadius: "var(--r-xl)", border: "1px solid var(--line)", boxShadow: "var(--shadow-lg)", padding: 24 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{ar ? "كوبون خصم جديد" : "New discount coupon"}</h3>
+          <button onClick={onClose} style={{ background: "transparent", border: "none", color: "var(--text-3)", cursor: "pointer" }}><Icon name="x" size={20} /></button>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div><label style={label}>{ar ? "كود الكوبون" : "Coupon code"}</label><input value={code} onChange={(e) => setCode(e.target.value)} placeholder="SUMMER25" style={field} /></div>
+          <div style={{ display: "flex", gap: 12 }}>
+            <div style={{ flex: 1 }}><label style={label}>{ar ? "نسبة الخصم %" : "Discount %"}</label><input type="number" min={1} max={100} value={pct} onChange={(e) => setPct(+e.target.value)} style={field} /></div>
+            <div style={{ flex: 1 }}><label style={label}>{ar ? "حدّ الاستخدام" : "Usage limit"}</label><input type="number" min={1} value={limit} onChange={(e) => setLimit(+e.target.value)} style={field} /></div>
+          </div>
+          <div><label style={label}>{ar ? "صالح حتى" : "Valid until"}</label><input type="date" min={new Date().toISOString().slice(0, 10)} value={until} onChange={(e) => setUntil(e.target.value)} style={field} /></div>
+        </div>
+        <div style={{ display: "flex", gap: 10, marginTop: 22 }}>
+          <Btn onClick={submit} style={{ flex: 1 }}>{ar ? "إضافة الكوبون" : "Add coupon"}</Btn>
+          <Btn variant="outline" onClick={onClose}>{ar ? "إلغاء" : "Cancel"}</Btn>
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }
 

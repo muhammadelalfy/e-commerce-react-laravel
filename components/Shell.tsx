@@ -3,6 +3,44 @@ import React, { useState, useEffect } from "react";
 import { useApp } from "@/lib/AppContext";
 import { Icon, Stars, Thumb, money } from "./ui";
 import { NOTIFS, VENDORS, type Product } from "@/lib/data";
+import { useGeoStore } from "@/lib/geoStore";
+
+/** Header chip showing the chosen country flag + city; click reopens the picker. */
+export function LocationChip() {
+  const { lang } = useApp();
+  const ar = lang === "ar";
+  const geo = useGeoStore();
+  const [mounted, setMounted] = useState(false);
+  const [sel, setSel] = useState<{ country: string; city: string } | null>(null);
+  // read the saved selection only on the client (avoids SSR hydration mismatch)
+  useEffect(() => {
+    setMounted(true);
+    const read = () => {
+      const country = localStorage.getItem("mash_country");
+      const city = localStorage.getItem("mash_city");
+      setSel(country && city ? { country, city } : null);
+    };
+    read();
+    window.addEventListener("mash:country-changed", read);
+    return () => window.removeEventListener("mash:country-changed", read);
+  }, []);
+  const open = () => window.dispatchEvent(new CustomEvent("mash:open-country"));
+  const btnStyle: React.CSSProperties = { display: "flex", alignItems: "center", gap: 6, height: 38, padding: "0 12px", borderRadius: 999, border: "1.5px solid var(--line)", background: "var(--surface-2)", color: "var(--text-2)", fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" };
+  // Render an identical (empty) button on the server and first client paint to
+  // avoid a hydration mismatch; fill in flag+city once mounted & a selection exists.
+  if (!mounted || !sel) {
+    return <button suppressHydrationWarning aria-hidden style={{ ...btnStyle, visibility: "hidden" }} />;
+  }
+  const c = geo.countries.find((x) => x.id === sel.country);
+  const flag = c?.flag ?? "🏳️";
+  return (
+    <button onClick={open} suppressHydrationWarning title={ar ? "تغيير الدولة والمدينة" : "Change country & city"} style={btnStyle}>
+      <span style={{ fontSize: 16 }}>{flag}</span>
+      <span className="mash-topbar-city">{sel.city}</span>
+      <Icon name="chevron" size={14} style={{ color: "var(--text-3)" }} />
+    </button>
+  );
+}
 
 export function Logo() {
   // OFFERZ / اوفرز brand wordmark (rose-pink + navy). Displayed as a single
@@ -129,6 +167,7 @@ export function Header({ go, onSearch, cur, favCount = 0, unread = 0 }: { go: (p
             style={{ width: "100%", height: 42, paddingInlineStart: 42, paddingInlineEnd: 16, borderRadius: "var(--r-pill)", border: "1.5px solid var(--line)", background: "var(--surface-2)", color: "var(--text)", fontSize: 14, fontFamily: "inherit" }} />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4, marginInlineStart: "auto" }}>
+          <LocationChip />
           <button onClick={toggleTheme} title="theme" style={iconBtn}><Icon name={theme === "dark" ? "sun" : "moon"} size={19} /></button>
           <div style={{ position: "relative" }} onClick={(e) => e.stopPropagation()}>
             <button onClick={() => setNotifOpen((o) => !o)} title="notifications" style={{ ...iconBtn, position: "relative" }}>

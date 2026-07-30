@@ -44,3 +44,6 @@ yarn-error.log*
 /Store mobile app/
 /new logo/
 /.claude/
+
+# local dev server log
+.next-dev.log
