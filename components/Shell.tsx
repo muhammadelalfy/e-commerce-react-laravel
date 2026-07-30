@@ -43,16 +43,15 @@ export function LocationChip() {
 }
 
 export function Logo() {
-  // OFFERZ / اوفرز brand wordmark (rose-pink + navy). Displayed as a single
-  // image; invert-friendly filter keeps the navy readable in dark mode.
+  // أوفرز brand mark — logo2 (gold + rose + navy geometric mark).
   return (
     <div style={{ display: "flex", alignItems: "center" }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/logo-offerz.png"
-        alt="أوفرز · OFFERZ"
-        height={58}
-        style={{ height: 58, width: "auto", display: "block" }}
+        src="/logo2.png"
+        alt="أوفرز · Offers"
+        height={52}
+        style={{ height: 52, width: "auto", display: "block" }}
         className="mash-logo-img"
       />
     </div>
@@ -63,7 +62,7 @@ export function TopBar() {
   const { t, toggleLang } = useApp();
   return (
     <div style={{ background: "var(--topbar)", color: "rgba(255,255,255,.85)", fontSize: 12.5 }}>
-      <div className="container" style={{ height: 38, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+      <div className="container mash-topbar-row" style={{ height: 38, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
           <Icon name="phone" size={14} /><span className="num">{t.phone}</span>
         </div>

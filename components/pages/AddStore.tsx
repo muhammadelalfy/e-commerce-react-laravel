@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useApp } from "@/lib/AppContext";
 import { Icon, Btn } from "../ui";
 import { CATS } from "@/lib/data";
+import { submitStore } from "@/lib/storeStore";
 
 type Go = (page: string, id?: string | null) => void;
 
@@ -133,7 +134,11 @@ export function AddStore({ go }: { go: Go }) {
               <input type="checkbox" defaultChecked style={{ marginTop: 2, accentColor: "var(--brand)" }} />
               <span>{ar ? "أوافق على " : "I agree to the "}<a href="#" onClick={(e) => { e.preventDefault(); go("info", "terms"); }} style={{ color: "var(--brand)", fontWeight: 700 }}>{ar ? "الشروط والأحكام" : "Terms & Conditions"}</a></span>
             </label>
-            <Btn size="lg" full onClick={() => setStep(1)}><Icon name="store" size={17} />{ar ? "إنشاء المتجر" : "Create store"}</Btn>
+            <Btn size="lg" full onClick={() => {
+              // submit a pending store application for admin approval
+              submitStore({ ar: form.store || (ar ? "متجر جديد" : "New store"), en: form.store || "New store", cat: form.type, city: form.city, owner: form.owner || (ar ? "غير محدّد" : "Unknown"), cr: form.cr || undefined });
+              setStep(1);
+            }}><Icon name="store" size={17} />{ar ? "إنشاء المتجر" : "Create store"}</Btn>
           </div>
         </div>
       </div>

@@ -58,6 +58,7 @@ export const PATHS: Record<string, string> = {
   lock: "M6 10V8a6 6 0 1112 0v2M5 10h14v10H5zM12 14v3",
   back: "M19 12H5M11 6l-6 6 6 6",
   logout: "M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9",
+  x: "M6 6l12 12M18 6L6 18",
 };
 
 export function Icon({ name, size = 20, stroke = 1.7, fill = "none", style = {} }: { name: string; size?: number; stroke?: number; fill?: string; style?: React.CSSProperties; }) {

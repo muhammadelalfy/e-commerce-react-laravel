@@ -47,3 +47,4 @@ yarn-error.log*
 
 # local dev server log
 .next-dev.log
+/logo2.png

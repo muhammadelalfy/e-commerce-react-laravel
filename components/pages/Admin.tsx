@@ -3,9 +3,12 @@ import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useApp } from "@/lib/AppContext";
 import { Icon, Btn, Thumb, money } from "../ui";
-import { VENDORS, PRODUCTS, CITIES, REELS, EVENTS, CATS } from "@/lib/data";
+import { VENDORS, PRODUCTS, CITIES, REELS, EVENTS, CATS, PLANS, type Cat, type Plan } from "@/lib/data";
 import { useCouponStore } from "@/lib/couponStore";
 import { useGeoStore } from "@/lib/geoStore";
+import { useCatStore } from "@/lib/catStore";
+import { useStoreStore } from "@/lib/storeStore";
+import { useRepStore } from "@/lib/repStore";
 import { fetchCities } from "../CountryModal";
 import { GULF_COUNTRIES } from "@/lib/countries";
 
@@ -32,18 +35,23 @@ export function Admin({ go }: { go: Go }) {
   const ar = lang === "ar";
   const [tab, setTab] = useState("overview");
   const store = useCouponStore();
+  const storeApps = useStoreStore();
   const unread = store.notices.filter((n) => !n.read).length;
+  const pendingStores = storeApps.apps.filter((a) => a.status === "PENDING").length;
   const nav: [string, string, string, number?][] = [
     ["overview", ar ? "نظرة عامة" : "Overview", "grid"],
     ["users", ar ? "المستخدمون" : "Users", "users"],
-    ["vendors", ar ? "المتاجر" : "Vendors", "store"],
+    ["vendors", ar ? "المتاجر" : "Vendors", "store", pendingStores],
     ["approval", ar ? "موافقة المنتجات" : "Approvals", "check"],
+    ["categories", ar ? "الأقسام والأقسام الفرعية" : "Categories", "grid"],
     ["coupons", ar ? "كوبونات الخصم" : "Coupons", "tag", unread],
     ["countries", ar ? "الدول" : "Countries", "globe"],
     ["cities", ar ? "المدن" : "Cities", "pin"],
+    ["reps", ar ? "المندوبون" : "Representatives", "users"],
     ["ads", ar ? "الإعلانات" : "Ads", "calendar"],
     ["reels", ar ? "الريلز" : "Reels", "reel"],
     ["roles", ar ? "الأدوار والصلاحيات" : "Roles & permissions", "lock"],
+    ["packages", ar ? "الباقات" : "Packages", "box"],
     ["subs", ar ? "الاشتراكات" : "Subscriptions", "ticket"],
     ["content", ar ? "محتوى التطبيق" : "Content", "filePdf"],
   ];
@@ -67,14 +75,17 @@ export function Admin({ go }: { go: Go }) {
       <div>
         {tab === "overview" && <AdminOverview ar={ar} lang={lang} />}
         {tab === "approval" && <AdminApproval ar={ar} lang={lang} />}
+        {tab === "categories" && <AdminCategories ar={ar} />}
         {tab === "coupons" && <AdminCoupons ar={ar} />}
         {tab === "users" && <AdminUsers ar={ar} />}
         {tab === "vendors" && <AdminVendors ar={ar} go={go} />}
         {tab === "countries" && <AdminCountries ar={ar} />}
         {tab === "cities" && <AdminCities ar={ar} />}
+        {tab === "reps" && <AdminReps ar={ar} />}
         {tab === "ads" && <AdminAds ar={ar} />}
         {tab === "reels" && <AdminReels ar={ar} />}
         {tab === "roles" && <AdminRoles ar={ar} />}
+        {tab === "packages" && <AdminPackages ar={ar} lang={lang} />}
         {tab === "subs" && <AdminSubs ar={ar} />}
         {tab === "content" && <AdminContent ar={ar} />}
       </div>
@@ -178,6 +189,83 @@ function timeAgo(ts: number, ar: boolean): string {
   return ar ? `منذ ${d} ي` : `${d}d ago`;
 }
 
+/* ---- Categories (departments) + sub-categories CRUD ---- */
+function AdminCategories({ ar }: { ar: boolean }) {
+  const cat = useCatStore();
+  const [open, setOpen] = useState<string | null>(null);
+  const [modal, setModal] = useState(false);
+  const [subDraft, setSubDraft] = useState<Record<string, { ar: string; en: string }>>({});
+
+  const draftOf = (id: string) => subDraft[id] || { ar: "", en: "" };
+  const setDraft = (id: string, patch: Partial<{ ar: string; en: string }>) =>
+    setSubDraft((s) => ({ ...s, [id]: { ...draftOf(id), ...patch } }));
+  const addSub = (catId: string) => {
+    const d = draftOf(catId);
+    if (!d.ar.trim()) return;
+    cat.addSubCategory({ id: catId + "-" + Date.now().toString().slice(-5), cat: catId, ar: d.ar.trim(), en: (d.en || d.ar).trim() });
+    setSubDraft((s) => ({ ...s, [catId]: { ar: "", en: "" } }));
+  };
+  const smallInp: React.CSSProperties = { height: 36, padding: "0 10px", borderRadius: 8, border: "1.5px solid var(--line)", background: "var(--surface-2)", color: "var(--text)", fontSize: 13, fontFamily: "inherit" };
+
+  return (
+    <div>
+      <Head title={ar ? "الأقسام والأقسام الفرعية" : "Categories & sub-categories"}
+        action={<Btn size="sm" onClick={() => setModal(true)}><Icon name="plus" size={15} />{ar ? "قسم جديد" : "New category"}</Btn>} />
+      <p style={{ margin: "-8px 0 16px", fontSize: 13, color: "var(--text-3)" }}>{ar ? "اضغط على أي قسم لإدارة أقسامه الفرعية." : "Click a department to manage its sub-categories."}</p>
+      <div style={{ ...card, overflow: "hidden" }}>
+        {cat.cats.map((c) => {
+          const isOpen = open === c.id;
+          const subs = cat.subsOf(c.id);
+          return (
+            <div key={c.id} style={{ borderBottom: "1px solid var(--line-soft)" }}>
+              <div onClick={() => setOpen(isOpen ? null : c.id)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 18px", cursor: "pointer", background: isOpen ? "var(--brand-soft)" : "transparent" }}>
+                <Icon name="chevron" size={15} style={{ transform: isOpen ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform .2s", color: "var(--text-3)" }} />
+                <span style={{ width: 34, height: 34, borderRadius: 9, flex: "none", background: c.tint, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--brand)" }}><Icon name={c.icon} size={18} /></span>
+                <span style={{ fontWeight: 700, fontSize: 14, flex: 1 }}>{ar ? c.ar : c.en}</span>
+                <span className="num" style={{ fontSize: 12, fontWeight: 700, color: "var(--brand)" }}>{subs.length} {ar ? "فرعي" : "sub"}</span>
+                <button onClick={(e) => { e.stopPropagation(); cat.removeCategory(c.id); }} title="delete" style={{ background: "transparent", border: "none", color: "var(--sale)" }}><Icon name="trash" size={16} /></button>
+              </div>
+              {isOpen && (
+                <div style={{ padding: "6px 18px 16px 46px" }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+                    {subs.length === 0 && <span style={{ fontSize: 12.5, color: "var(--text-3)" }}>{ar ? "لا توجد أقسام فرعية بعد." : "No sub-categories yet."}</span>}
+                    {subs.map((s) => (
+                      <span key={s.id} style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12.5, fontWeight: 600, background: "var(--surface-2)", border: "1px solid var(--line)", borderRadius: 999, padding: "5px 8px 5px 12px" }}>
+                        {ar ? s.ar : s.en}
+                        <button onClick={() => cat.removeSubCategory(s.id)} title="delete" style={{ background: "transparent", border: "none", color: "var(--sale)", display: "flex", cursor: "pointer" }}><Icon name="x" size={13} /></button>
+                      </span>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                    <input value={draftOf(c.id).ar} onChange={(e) => setDraft(c.id, { ar: e.target.value })} placeholder={ar ? "الاسم بالعربية" : "Arabic name"} style={smallInp} />
+                    <input value={draftOf(c.id).en} onChange={(e) => setDraft(c.id, { en: e.target.value })} placeholder={ar ? "الاسم بالإنجليزية" : "English name"} style={smallInp} />
+                    <Btn size="sm" onClick={() => addSub(c.id)}><Icon name="plus" size={14} />{ar ? "إضافة فرعي" : "Add sub"}</Btn>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {modal && (
+        <AdminModal ar={ar} title={ar ? "قسم جديد" : "New category"} onClose={() => setModal(false)}
+          onSave={(v) => {
+            const name = v.name.trim();
+            const id = (v.en || name).toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8) + Date.now().toString().slice(-3);
+            const newCat: Cat = { id, icon: v.icon || "grid", img: null, ar: name, en: (v.en || name).trim(), count: 0, tint: "#eef2f7" };
+            cat.addCategory(newCat);
+            setModal(false);
+          }}
+          fields={[
+            { key: "name", label: ar ? "اسم القسم (عربي)" : "Category name (AR)", placeholder: ar ? "مثال: الإلكترونيات" : "e.g. Electronics" },
+            { key: "en", label: ar ? "الاسم بالإنجليزية" : "Category name (EN)", placeholder: "e.g. Electronics" },
+            { key: "icon", label: ar ? "الأيقونة" : "Icon", type: "select", options: ["grid", "headphones", "spray", "shirt", "sofa", "watch", "utensils", "gem", "book", "building", "tag", "store"] },
+          ]} />
+      )}
+    </div>
+  );
+}
+
 function AdminCoupons({ ar }: { ar: boolean }) {
   const store = useCouponStore();
   const vName = (id: string) => { const v = VENDORS[id]; return v ? (ar ? v.ar : v.en) : id; };
@@ -278,9 +366,49 @@ function AdminUsers({ ar }: { ar: boolean }) {
 }
 
 function AdminVendors({ ar, go }: { ar: boolean; go: Go }) {
+  const ss = useStoreStore();
+  const cat = useCatStore();
+  const catName = (id: string) => { const c = cat.cats.find((x) => x.id === id); return c ? (ar ? c.ar : c.en) : id; };
+  const pending = ss.apps.filter((a) => a.status === "PENDING");
+  const decided = ss.apps.filter((a) => a.status !== "PENDING");
   return (
     <div>
       <Head title={ar ? "المتاجر" : "Vendors"} />
+
+      {/* NEW store registrations awaiting approval */}
+      <div style={{ ...card, overflow: "hidden", marginBottom: 22 }}>
+        <div style={{ padding: "13px 18px", borderBottom: "1px solid var(--line)", fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
+          <Icon name="store" size={16} style={{ color: "var(--brand)" }} />
+          {ar ? "طلبات تسجيل متاجر جديدة" : "New store applications"}
+          {pending.length > 0 && <span className="num" style={{ minWidth: 20, height: 20, padding: "0 6px", borderRadius: 999, background: "var(--brand)", color: "#fff", fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{pending.length}</span>}
+        </div>
+        {pending.length === 0 && <div style={{ padding: 28, textAlign: "center", color: "var(--text-3)", fontSize: 13 }}>{ar ? "لا توجد طلبات قيد المراجعة." : "No pending applications."}</div>}
+        {pending.map((a) => (
+          <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", borderBottom: "1px solid var(--line-soft)" }}>
+            <span style={{ width: 44, height: 44, borderRadius: 12, flex: "none", background: "var(--brand-soft)", color: "var(--brand)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="store" size={20} /></span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700, fontSize: 14 }}>{ar ? a.ar : a.en}</div>
+              <div style={{ fontSize: 12, color: "var(--text-3)", marginTop: 2 }}>
+                {catName(a.cat)} · {a.city} · {ar ? "المالك:" : "Owner:"} {a.owner}
+                {a.cr && <> · {ar ? "س.ت:" : "CR:"} <span className="num">{a.cr}</span></>}
+              </div>
+            </div>
+            <button onClick={() => ss.setStoreStatus(a.id, "APPROVED")} title={ar ? "قبول" : "Approve"} style={aBtn("var(--active)", "var(--active-bg)")}><Icon name="check" size={16} /></button>
+            <button onClick={() => ss.setStoreStatus(a.id, "REJECTED")} title={ar ? "رفض" : "Reject"} style={aBtn("var(--sale)", "var(--brand-soft)")}>✕</button>
+          </div>
+        ))}
+        {decided.map((a) => (
+          <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 18px", borderBottom: "1px solid var(--line-soft)", opacity: .72 }}>
+            <span style={{ width: 36, height: 36, borderRadius: 10, flex: "none", background: "var(--surface-2)", color: "var(--text-3)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="store" size={16} /></span>
+            <div style={{ flex: 1, fontSize: 13, fontWeight: 700 }}>{ar ? a.ar : a.en}</div>
+            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "4px 10px", borderRadius: 999, background: a.status === "APPROVED" ? "var(--active-bg)" : "var(--brand-soft)", color: a.status === "APPROVED" ? "var(--active)" : "var(--sale)" }}>
+              {a.status === "APPROVED" ? (ar ? "مقبول" : "Approved") : (ar ? "مرفوض" : "Rejected")}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <h2 style={{ margin: "0 0 14px", fontSize: 16, fontWeight: 800 }}>{ar ? "المتاجر النشطة" : "Active stores"}</h2>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
         {Object.values(VENDORS).map((v) => (
           <div key={v.id} style={{ ...card, padding: 18, display: "flex", gap: 14, alignItems: "center" }}>
@@ -460,6 +588,50 @@ function NewCountryModal({ ar, onClose, onSave }: { ar: boolean; onClose: () => 
   );
 }
 
+/* ---- Delegators / representatives (المندوبون) CRUD ---- */
+function AdminReps({ ar }: { ar: boolean }) {
+  const rep = useRepStore();
+  const [modal, setModal] = useState(false);
+  return (
+    <div>
+      <Head title={ar ? "المندوبون" : "Representatives"}
+        action={<Btn size="sm" onClick={() => setModal(true)}><Icon name="plus" size={15} />{ar ? "مندوب جديد" : "New representative"}</Btn>} />
+      <div style={{ ...card, overflow: "hidden" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1.4fr 1.2fr 0.6fr", gap: 12, padding: "13px 18px", borderBottom: "1px solid var(--line)", fontSize: 12, fontWeight: 700, color: "var(--text-3)" }}>
+          <span>{ar ? "الاسم" : "Name"}</span><span>{ar ? "الهاتف" : "Phone"}</span><span>{ar ? "المدينة" : "City"}</span><span></span>
+        </div>
+        {rep.reps.map((r) => (
+          <div key={r.id} style={{ display: "grid", gridTemplateColumns: "2fr 1.4fr 1.2fr 0.6fr", gap: 12, padding: "13px 18px", borderBottom: "1px solid var(--line-soft)", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ width: 34, height: 34, borderRadius: 999, flex: "none", background: "var(--brand-soft)", color: "var(--brand)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="user" size={17} /></span>
+              <span style={{ fontWeight: 700, fontSize: 13.5 }}>{ar ? r.ar : r.en}</span>
+            </div>
+            <span className="num" style={{ fontSize: 13, color: "var(--text-2)" }}>{r.phone}</span>
+            <span style={{ fontSize: 13, color: "var(--text-2)" }}>{r.city}</span>
+            <button onClick={() => rep.removeRep(r.id)} title="delete" style={{ background: "transparent", border: "none", color: "var(--sale)", justifySelf: "end" }}><Icon name="trash" size={16} /></button>
+          </div>
+        ))}
+        {rep.reps.length === 0 && <div style={{ padding: 40, textAlign: "center", color: "var(--text-3)" }}>{ar ? "لا يوجد مندوبون" : "No representatives"}</div>}
+      </div>
+      {modal && (
+        <AdminModal ar={ar} title={ar ? "مندوب جديد" : "New representative"} onClose={() => setModal(false)}
+          onSave={(v) => {
+            const name = v.name.trim();
+            const id = "rep-" + Date.now().toString().slice(-6);
+            rep.addRep({ id, ar: name, en: (v.en || name).trim(), phone: v.phone || "", city: v.city || (ar ? "الرياض" : "Riyadh") });
+            setModal(false);
+          }}
+          fields={[
+            { key: "name", label: ar ? "الاسم (عربي)" : "Name (AR)", placeholder: ar ? "مثال: خالد العتيبي" : "e.g. Khaled" },
+            { key: "en", label: ar ? "الاسم بالإنجليزية" : "Name (EN)", placeholder: "e.g. Khaled", required: false },
+            { key: "phone", label: ar ? "رقم الهاتف" : "Phone", placeholder: "05x xxx xxxx", required: false },
+            { key: "city", label: ar ? "المدينة" : "City", type: "select", options: CITIES.map((c) => (ar ? c.ar : c.en)) },
+          ]} />
+      )}
+    </div>
+  );
+}
+
 function AdminCities({ ar }: { ar: boolean }) {
   const geo = useGeoStore();
   const [modal, setModal] = useState(false);
@@ -564,22 +736,67 @@ function AdminReels({ ar }: { ar: boolean }) {
   );
 }
 
+/* ---- Packages (subscription plans) CRUD ---- */
+function AdminPackages({ ar, lang }: { ar: boolean; lang: string }) {
+  const [rows, setRows] = useState<Plan[]>(PLANS.map((p) => ({ ...p })));
+  const [modal, setModal] = useState(false);
+  return (
+    <div>
+      <Head title={ar ? "الباقات" : "Packages"}
+        action={<Btn size="sm" onClick={() => setModal(true)}><Icon name="plus" size={15} />{ar ? "باقة جديدة" : "New package"}</Btn>} />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+        {rows.map((p) => (
+          <div key={p.id} style={{ ...card, padding: 20, position: "relative", border: "2px solid " + (p.active ? "var(--brand)" : "var(--line)") }}>
+            <button onClick={() => setRows((r) => r.filter((x) => x.id !== p.id))} title="delete" style={{ position: "absolute", top: 12, insetInlineEnd: 12, background: "transparent", border: "none", color: "var(--sale)", cursor: "pointer" }}><Icon name="trash" size={16} /></button>
+            <div style={{ fontSize: 17, fontWeight: 800 }}>{ar ? p.ar : p.en}</div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6, margin: "12px 0 16px" }}>
+              <span className="num" style={{ fontSize: 30, fontWeight: 800 }}>{p.price === 0 ? (ar ? "مجاني" : "Free") : money(p.price, lang as any)}</span>
+              {p.price !== 0 && <span style={{ color: "var(--text-3)", fontSize: 12.5 }}>/{ar ? "شهرياً" : "mo"}</span>}
+            </div>
+            <button onClick={() => setRows((r) => r.map((x) => x.id === p.id ? { ...x, active: !x.active } : x))}
+              style={{ width: "100%", padding: "8px 0", borderRadius: 10, border: "1.5px solid " + (p.active ? "var(--brand)" : "var(--line)"), background: p.active ? "var(--brand-soft)" : "var(--surface)", color: p.active ? "var(--brand)" : "var(--text-2)", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>
+              {p.active ? (ar ? "مفعّلة ✓" : "Active ✓") : (ar ? "غير مفعّلة" : "Inactive")}
+            </button>
+          </div>
+        ))}
+      </div>
+      {modal && (
+        <AdminModal ar={ar} title={ar ? "باقة جديدة" : "New package"} onClose={() => setModal(false)}
+          onSave={(v) => {
+            const name = v.name.trim();
+            const id = (v.en || name).toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8) + Date.now().toString().slice(-3);
+            setRows((r) => [...r, { id, ar: name, en: (v.en || name).trim(), price: Number(v.price) || 0, active: true }]);
+            setModal(false);
+          }}
+          fields={[
+            { key: "name", label: ar ? "اسم الباقة (عربي)" : "Package name (AR)", placeholder: ar ? "مثال: بريميوم" : "e.g. Premium" },
+            { key: "en", label: ar ? "الاسم بالإنجليزية" : "Package name (EN)", placeholder: "e.g. Premium" },
+            { key: "price", label: ar ? "السعر الشهري (﷼)" : "Monthly price (SAR)", type: "number", required: false },
+          ]} />
+      )}
+    </div>
+  );
+}
+
 function AdminSubs({ ar }: { ar: boolean }) {
-  const rows: [string, string, string, string][] = ar
-    ? [["تك زون", "احترافي", "نشط", "٣٠ يوليو"], ["العربية للعود", "احترافي", "نشط", "١٥ أغسطس"], ["أناقة", "متاجر", "نشط", "١ سبتمبر"], ["النخبة", "أساسي", "منتهٍ", "—"]]
-    : [["Tech Zone", "Pro", "Active", "Jul 30"], ["Al-Arabia Oud", "Pro", "Active", "Aug 15"], ["Anaqa", "Enterprise", "Active", "Sep 1"], ["Al-Nakhba", "Basic", "Expired", "—"]];
+  // [store, plan, status, start date, expiry date]
+  const rows: [string, string, string, string, string][] = ar
+    ? [["تك زون", "احترافي", "نشط", "١ يوليو", "٣٠ يوليو"], ["العربية للعود", "احترافي", "نشط", "١٦ يوليو", "١٥ أغسطس"], ["أناقة", "متاجر", "نشط", "٢ أغسطس", "١ سبتمبر"], ["النخبة", "أساسي", "منتهٍ", "١ يونيو", "—"]]
+    : [["Tech Zone", "Pro", "Active", "Jul 1", "Jul 30"], ["Al-Arabia Oud", "Pro", "Active", "Jul 16", "Aug 15"], ["Anaqa", "Enterprise", "Active", "Aug 2", "Sep 1"], ["Al-Nakhba", "Basic", "Expired", "Jun 1", "—"]];
+  const gridCols = "2fr 1fr 1fr 1fr 1fr";
   return (
     <div>
       <Head title={ar ? "الاشتراكات" : "Subscriptions"} />
       <div style={{ ...card, overflow: "hidden" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 12, padding: "13px 18px", borderBottom: "1px solid var(--line)", fontSize: 12, fontWeight: 700, color: "var(--text-3)" }}>
-          <span>{ar ? "المتجر" : "Store"}</span><span>{ar ? "الباقة" : "Plan"}</span><span>{ar ? "الحالة" : "Status"}</span><span>{ar ? "ينتهي" : "Expires"}</span>
+        <div style={{ display: "grid", gridTemplateColumns: gridCols, gap: 12, padding: "13px 18px", borderBottom: "1px solid var(--line)", fontSize: 12, fontWeight: 700, color: "var(--text-3)" }}>
+          <span>{ar ? "المتجر" : "Store"}</span><span>{ar ? "الباقة" : "Plan"}</span><span>{ar ? "الحالة" : "Status"}</span><span>{ar ? "يبدأ" : "Starts"}</span><span>{ar ? "ينتهي" : "Expires"}</span>
         </div>
-        {rows.map(([s, plan, st, exp]) => (
-          <div key={s} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 12, padding: "14px 18px", borderBottom: "1px solid var(--line-soft)", alignItems: "center" }}>
+        {rows.map(([s, plan, st, start, exp]) => (
+          <div key={s} style={{ display: "grid", gridTemplateColumns: gridCols, gap: 12, padding: "14px 18px", borderBottom: "1px solid var(--line-soft)", alignItems: "center" }}>
             <span style={{ fontWeight: 600, fontSize: 13.5 }}>{s}</span>
             <span><span style={{ background: "var(--brand-soft)", color: "var(--brand)", fontSize: 11.5, fontWeight: 700, padding: "3px 10px", borderRadius: 999 }}>{plan}</span></span>
             <span style={{ fontSize: 12.5, fontWeight: 700, color: /منتهٍ|Expired/.test(st) ? "var(--sale)" : "var(--active)" }}>{st}</span>
+            <span className="num" style={{ fontSize: 13, color: "var(--text-2)" }}>{start}</span>
             <span className="num" style={{ fontSize: 13, color: "var(--text-2)" }}>{exp}</span>
           </div>
         ))}
@@ -591,6 +808,13 @@ function AdminSubs({ ar }: { ar: boolean }) {
 function AdminContent({ ar }: { ar: boolean }) {
   const pages: [string, string][] = ar ? [["من نحن", "about"], ["شروط الاستخدام", "terms"], ["سياسة الخصوصية", "privacy"], ["الشحن والتوصيل", "shipping"], ["الإرجاع", "returns"], ["الأسئلة الشائعة", "faq"]]
     : [["About us", "about"], ["Terms of use", "terms"], ["Privacy policy", "privacy"], ["Shipping", "shipping"], ["Returns", "returns"], ["FAQ", "faq"]];
+  // editable body text per page (seeded placeholder; edits persist in state)
+  const [content, setContent] = useState<Record<string, string>>(() =>
+    Object.fromEntries(pages.map(([l, k]) => [k, ar ? `محتوى صفحة «${l}» — عدّل هذا النص من هنا ثم احفظ.` : `Content for the "${l}" page — edit this text and save.`])));
+  const [editing, setEditing] = useState<string | null>(null);
+
+  const editKey = editing;
+  const editLabel = pages.find(([, k]) => k === editKey)?.[0] ?? "";
   return (
     <div>
       <Head title={ar ? "محتوى التطبيق" : "App content"} />
@@ -598,12 +822,45 @@ function AdminContent({ ar }: { ar: boolean }) {
         {pages.map(([l, k]) => (
           <div key={k} style={{ ...card, padding: 18, display: "flex", alignItems: "center", gap: 12 }}>
             <span style={{ width: 40, height: 40, borderRadius: 11, background: "var(--surface-2)", color: "var(--text-2)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="filePdf" size={19} /></span>
-            <span style={{ flex: 1, fontWeight: 700, fontSize: 14 }}>{l}</span>
-            <button style={{ background: "transparent", border: "none", color: "var(--brand)", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}><Icon name="edit" size={15} />{ar ? "تحرير" : "Edit"}</button>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700, fontSize: 14 }}>{l}</div>
+              <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>{content[k]}</div>
+            </div>
+            <button onClick={() => setEditing(k)} style={{ background: "transparent", border: "none", color: "var(--brand)", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}><Icon name="edit" size={15} />{ar ? "تحرير" : "Edit"}</button>
           </div>
         ))}
       </div>
+      {editKey && (
+        <ContentEditModal ar={ar} title={editLabel} value={content[editKey]}
+          onClose={() => setEditing(null)}
+          onSave={(text) => { setContent((c) => ({ ...c, [editKey]: text })); setEditing(null); }} />
+      )}
     </div>
+  );
+}
+
+function ContentEditModal({ ar, title, value, onClose, onSave }: { ar: boolean; title: string; value: string; onClose: () => void; onSave: (text: string) => void }) {
+  const [text, setText] = useState(value);
+  return (
+    <Portal>
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(8,16,20,.6)", backdropFilter: "blur(3px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--surface)", borderRadius: "var(--r-xl)", width: "min(640px, 100%)", maxHeight: "90vh", overflow: "auto", boxShadow: "var(--shadow-lg)", border: "1px solid var(--line)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid var(--line)" }}>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{ar ? "تحرير: " : "Edit: "}{title}</h3>
+          <button onClick={onClose} style={{ background: "transparent", border: "none", fontSize: 24, color: "var(--text-3)", lineHeight: 1, cursor: "pointer" }}>×</button>
+        </div>
+        <div style={{ padding: 24 }}>
+          <label style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-2)", display: "block", marginBottom: 8 }}>{ar ? "نص الصفحة" : "Page content"}</label>
+          <textarea value={text} onChange={(e) => setText(e.target.value)} rows={12}
+            style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: "1.5px solid var(--line)", background: "var(--surface-2)", color: "var(--text)", fontSize: 14, fontFamily: "inherit", lineHeight: 1.7, resize: "vertical" }} />
+        </div>
+        <div style={{ display: "flex", gap: 12, padding: "16px 24px", borderTop: "1px solid var(--line)" }}>
+          <Btn variant="outline" onClick={onClose} style={{ flex: 1 }}>{ar ? "إلغاء" : "Cancel"}</Btn>
+          <Btn onClick={() => onSave(text)} style={{ flex: 2 }}><Icon name="check" size={16} />{ar ? "حفظ" : "Save"}</Btn>
+        </div>
+      </div>
+    </div>
+    </Portal>
   );
 }
 

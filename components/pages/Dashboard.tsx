@@ -3,8 +3,9 @@ import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useApp } from "@/lib/AppContext";
 import { Icon, Btn, Thumb, money } from "../ui";
-import { PRODUCTS, VENDORS, PLANS, CATS, CITIES, type Coupon } from "@/lib/data";
+import { PRODUCTS, VENDORS, PLANS, CITIES, type Coupon } from "@/lib/data";
 import { useCouponStore } from "@/lib/couponStore";
+import { useCatStore } from "@/lib/catStore";
 
 type Go = (page: string, id?: string | null) => void;
 
@@ -35,7 +36,7 @@ function DField({ label, children }: { label: string; children: React.ReactNode 
   return <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-2)" }}>{label}</span>{children}</label>;
 }
 
-interface Row { id: string; ar: string; en: string; price: number; color: string; cat: string; pct: number; days: number; active: boolean; pending: boolean; img: string | null; }
+interface Row { id: string; ar: string; en: string; price: number; color: string; cat: string; subcat?: string; pct: number; days: number; active: boolean; pending: boolean; img: string | null; }
 
 export function Dashboard({ go }: { go: Go }) {
   const { t, lang } = useApp();
@@ -409,14 +410,19 @@ function SubscriptionPanel({ lang, go }: { lang: string; go: Go }) {
 }
 
 function AddActivityModal({ d, lang, onClose, onSave }: { d: any; lang: string; onClose: () => void; onSave: (row: Row) => void }) {
+  const ar = lang === "ar";
+  const catStore = useCatStore();
+  const cats = catStore.cats;
   const [name, setName] = useState("");
-  const [type, setType] = useState("electronics");
+  const [type, setType] = useState(cats[0]?.id ?? "electronics");
+  const [subType, setSubType] = useState("");
   const [has, setHas] = useState(true);
   const [pct, setPct] = useState(30);
   const [days, setDays] = useState(7);
   const [price, setPrice] = useState(199);
-  const cats = CATS;
-  const save = () => onSave({ id: "new" + Date.now(), ar: name || (lang === "ar" ? "نشاط جديد" : "New activity"), en: name || "New activity", price: Number(price), color: "#dfe7ef", cat: type, pct: has ? Number(pct) : 0, days: has ? Number(days) : 0, active: false, pending: true, img: null });
+  // sub-categories of the selected department; reset selection when department changes
+  const subs = catStore.subsOf(type);
+  const save = () => onSave({ id: "new" + Date.now(), ar: name || (lang === "ar" ? "نشاط جديد" : "New activity"), en: name || "New activity", price: Number(price), color: "#dfe7ef", cat: type, subcat: subType || undefined, pct: has ? Number(pct) : 0, days: has ? Number(days) : 0, active: false, pending: true, img: null });
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(8,16,12,.55)", backdropFilter: "blur(3px)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--surface)", borderRadius: "var(--r-xl)", width: "min(560px, 100%)", maxHeight: "90vh", overflow: "auto", boxShadow: "var(--shadow-lg)", border: "1px solid var(--line)" }}>
@@ -427,13 +433,19 @@ function AddActivityModal({ d, lang, onClose, onSave }: { d: any; lang: string; 
         <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
           <DField label={d.productName}><input value={name} onChange={(e) => setName(e.target.value)} placeholder={lang === "ar" ? "اسم المنتج أو النشاط" : "Product / activity name"} style={inp} /></DField>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-            <DField label={d.activityType}>
-              <select value={type} onChange={(e) => setType(e.target.value)} style={inp}>
-                {cats.map((c) => <option key={c.id} value={c.id}>{lang === "ar" ? c.ar : c.en}</option>)}
+            <DField label={ar ? "القسم" : "Category"}>
+              <select value={type} onChange={(e) => { setType(e.target.value); setSubType(""); }} style={inp}>
+                {cats.map((c) => <option key={c.id} value={c.id}>{ar ? c.ar : c.en}</option>)}
               </select>
             </DField>
-            <DField label={d.price}><input type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} style={inp} className="num" /></DField>
+            <DField label={ar ? "القسم الفرعي" : "Sub-category"}>
+              <select value={subType} onChange={(e) => setSubType(e.target.value)} style={inp} disabled={subs.length === 0}>
+                <option value="">{subs.length === 0 ? (ar ? "لا يوجد أقسام فرعية" : "No sub-categories") : (ar ? "اختر القسم الفرعي" : "Select sub-category")}</option>
+                {subs.map((s) => <option key={s.id} value={s.id}>{ar ? s.ar : s.en}</option>)}
+              </select>
+            </DField>
           </div>
+          <DField label={d.price}><input type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} style={inp} className="num" /></DField>
           <DField label={d.hasDiscount}>
             <div style={{ display: "flex", gap: 10 }}>
               {([[true, d.yes], [false, d.no]] as [boolean, string][]).map(([v, l]) => (

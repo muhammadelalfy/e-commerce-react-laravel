@@ -34,6 +34,8 @@ export function CategoryPage({ id, go }: { id: string; go: Go }) {
   const isAll = id === "all" || id === "shop";
   const cat = isAll ? null : (CATS.find((c) => c.id === id) || CATS[0]);
   const all = isAll ? PRODUCTS : PRODUCTS.filter((p) => p.cat === cat!.id);
+  // stores that belong to this department (category → stores step of the cycle)
+  const storesIn = isAll ? [] : Object.values(VENDORS).filter((v) => v.cat === cat!.id);
   const title = isAll ? (ar ? "تسوّق مع أوفرز" : "Shop with Offers") : (ar ? cat!.ar : cat!.en);
   const heroImg = isAll ? "/img/cat-clothes.png" : CAT_HERO[cat!.id];
   const vendorsIn = Array.from(new Set(all.map((p) => p.vendor)));
@@ -114,6 +116,42 @@ export function CategoryPage({ id, go }: { id: string; go: Go }) {
         </aside>
 
         <div>
+          {/* SPECIFIC CATEGORY → show the STORES in it (click a store to see its products) */}
+          {!isAll ? (
+            <>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18, flexWrap: "wrap", gap: 12 }}>
+                <span className="num" style={{ color: "var(--text-2)", fontSize: 14 }}>{storesIn.length} {ar ? "متجر" : "stores"}</span>
+                <span style={{ fontSize: 13, color: "var(--text-3)" }}>{ar ? "اختر متجراً لعرض منتجاته" : "Pick a store to see its products"}</span>
+              </div>
+              {storesIn.length ? (
+                <div className="mash-store-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 18 }}>
+                  {storesIn.map((v) => {
+                    const count = PRODUCTS.filter((p) => p.vendor === v.id).length;
+                    return (
+                      <button key={v.id} onClick={() => { go("vendor", v.id); window.scrollTo({ top: 0 }); }}
+                        style={{ textAlign: "start", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-sm)", padding: 18, display: "flex", gap: 14, alignItems: "center", cursor: "pointer" }}>
+                        <span style={{ width: 56, height: 56, borderRadius: 14, flex: "none", background: v.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}><Icon name="store" size={26} /></span>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 800, fontSize: 15.5 }}>{ar ? v.ar : v.en}</div>
+                          <div style={{ fontSize: 12.5, color: "var(--text-3)", marginTop: 4, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                            <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Stars value={v.rating} size={12} /> <b className="num" style={{ color: "var(--text-2)" }}>{v.rating}</b></span>
+                            <span>· {ar ? v.city.ar : v.city.en}</span>
+                            <span>· <span className="num">{count}</span> {ar ? "منتج" : "products"}</span>
+                          </div>
+                        </div>
+                        <Icon name="arrow" size={18} style={{ color: "var(--brand)", transform: ar ? "scaleX(-1)" : "none" }} />
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-3)" }}>
+                  <Icon name="store" size={40} /><p style={{ marginTop: 12 }}>{ar ? "لا توجد متاجر في هذا القسم بعد" : "No stores in this category yet"}</p>
+                </div>
+              )}
+            </>
+          ) : (
+          <>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18, flexWrap: "wrap", gap: 12 }}>
             <span className="num" style={{ color: "var(--text-2)", fontSize: 14 }}>{list.length} {ar ? "نتيجة" : "results"}</span>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -131,6 +169,8 @@ export function CategoryPage({ id, go }: { id: string; go: Go }) {
             <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-3)" }}>
               <Icon name="search" size={40} /><p style={{ marginTop: 12 }}>{ar ? "لا توجد منتجات مطابقة للفلاتر" : "No products match your filters"}</p>
             </div>
+          )}
+          </>
           )}
 
           <div style={{ marginTop: 48 }}>

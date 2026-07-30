@@ -1,8 +1,14 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useApp } from "@/lib/AppContext";
 import { Icon, Btn } from "../ui";
 import { Logo } from "../Shell";
+import { fetchCities } from "../CountryModal";
+import { PLANS } from "@/lib/data";
+import { useCatStore } from "@/lib/catStore";
+import { useGeoStore } from "@/lib/geoStore";
+import { submitStore } from "@/lib/storeStore";
+import { useRepStore } from "@/lib/repStore";
 
 type Go = (page: string, id?: string | null) => void;
 
@@ -18,6 +24,22 @@ function AField({ label, icon, cn, ...rest }: { label: string; icon: string; cn?
   );
 }
 
+/** labelled select with a leading icon, matching AField's look */
+function ASelect({ label, icon, children, ...rest }: { label: string; icon: string; children: React.ReactNode } & React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-2)" }}>{label}</span>
+      <span style={{ position: "relative", display: "flex", alignItems: "center" }}>
+        <span style={{ position: "absolute", insetInlineStart: 12, color: "var(--text-3)", display: "flex", pointerEvents: "none" }}><Icon name={icon} size={17} /></span>
+        <select {...rest} style={{ height: 46, width: "100%", paddingInlineStart: 40, paddingInlineEnd: 32, borderRadius: 10, border: "1.5px solid var(--line)", background: "var(--surface-2)", color: "var(--text)", fontSize: 14, fontFamily: "inherit", appearance: "none" }}>
+          {children}
+        </select>
+        <span style={{ position: "absolute", insetInlineEnd: 12, color: "var(--text-3)", pointerEvents: "none" }}><Icon name="chevron" size={16} /></span>
+      </span>
+    </label>
+  );
+}
+
 export function Auth({ param, go }: { param: string | null; go: Go }) {
   const { lang, signIn } = useApp();
   const ar = lang === "ar";
@@ -28,11 +50,54 @@ export function Auth({ param, go }: { param: string | null; go: Go }) {
   const [mode, setMode] = useState(initMode);
   const [ident, setIdent] = useState(initAud === "reels" ? "مشهور" : "");
   const [crFile, setCrFile] = useState("");
+  const [logoFile, setLogoFile] = useState("");
+
+  // shared stores for the vendor-registration form
+  const catStore = useCatStore();
+  const geo = useGeoStore();
+  const repStore = useRepStore();
+
+  // full store-registration form state (matches the mobile design)
+  const [f, setF] = useState({
+    fname: "", lname: "", plan: PLANS[0]?.id ?? "basic", store: "", slogan: "",
+    phone: "", whatsapp: "", address: "", rep: "", country: geo.countries[0]?.id ?? "sa",
+    city: "", website: "", cat: catStore.cats[0]?.id ?? "", subcat: "",
+  });
+  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF((s) => ({ ...s, [k]: e.target.value }));
+  const subs = catStore.subsOf(f.cat);
+
+  // cities depend on the selected country — fetched live from the CountriesNow
+  // API (same source as the country-picker modal). Falls back to stored cities.
+  const [cityList, setCityList] = useState<string[]>([]);
+  const [loadingCities, setLoadingCities] = useState(false);
+  useEffect(() => {
+    if (!(mode === "register" && aud === "vendor")) return;
+    const c = geo.countries.find((x) => x.id === f.country);
+    if (!c) { setCityList([]); return; }
+    const ctrl = new AbortController();
+    setLoadingCities(true);
+    fetchCities(c.en, ctrl.signal)
+      .then((list) => setCityList(list))
+      .catch((e) => { if (e?.name !== "AbortError") {
+        // fall back to any cities stored for this country
+        setCityList(geo.cities.filter((x) => x.country === f.country).map((x) => (ar ? x.ar : x.en)));
+      } })
+      .finally(() => setLoadingCities(false));
+    return () => ctrl.abort();
+  }, [f.country, mode, aud]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const submit = () => {
     const id = ident.trim();
     if (aud === "reels") { signIn({ name: id || "مشهور", role: "reels" }); go("reels-studio"); return; }
-    if (aud === "vendor") { signIn({ name: id || "vendor", role: "vendor" }); go(mode === "register" ? "addstore" : "dashboard"); return; }
+    if (aud === "vendor") {
+      if (mode === "register") {
+        // submit a pending store application for admin approval (city is the API name)
+        submitStore({ ar: f.store || (ar ? "متجر جديد" : "New store"), en: f.store || "New store", cat: f.cat, city: f.city, owner: (f.fname + " " + f.lname).trim() || (ar ? "غير محدّد" : "Unknown"), cr: undefined });
+      }
+      signIn({ name: id || f.store || "vendor", role: "vendor" });
+      go(mode === "register" ? "addstore" : "dashboard");
+      return;
+    }
     signIn({ name: id || "guest", role: "customer" }); go("home");
   };
 
@@ -103,25 +168,73 @@ export function Auth({ param, go }: { param: string | null; go: Go }) {
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {mode === "register" && aud === "vendor" && <AField label={ar ? "اسم المتجر" : "Store name"} icon="store" placeholder={ar ? "مثال: تك زون" : "e.g. Tech Zone"} />}
-              {mode === "register" && aud === "customer" && <AField label={ar ? "الاسم الكامل" : "Full name"} icon="user" placeholder={ar ? "محمد العتيبي" : "Mohammed Al-Otaibi"} />}
-              <AField label={ar ? "البريد الإلكتروني أو اسم المستخدم" : "Email or username"} icon="globe" placeholder={aud === "vendor" ? "you@store.sa" : "you@email.com"} value={ident} onChange={(e) => setIdent(e.target.value)} />
-              {mode === "register" && <AField label={ar ? "رقم الجوال" : "Mobile"} icon="phone" placeholder="05x xxx xxxx" cn="num" />}
-              <AField label={ar ? "كلمة المرور" : "Password"} icon="shield" type="password" placeholder="••••••••" cn="num" />
+              {/* ===== FULL STORE-REGISTRATION FORM (vendor + register) ===== */}
+              {mode === "register" && aud === "vendor" ? (
+                <div key="vendor-register" style={{ display: "contents" }}>
+                  <AField label={ar ? "البريد الإلكتروني" : "Email"} icon="globe" type="email" placeholder="you@store.sa" value={ident} onChange={(e) => setIdent(e.target.value)} cn="num" />
+                  <AField label={ar ? "كلمة السر" : "Password"} icon="shield" type="password" placeholder="••••••••" cn="num" />
+                  <AField label={ar ? "إعادة كلمة السر" : "Confirm password"} icon="shield" type="password" placeholder="••••••••" cn="num" />
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <AField label={ar ? "الإسم" : "First name"} icon="user" value={f.fname} onChange={set("fname")} />
+                    <AField label={ar ? "اللقب" : "Last name"} icon="user" value={f.lname} onChange={set("lname")} />
+                  </div>
+                  <ASelect label={ar ? "نوع الإشتراك" : "Subscription type"} icon="ticket" value={f.plan} onChange={set("plan")}>
+                    {PLANS.map((p) => <option key={p.id} value={p.id}>{ar ? p.ar : p.en}</option>)}
+                  </ASelect>
+                  <AField label={ar ? "إسم المتجر" : "Store name"} icon="store" placeholder={ar ? "مثال: تك زون" : "e.g. Tech Zone"} value={f.store} onChange={set("store")} />
 
-              {/* Commercial registration — vendor registration only */}
-              {mode === "register" && aud === "vendor" && (
-                <>
-                  <AField label={ar ? "رقم السجل التجاري" : "Commercial registration no."} icon="filePdf" placeholder={ar ? "١٠xxxxxxxx" : "10xxxxxxxx"} cn="num" />
-                  <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-2)" }}>{ar ? "ملف مصادقة السجل من الغرفة التجارية" : "Chamber-of-commerce authentication file"}</span>
-                    <label style={{ display: "flex", alignItems: "center", gap: 10, border: "1.5px dashed " + (crFile ? "var(--brand)" : "var(--line)"), borderRadius: 10, padding: "12px 14px", cursor: "pointer", background: crFile ? "var(--brand-soft)" : "var(--surface-2)", color: crFile ? "var(--brand)" : "var(--text-3)", fontSize: 13 }}>
-                      <Icon name={crFile ? "check" : "filePdf"} size={18} style={{ flex: "none" }} />
-                      <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{crFile || (ar ? "ارفع ملف السجل (PDF أو صورة)" : "Upload registration file (PDF or image)")}</span>
-                      <input type="file" accept=".pdf,image/*" onChange={(e) => setCrFile(e.target.files?.[0]?.name || "")} style={{ display: "none" }} />
+                  {/* Store logo upload */}
+                  <label style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text)" }}>{ar ? "الشعار" : "Logo"}</span>
+                    <label style={{ width: 56, height: 56, borderRadius: 999, background: logoFile ? "var(--brand-soft)" : "var(--brand)", color: logoFile ? "var(--brand)" : "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "var(--shadow-sm)" }}>
+                      <Icon name={logoFile ? "check" : "plus"} size={24} />
+                      <input type="file" accept="image/*" onChange={(e) => setLogoFile(e.target.files?.[0]?.name || "")} style={{ display: "none" }} />
                     </label>
+                    {logoFile && <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>{logoFile}</span>}
                   </label>
-                </>
+
+                  <AField label={ar ? "شعار المتجر / العلامة" : "Store slogan / brand"} icon="tag" placeholder={ar ? "شعار مميّز لمتجرك" : "A catchy slogan"} value={f.slogan} onChange={set("slogan")} />
+                  <AField label={ar ? "رقم الهاتف" : "Phone"} icon="phone" placeholder="05x xxx xxxx" value={f.phone} onChange={set("phone")} cn="num" />
+                  <AField label={ar ? "رقم الواتساب" : "WhatsApp"} icon="phone" placeholder="05x xxx xxxx" value={f.whatsapp} onChange={set("whatsapp")} cn="num" />
+                  <AField label={ar ? "العنوان" : "Address"} icon="pin" placeholder={ar ? "الحي، الشارع" : "District, street"} value={f.address} onChange={set("address")} />
+
+                  {/* Commercial-registration file */}
+                  <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, border: "none", borderRadius: 999, padding: "11px 18px", cursor: "pointer", background: crFile ? "var(--brand-soft)" : "var(--brand)", color: crFile ? "var(--brand)" : "#fff", fontSize: 13.5, fontWeight: 700 }}>
+                    <Icon name={crFile ? "check" : "filePdf"} size={17} />
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{crFile || (ar ? "حمّل سجل المتجر" : "Upload commercial registration")}</span>
+                    <input type="file" accept=".pdf,image/*" onChange={(e) => setCrFile(e.target.files?.[0]?.name || "")} style={{ display: "none" }} />
+                  </label>
+
+                  <ASelect label={ar ? "المندوب" : "Representative"} icon="user" value={f.rep} onChange={set("rep")}>
+                    <option value="">{ar ? "اختر المندوب" : "Select representative"}</option>
+                    {repStore.reps.map((r) => <option key={r.id} value={r.id}>{ar ? r.ar : r.en}</option>)}
+                  </ASelect>
+                  <ASelect label={ar ? "البلد" : "Country"} icon="globe" value={f.country} onChange={(e) => { set("country")(e); setF((s) => ({ ...s, city: "" })); }}>
+                    {geo.countries.map((c) => <option key={c.id} value={c.id}>{ar ? c.ar : c.en}</option>)}
+                  </ASelect>
+                  <ASelect label={ar ? "المدينة" : "City"} icon="pin" value={f.city} onChange={set("city")} disabled={loadingCities || cityList.length === 0}>
+                    <option value="">{loadingCities ? (ar ? "جارٍ جلب المدن…" : "Fetching cities…") : cityList.length === 0 ? (ar ? "لا توجد مدن" : "No cities") : (ar ? "اختيار المدينة (المدن)" : "Select city")}</option>
+                    {cityList.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </ASelect>
+                  <AField label={ar ? "موقع الواب" : "Website"} icon="globe" placeholder="https://" value={f.website} onChange={set("website")} cn="num" />
+
+                  {/* Categories (المجالات) — pick a category, its sub-categories appear */}
+                  <ASelect label={ar ? "المجالات" : "Categories"} icon="grid" value={f.cat} onChange={(e) => { set("cat")(e); setF((s) => ({ ...s, subcat: "" })); }}>
+                    {catStore.cats.map((c) => <option key={c.id} value={c.id}>{ar ? c.ar : c.en}</option>)}
+                  </ASelect>
+                  <ASelect label={ar ? "التصنيف الفرعي" : "Sub-category"} icon="grid" value={f.subcat} onChange={set("subcat")} disabled={subs.length === 0}>
+                    <option value="">{subs.length === 0 ? (ar ? "لا توجد تصنيفات فرعية" : "No sub-categories") : (ar ? "اختر التصنيف الفرعي" : "Select sub-category")}</option>
+                    {subs.map((s) => <option key={s.id} value={s.id}>{ar ? s.ar : s.en}</option>)}
+                  </ASelect>
+                  <p style={{ margin: "-4px 0 4px", fontSize: 12, color: "var(--text-3)", textAlign: "center" }}>{ar ? "عند إختيار تصنيف ستظهر التصنيفات التابعة له." : "When you pick a category, its sub-categories appear."}</p>
+                </div>
+              ) : (
+                <div key="simple-auth" style={{ display: "contents" }}>
+                  {mode === "register" && aud === "customer" && <AField label={ar ? "الاسم الكامل" : "Full name"} icon="user" placeholder={ar ? "محمد العتيبي" : "Mohammed Al-Otaibi"} />}
+                  <AField label={ar ? "البريد الإلكتروني أو اسم المستخدم" : "Email or username"} icon="globe" placeholder={aud === "vendor" ? "you@store.sa" : "you@email.com"} value={ident} onChange={(e) => setIdent(e.target.value)} />
+                  {mode === "register" && <AField label={ar ? "رقم الجوال" : "Mobile"} icon="phone" placeholder="05x xxx xxxx" cn="num" />}
+                  <AField label={ar ? "كلمة المرور" : "Password"} icon="shield" type="password" placeholder="••••••••" cn="num" />
+                </div>
               )}
 
               {mode === "login" ? (
@@ -137,7 +250,7 @@ export function Auth({ param, go }: { param: string | null; go: Go }) {
               )}
 
               <Btn size="lg" full onClick={submit}>
-                {mode === "login" ? (ar ? "تسجيل الدخول" : "Sign in") : aud === "vendor" ? (ar ? "متابعة إعداد المتجر" : "Continue store setup") : (ar ? "إنشاء الحساب" : "Create account")}
+                {mode === "login" ? (ar ? "تسجيل الدخول" : "Sign in") : aud === "vendor" ? (ar ? "تأكيد" : "Confirm") : (ar ? "إنشاء الحساب" : "Create account")}
               </Btn>
 
               <div style={{ display: "flex", alignItems: "center", gap: 12, color: "var(--text-3)", fontSize: 12, margin: "2px 0" }}>

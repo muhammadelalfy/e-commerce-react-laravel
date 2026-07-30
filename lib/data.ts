@@ -116,6 +116,33 @@ export const CATS: Cat[] = [
   { id: "realestate",  icon: "building",   img: null,                        ar: "العقارات",   en: "Real Estate", count: 128, tint: "#e6eef7" },
 ];
 
+// Each department (category) has sub-categories. Keyed by parent category id.
+export interface SubCat { id: string; cat: string; ar: string; en: string; }
+export const SUBCATS: SubCat[] = [
+  { id: "phones",     cat: "electronics", ar: "الجوّالات",        en: "Phones" },
+  { id: "audio",      cat: "electronics", ar: "الصوتيات",         en: "Audio" },
+  { id: "laptops",    cat: "electronics", ar: "الحواسيب المحمولة", en: "Laptops" },
+  { id: "oud",        cat: "perfumes",    ar: "العود",            en: "Oud" },
+  { id: "mens-perf",  cat: "perfumes",    ar: "عطور رجالية",       en: "Men's Perfume" },
+  { id: "womens-perf",cat: "perfumes",    ar: "عطور نسائية",       en: "Women's Perfume" },
+  { id: "mens-wear",  cat: "fashion",     ar: "ملابس رجالية",      en: "Men's Wear" },
+  { id: "womens-wear",cat: "fashion",     ar: "ملابس نسائية",      en: "Women's Wear" },
+  { id: "kids-wear",  cat: "fashion",     ar: "ملابس أطفال",       en: "Kids' Wear" },
+  { id: "living",     cat: "furniture",   ar: "غرف المعيشة",       en: "Living Room" },
+  { id: "bedroom",    cat: "furniture",   ar: "غرف النوم",         en: "Bedroom" },
+  { id: "smart-watch",cat: "watches",     ar: "ساعات ذكية",        en: "Smart Watches" },
+  { id: "luxury-watch",cat: "watches",    ar: "ساعات فاخرة",       en: "Luxury Watches" },
+  { id: "fast-food",  cat: "restaurants", ar: "وجبات سريعة",       en: "Fast Food" },
+  { id: "fine-dining",cat: "restaurants", ar: "مطاعم فاخرة",       en: "Fine Dining" },
+  { id: "rings",      cat: "gold",        ar: "خواتم",            en: "Rings" },
+  { id: "necklaces",  cat: "gold",        ar: "قلائد",            en: "Necklaces" },
+  { id: "novels",     cat: "books",       ar: "روايات",           en: "Novels" },
+  { id: "academic",   cat: "books",       ar: "كتب أكاديمية",      en: "Academic" },
+  { id: "apartments", cat: "realestate",  ar: "شقق",              en: "Apartments" },
+  { id: "villas",     cat: "realestate",  ar: "فلل",              en: "Villas" },
+  { id: "land",       cat: "realestate",  ar: "أراضٍ",            en: "Land" },
+];
+
 export interface Vendor {
   id: string; ar: string; en: string; cat: string; color: string; rating: number; reviews: number;
   since: number; followers: number; city: { ar: string; en: string }; ar_about: string; en_about: string;
