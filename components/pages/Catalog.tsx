@@ -29,6 +29,37 @@ function VOpt({ on, onClick, label }: { on: boolean; onClick: () => void; label:
   );
 }
 
+/** Category filter row: filters on click, and on HOVER shows a fly-out panel
+ *  listing the category's sub-categories (each links to that sub-category's stores). */
+function CatFilterRow({ cat, on, ar, onFilter, go }: { cat: { id: string; ar: string; en: string; icon: string }; on: boolean; ar: boolean; onFilter: () => void; go: Go }) {
+  const catStore = useCatStore();
+  const [hover, setHover] = useState(false);
+  const subs = catStore.subsOf(cat.id);
+  return (
+    <div style={{ position: "relative" }} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
+      <button onClick={onFilter} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, background: "transparent", border: "none", padding: "4px 0", color: on ? "var(--brand)" : "var(--text-2)", fontWeight: on ? 700 : 500, fontSize: 13, textAlign: "start", cursor: "pointer" }}>
+        <span style={{ width: 16, height: 16, borderRadius: 999, border: "2px solid " + (on ? "var(--brand)" : "var(--line)"), display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>{on && <span style={{ width: 7, height: 7, borderRadius: 999, background: "var(--brand)" }} />}</span>
+        <span style={{ flex: 1 }}>{ar ? cat.ar : cat.en}</span>
+        {subs.length > 0 && <Icon name="chevron" size={14} style={{ color: "var(--text-3)", transform: ar ? "rotate(90deg)" : "rotate(-90deg)" }} />}
+      </button>
+      {/* fly-out of sub-categories on hover */}
+      {hover && subs.length > 0 && (
+        <div style={{ position: "absolute", top: -6, insetInlineStart: "100%", marginInlineStart: 8, zIndex: 40, minWidth: 170, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-md)", boxShadow: "var(--shadow-lg)", padding: 8, animation: "mash-fade .15s ease" }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--text-3)", padding: "2px 8px 6px" }}>{ar ? "الأقسام الفرعية" : "Sub-categories"}</div>
+          {subs.map((s) => (
+            <button key={s.id} onClick={() => { go("category", cat.id + "~" + s.id); window.scrollTo({ top: 0 }); }}
+              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "8px 10px", borderRadius: 8, border: "none", background: "transparent", color: "var(--text)", fontSize: 13, fontWeight: 600, cursor: "pointer", textAlign: "start" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-2)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
+              {ar ? s.ar : s.en}<Icon name="arrow" size={13} style={{ color: "var(--brand)", transform: ar ? "scaleX(-1)" : "none" }} />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function CategoryPage({ id, go }: { id: string; go: Go }) {
   const { t, lang } = useApp();
   const ar = lang === "ar";
@@ -59,6 +90,7 @@ export function CategoryPage({ id, go }: { id: string; go: Go }) {
   const [minRating, setMinRating] = useState(0);
   const [vendorF, setVendorF] = useState("all");
   const [activeOnly, setActiveOnly] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false); // mobile: collapse the filters aside
   const [catF, setCatF] = useState("all");
 
   let list = all.filter((p) => p.price <= maxPrice && p.rating >= minRating && (vendorF === "all" || p.vendor === vendorF) && (!activeOnly || p.active) && (catF === "all" || p.cat === catF));
@@ -92,14 +124,23 @@ export function CategoryPage({ id, go }: { id: string; go: Go }) {
         </div>
       </div>
 
-      <div className="container" style={{ paddingTop: 28, display: "grid", gridTemplateColumns: "260px 1fr", gap: 28, alignItems: "start" }}>
-        <aside style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", padding: 20, position: "sticky", top: 90, display: "flex", flexDirection: "column", gap: 22 }}>
+      <div className="container mash-shop-grid" style={{ paddingTop: 28, display: "grid", gridTemplateColumns: "260px 1fr", gap: 28, alignItems: "start" }}>
+        <div>
+          {/* mobile-only toggle to collapse/expand the filters */}
+          <button className="mash-filters-toggle" onClick={() => setFiltersOpen((o) => !o)}
+            style={{ display: "none", width: "100%", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "12px 16px", marginBottom: filtersOpen ? 12 : 0, borderRadius: "var(--r-lg)", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--text)", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 8 }}><Icon name="filter" size={17} style={{ color: "var(--brand)" }} />{ar ? "الفلاتر" : "Filters"}</span>
+            <Icon name="chevron" size={18} style={{ transform: filtersOpen ? "rotate(180deg)" : "none", transition: "transform .2s", color: "var(--text-3)" }} />
+          </button>
+        <aside className="mash-shop-filters" data-open={filtersOpen} style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", padding: 20, position: "sticky", top: 90, display: "flex", flexDirection: "column", gap: 22 }}>
           {isAll && (
             <div>
               <div style={fHead}>{ar ? "القسم" : "Category"}</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <VOpt on={catF === "all"} onClick={() => setCatF("all")} label={ar ? "كل الأقسام" : "All categories"} />
-                {CATS.filter((c) => PRODUCTS.some((p) => p.cat === c.id)).map((c) => <VOpt key={c.id} on={catF === c.id} onClick={() => setCatF(c.id)} label={ar ? c.ar : c.en} />)}
+                {CATS.filter((c) => PRODUCTS.some((p) => p.cat === c.id)).map((c) => (
+                  <CatFilterRow key={c.id} cat={c} on={catF === c.id} ar={ar} onFilter={() => setCatF(c.id)} go={go} />
+                ))}
               </div>
             </div>
           )}
@@ -131,6 +172,7 @@ export function CategoryPage({ id, go }: { id: string; go: Go }) {
             {ar ? "العروض الفعّالة فقط" : "Active offers only"}
           </label>
         </aside>
+        </div>
 
         <div>
           {/* STEP 1 — CATEGORY → show its SUB-CATEGORIES */}

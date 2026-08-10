@@ -124,6 +124,19 @@ img { display: block; max-width: 100%; }
 .mash-richtext ul, .mash-richtext ol { margin: 4px 0; padding-inline-start: 22px; }
 .mash-richtext a { color: var(--brand); text-decoration: underline; }
 
+/* auto-scrolling sub-category strip under a "shop by category" tile.
+   Track holds the chips twice (width = 2× content); animating to -50% loops. */
+.mash-submarquee { overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+.mash-submarquee-track { display: flex; width: max-content; gap: 8px; padding-inline: 8px; animation: mash-submarquee var(--dur, 18s) linear infinite; }
+.mash-submarquee:hover .mash-submarquee-track { animation-play-state: paused; }
+@keyframes mash-submarquee { 0% { transform: translate3d(0,0,0) } 100% { transform: translate3d(-50%,0,0) } }
+@media (prefers-reduced-motion: reduce) { .mash-submarquee-track { animation: none; } }
+
+/* horizontal chip scroller — scroll instead of wrapping to a new line */
+.mash-scroll-x { -webkit-overflow-scrolling: touch; scrollbar-width: thin; scroll-snap-type: x proximity; }
+.mash-scroll-x::-webkit-scrollbar { height: 5px; }
+.mash-scroll-x::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
+
 .hl { position: relative; display: inline-block; z-index: 0; }
 .hl::after { content: ""; position: absolute; inset-inline: -6px; bottom: 3px; height: 12px; background: var(--gold); border-radius: 3px; z-index: -1; opacity: .9; }
 
@@ -189,6 +202,11 @@ img { display: block; max-width: 100%; }
 
   /* hero / auction / event split panels stack */
   [style*="1fr 1fr"] { grid-template-columns: 1fr !important; }
+
+  /* SHOP filters: show the toggle button, collapse the filters panel by default */
+  .mash-filters-toggle { display: flex !important; }
+  .mash-shop-filters { display: none !important; }
+  .mash-shop-filters[data-open="true"] { display: flex !important; margin-bottom: 20px; }
 }
 
 /* ---- PHONE (≤560px) ---- */
