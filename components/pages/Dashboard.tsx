@@ -6,10 +6,14 @@ import { Icon, Btn, Thumb, money } from "../ui";
 import { PRODUCTS, VENDORS, PLANS, CITIES, type Coupon } from "@/lib/data";
 import { useCouponStore } from "@/lib/couponStore";
 import { useCatStore } from "@/lib/catStore";
+import { useOfferStore, type Offer } from "@/lib/offerStore";
+import { OfferModal, fmtDate } from "../OfferParts";
+import { useAdPackageStore, periodLabelOf, type AdPackage, PERIOD_DAYS, addDays } from "@/lib/adPackageStore";
 
 type Go = (page: string, id?: string | null) => void;
 
 const inp: React.CSSProperties = { height: 44, padding: "0 14px", borderRadius: 10, border: "1.5px solid var(--line)", background: "var(--surface-2)", color: "var(--text)", fontSize: 14, fontFamily: "inherit", width: "100%" };
+const card: React.CSSProperties = { background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-sm)" };
 
 function StatCard({ icon, label, value, sub, tint }: { icon: string; label: string; value: React.ReactNode; sub?: string; tint: string }) {
   return (
@@ -56,8 +60,8 @@ export function Dashboard({ go }: { go: Go }) {
   const toggle = (id: string) => setRows((r) => r.map((x) => x.id === id ? { ...x, active: !x.active } : x));
   const activeCount = rows.filter((x) => x.active).length;
 
-  const nav: [string, string][] = [["overview", "grid"], ["products", "box"], ["discounts", "tag"], ["coupons", "ticket"], ["orders", "bag"], ["locations", "pin"], ["subscription", "ticket"], ["settings", "settings"]];
-  const navLabel: Record<string, string> = { ...(d as any), coupons: lang === "ar" ? "الكوبونات" : "Coupons", locations: lang === "ar" ? "مواقع المتجر" : "Store locations", subscription: lang === "ar" ? "الاشتراك" : "Subscription" };
+  const nav: [string, string][] = [["overview", "grid"], ["products", "box"], ["discounts", "tag"], ["ads", "tag"], ["coupons", "ticket"], ["orders", "bag"], ["locations", "pin"], ["subscription", "ticket"], ["settings", "settings"]];
+  const navLabel: Record<string, string> = { ...(d as any), ads: lang === "ar" ? "العروض المموّلة" : "Sponsored offers", coupons: lang === "ar" ? "الكوبونات" : "Coupons", locations: lang === "ar" ? "مواقع المتجر" : "Store locations", subscription: lang === "ar" ? "الاشتراك" : "Subscription" };
 
   return (
     <div className="container" style={{ paddingTop: 24, display: "grid", gridTemplateColumns: "230px 1fr", gap: 24, alignItems: "start" }}>
@@ -85,10 +89,13 @@ export function Dashboard({ go }: { go: Go }) {
             <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>{d.title}</h1>
             <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-3)" }}>{d.manager}</p>
           </div>
-          <Btn onClick={() => setModal(true)}><Icon name="plus" size={17} />{d.addProduct}</Btn>
+          {/* "add product" belongs only on the Products tab; other tabs have their own add buttons */}
+          {dtab === "products" && (
+            <Btn onClick={() => setModal(true)}><Icon name="plus" size={17} />{d.addProduct}</Btn>
+          )}
         </div>
 
-        {dtab === "locations" ? <LocationsPanel lang={lang} vendor={vendor} /> : dtab === "coupons" ? <CouponsPanel lang={lang} vendorId="techzone" /> : dtab === "subscription" ? <SubscriptionPanel lang={lang} go={go} /> : dtab === "orders" ? <OrdersPanel lang={lang} /> : dtab === "settings" ? <SettingsPanel lang={lang} vendor={vendor} /> : (<>
+        {dtab === "ads" ? <OffersPanel lang={lang} vendorId="techzone" /> : dtab === "locations" ? <LocationsPanel lang={lang} vendor={vendor} /> : dtab === "coupons" ? <CouponsPanel lang={lang} vendorId="techzone" /> : dtab === "subscription" ? <SubscriptionPanel lang={lang} go={go} /> : dtab === "orders" ? <OrdersPanel lang={lang} /> : dtab === "settings" ? <SettingsPanel lang={lang} vendor={vendor} /> : (<>
 
           {dtab === "overview" && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
@@ -289,6 +296,132 @@ function SettingsPanel({ lang, vendor }: { lang: string; vendor: (typeof VENDORS
   );
 }
 
+/* ---- Sponsored offers (advertisements) — vendor panel ---- */
+function OffersPanel({ lang, vendorId }: { lang: string; vendorId: string }) {
+  const ar = lang === "ar";
+  const store = useOfferStore();
+  const adPkg = useAdPackageStore();
+  const [editing, setEditing] = useState<Offer | null | undefined>(undefined); // undefined=closed, null=new
+  const [subscribing, setSubscribing] = useState<AdPackage | null>(null); // package being subscribed to (date step)
+  const rows = store.offersOf(vendorId);
+  const sub = adPkg.subOf(vendorId);              // current subscription (or null)
+  const expired = !!sub && !!sub.end && sub.end < new Date().toISOString().slice(0, 10);
+  const atLimit = !!sub && (rows.length >= sub.ads || expired); // reached limit OR package finished
+
+  // NOT subscribed → show the available ad packages to subscribe
+  if (!sub) {
+    return (
+      <div>
+        <h2 style={{ margin: "0 0 6px", fontSize: 18, fontWeight: 800 }}>{ar ? "اشترك في باقة إعلانات" : "Subscribe to an ad package"}</h2>
+        <p style={{ margin: "0 0 18px", fontSize: 13.5, color: "var(--text-3)" }}>{ar ? "اختر باقة لنشر عروضك المموّلة في «عروض مختارة لك»." : "Pick a package to publish sponsored offers in 'Featured for you'."}</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+          {adPkg.packages.filter((p) => p.active).map((p) => (
+            <div key={p.id} style={{ ...card, padding: 20, textAlign: "center" }}>
+              <div style={{ fontSize: 16, fontWeight: 800 }}>{ar ? p.ar : p.en}</div>
+              <div style={{ margin: "10px 0", display: "flex", alignItems: "baseline", justifyContent: "center", gap: 5 }}>
+                <span className="num" style={{ fontSize: 28, fontWeight: 800 }}>{money(p.price, lang as any)}</span>
+                <span style={{ color: "var(--text-3)", fontSize: 12 }}>/ {periodLabelOf(p.period, ar)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "center", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, color: "var(--brand)", background: "var(--brand-soft)", borderRadius: 999, padding: "4px 11px" }}><Icon name="tag" size={12} /><span className="num">{p.ads}</span> {ar ? "إعلان" : "ads"}</span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, color: "var(--gold-deep)", background: "var(--gold-soft)", borderRadius: 999, padding: "4px 11px" }}><Icon name="calendar" size={12} />{periodLabelOf(p.period, ar)}</span>
+              </div>
+              <Btn full size="sm" onClick={() => setSubscribing(p)}><Icon name="check" size={15} />{ar ? "اشترك الآن" : "Subscribe"}</Btn>
+            </div>
+          ))}
+          {adPkg.packages.filter((p) => p.active).length === 0 && <div style={{ gridColumn: "1 / -1", padding: 30, textAlign: "center", color: "var(--text-3)" }}>{ar ? "لا توجد باقات متاحة حالياً" : "No packages available"}</div>}
+        </div>
+        {subscribing && <SubscribeModal ar={ar} lang={lang} pkg={subscribing} onClose={() => setSubscribing(null)} onConfirm={(start) => { adPkg.subscribe(vendorId, subscribing.id, start); setSubscribing(null); }} />}
+      </div>
+    );
+  }
+  // SUBSCRIBED → offers CRUD, limited by the package's ad count
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, gap: 12, flexWrap: "wrap" }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{ar ? "العروض المموّلة" : "Sponsored offers"}</h2>
+          <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-3)" }}>
+            {ar ? "باقتك:" : "Your package:"} <b style={{ color: "var(--text-2)" }}>{ar ? sub.ar : sub.en}</b> · <span className="num">{rows.length}/{sub.ads}</span> {ar ? "إعلان مستخدم" : "ads used"}
+            <button onClick={() => adPkg.unsubscribe(vendorId)} style={{ background: "transparent", border: "none", color: "var(--sale)", fontSize: 12, fontWeight: 700, marginInlineStart: 10, cursor: "pointer" }}>{ar ? "إلغاء الاشتراك" : "Unsubscribe"}</button>
+          </p>
+          <p style={{ margin: "2px 0 0", fontSize: 12.5, color: expired ? "var(--sale)" : "var(--gold-deep)", display: "flex", alignItems: "center", gap: 6 }}><Icon name="calendar" size={13} />{ar ? "الفترة:" : "Period:"} <span className="num">{fmtDate(sub.start, ar)} → {fmtDate(sub.end, ar)}</span>{expired && <b>· {ar ? "منتهية" : "Expired"}</b>}</p>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          {expired && <Btn size="sm" onClick={() => adPkg.extend(vendorId)}><Icon name="check" size={15} />{ar ? "تمديد الباقة" : "Extend"}</Btn>}
+          <Btn size="sm" disabled={atLimit} onClick={() => !atLimit && setEditing(null)} style={{ opacity: atLimit ? .5 : 1, cursor: atLimit ? "not-allowed" : "pointer" }}><Icon name="plus" size={15} />{ar ? "عرض جديد" : "New offer"}</Btn>
+        </div>
+      </div>
+      {expired
+        ? <div style={{ background: "var(--brand-soft)", color: "var(--sale)", borderRadius: 10, padding: "10px 14px", fontSize: 12.5, fontWeight: 700, marginBottom: 14 }}>{ar ? "انتهت مدة باقتك — مدّد الباقة لمواصلة نشر العروض." : "Your package has expired — extend it to keep publishing offers."}</div>
+        : atLimit && <div style={{ background: "var(--gold-soft)", color: "var(--gold-deep)", borderRadius: 10, padding: "10px 14px", fontSize: 12.5, fontWeight: 700, marginBottom: 14 }}>{ar ? "وصلت إلى حدّ إعلانات باقتك — رقِّ باقتك لإضافة المزيد." : "You've reached your package's ad limit — upgrade to add more."}</div>}
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {rows.map((o) => (
+          <div key={o.id} style={{ ...card, padding: 14, display: "flex", gap: 14, alignItems: "center" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <div style={{ width: 72, height: 54, borderRadius: 10, overflow: "hidden", flex: "none", background: "var(--surface-2)" }}><img src={o.img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /></div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700, fontSize: 14 }}>{ar ? o.ar : o.en}</div>
+              <div style={{ fontSize: 12, color: "var(--text-3)", marginTop: 3, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                {o.discount > 0 && <span style={{ color: "var(--brand)", fontWeight: 700 }}>-{o.discount}%</span>}
+                <span className="num">{fmtDate(o.start, ar)} → {fmtDate(o.end, ar)}</span>
+              </div>
+            </div>
+            <button onClick={() => setEditing(o)} title="edit" style={{ background: "transparent", border: "none", color: "var(--brand)", cursor: "pointer" }}><Icon name="edit" size={16} /></button>
+            <button onClick={() => store.removeOffer(o.id)} title="delete" style={{ background: "transparent", border: "none", color: "var(--sale)", cursor: "pointer" }}><Icon name="trash" size={16} /></button>
+          </div>
+        ))}
+        {rows.length === 0 && <div style={{ padding: 40, textAlign: "center", color: "var(--text-3)", background: "var(--surface)", border: "1px dashed var(--line)", borderRadius: "var(--r-lg)" }}>{ar ? "لا توجد عروض بعد — أضف عرضك الأول." : "No offers yet — add your first."}</div>}
+      </div>
+      {editing !== undefined && (
+        <OfferModal ar={ar} vendorId={vendorId} offer={editing} onClose={() => setEditing(undefined)}
+          onSave={(o) => { if (o.id) store.updateOffer(o.id, o); else store.addOffer(o); setEditing(undefined); }} />
+      )}
+    </div>
+  );
+}
+
+/** Subscribe step: pick a start date → end computed from the package period, then "pay". */
+function SubscribeModal({ ar, lang, pkg, onClose, onConfirm }: { ar: boolean; lang: string; pkg: AdPackage; onClose: () => void; onConfirm: (start: string) => void }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const [start, setStart] = useState(today);
+  const end = addDays(start || today, PERIOD_DAYS[pkg.period]);
+  const periodLabel = periodLabelOf(pkg.period, ar);
+  const field: React.CSSProperties = { width: "100%", height: 46, padding: "0 12px", borderRadius: 10, border: "1.5px solid var(--line)", background: "var(--surface-2)", color: "var(--text)", fontSize: 14 };
+  return createPortal(
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(10,12,16,.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div onClick={(e) => e.stopPropagation()} dir={ar ? "rtl" : "ltr"} style={{ width: "100%", maxWidth: 440, background: "var(--surface)", borderRadius: "var(--r-xl)", border: "1px solid var(--line)", boxShadow: "var(--shadow-lg)", overflow: "hidden" }}>
+        <div style={{ background: "linear-gradient(135deg, var(--brand-strong), var(--brand))", color: "#fff", padding: "22px 24px" }}>
+          <div style={{ fontSize: 13, opacity: .9 }}>{ar ? "الاشتراك في باقة إعلانات" : "Ad package subscription"}</div>
+          <div style={{ fontSize: 20, fontWeight: 800, marginTop: 4 }}>{ar ? pkg.ar : pkg.en}</div>
+          <div style={{ display: "flex", gap: 14, marginTop: 10, fontSize: 13, fontWeight: 700 }}>
+            <span><span className="num">{pkg.ads}</span> {ar ? "إعلان" : "ads"}</span>
+            <span>· {periodLabelOf(pkg.period, ar)}</span>
+            <span style={{ marginInlineStart: "auto" }}>{money(pkg.price, lang as any)}</span>
+          </div>
+        </div>
+        <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 14 }}>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-2)" }}>{ar ? "تاريخ بدء الاشتراك" : "Start date"}</span>
+            <input type="date" min={today} value={start} onChange={(e) => setStart(e.target.value)} style={field} className="num" />
+          </label>
+          {/* computed date range */}
+          <div style={{ background: "var(--gold-soft)", borderRadius: 10, padding: "12px 14px", fontSize: 13, color: "var(--text)", display: "flex", alignItems: "center", gap: 8 }}>
+            <Icon name="calendar" size={16} style={{ color: "var(--gold-deep)" }} />
+            <span>{ar ? "المدة" : "Period"} ({periodLabel}): <b className="num">{fmtDate(start, ar)} → {fmtDate(end, ar)}</b></span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, fontWeight: 800, padding: "4px 2px" }}>
+            <span>{ar ? "الإجمالي" : "Total"}</span><span className="num">{money(pkg.price, lang as any)}</span>
+          </div>
+          <Btn size="lg" full onClick={() => onConfirm(start)}><Icon name="check" size={17} />{ar ? "ادفع واشترك" : "Pay & subscribe"}</Btn>
+          <p style={{ margin: 0, textAlign: "center", fontSize: 11.5, color: "var(--text-3)" }}>{ar ? "بيئة تجريبية — لا يتم خصم مبالغ فعلية." : "Demo — no real charge is made."}</p>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 function CouponsPanel({ lang, vendorId }: { lang: string; vendorId: string }) {
   const ar = lang === "ar";
   const store = useCouponStore();
@@ -351,6 +484,7 @@ function NewCouponModal({ lang, vendorId, onClose, onAdd }: { lang: string; vend
       vendor: vendorId,
       ar: `خصم ${pct}٪ — ${vName}`,
       en: `${pct}% off — ${vName}`,
+      type: "percent",
       pct,
       used: 0,
       limit,
@@ -416,13 +550,14 @@ function AddActivityModal({ d, lang, onClose, onSave }: { d: any; lang: string; 
   const [name, setName] = useState("");
   const [type, setType] = useState(cats[0]?.id ?? "electronics");
   const [subType, setSubType] = useState("");
-  const [has, setHas] = useState(true);
+  const [discType, setDiscType] = useState<"percent" | "fixed">("percent"); // نوع الخصم (إلزامي)
   const [pct, setPct] = useState(30);
   const [days, setDays] = useState(7);
+  const [couponDesc, setCouponDesc] = useState(""); // وصف الكوبون
   const [price, setPrice] = useState(199);
   // sub-categories of the selected department; reset selection when department changes
   const subs = catStore.subsOf(type);
-  const save = () => onSave({ id: "new" + Date.now(), ar: name || (lang === "ar" ? "نشاط جديد" : "New activity"), en: name || "New activity", price: Number(price), color: "#dfe7ef", cat: type, subcat: subType || undefined, pct: has ? Number(pct) : 0, days: has ? Number(days) : 0, active: false, pending: true, img: null });
+  const save = () => onSave({ id: "new" + Date.now(), ar: name || (lang === "ar" ? "نشاط جديد" : "New activity"), en: name || "New activity", price: Number(price), color: "#dfe7ef", cat: type, subcat: subType || undefined, pct: Number(pct), days: Number(days), active: false, pending: true, img: null });
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(8,16,12,.55)", backdropFilter: "blur(3px)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--surface)", borderRadius: "var(--r-xl)", width: "min(560px, 100%)", maxHeight: "90vh", overflow: "auto", boxShadow: "var(--shadow-lg)", border: "1px solid var(--line)" }}>
@@ -446,19 +581,22 @@ function AddActivityModal({ d, lang, onClose, onSave }: { d: any; lang: string; 
             </DField>
           </div>
           <DField label={d.price}><input type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} style={inp} className="num" /></DField>
-          <DField label={d.hasDiscount}>
+          {/* discount is mandatory — always shown */}
+          <DField label={ar ? "نوع الخصم" : "Discount type"}>
             <div style={{ display: "flex", gap: 10 }}>
-              {([[true, d.yes], [false, d.no]] as [boolean, string][]).map(([v, l]) => (
-                <button key={String(v)} onClick={() => setHas(v)} style={{ flex: 1, padding: 10, borderRadius: 10, border: "1.5px solid " + (has === v ? "var(--brand)" : "var(--line)"), background: has === v ? "var(--brand-soft)" : "var(--surface)", color: has === v ? "var(--brand)" : "var(--text-2)", fontWeight: 700, fontSize: 13.5 }}>{l}</button>
+              {([["percent", ar ? "نسبة مئوية %" : "Percentage %"], ["fixed", ar ? "مبلغ ثابت ﷼" : "Fixed amount ﷼"]] as ["percent" | "fixed", string][]).map(([k, l]) => (
+                <button key={k} onClick={() => setDiscType(k)} style={{ flex: 1, padding: 10, borderRadius: 10, border: "1.5px solid " + (discType === k ? "var(--brand)" : "var(--line)"), background: discType === k ? "var(--brand-soft)" : "var(--surface)", color: discType === k ? "var(--brand)" : "var(--text-2)", fontWeight: 700, fontSize: 13.5 }}>{l}</button>
               ))}
             </div>
           </DField>
-          {has && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-              <DField label={d.discountPct}><input type="number" value={pct} onChange={(e) => setPct(Number(e.target.value))} style={inp} className="num" /></DField>
-              <DField label={d.durationDays}><input type="number" value={days} onChange={(e) => setDays(Number(e.target.value))} style={inp} className="num" /></DField>
-            </div>
-          )}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <DField label={discType === "fixed" ? (ar ? "قيمة الخصم (﷼)" : "Discount (SAR)") : d.discountPct}><input type="number" value={pct} onChange={(e) => setPct(Number(e.target.value))} style={inp} className="num" /></DField>
+            <DField label={d.durationDays}><input type="number" value={days} onChange={(e) => setDays(Number(e.target.value))} style={inp} className="num" /></DField>
+          </div>
+          <DField label={ar ? "وصف الكوبون" : "Coupon description"}>
+            <textarea value={couponDesc} onChange={(e) => setCouponDesc(e.target.value)} rows={2} placeholder={ar ? "مثال: خصم على المنتجات المختارة" : "e.g. Applies to selected products"}
+              style={{ ...inp, height: "auto", padding: "10px 14px", lineHeight: 1.6, resize: "vertical" }} />
+          </DField>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
             <DField label={d.siteLink}><input placeholder="https://" style={inp} className="num" /></DField>
             <DField label={d.mapLink}><input placeholder="https://maps…" style={inp} className="num" /></DField>

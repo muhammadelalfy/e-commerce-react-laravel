@@ -235,11 +235,12 @@ export const EVENTS: EventItem[] = [
   { id: "e5", ar: "معرض العقارات", en: "Real Estate Expo", ar_d: "شقق وفلل وأراضٍ بعروض تمويل حصرية من أفضل المطوّرين.", en_d: "Apartments, villas and land with exclusive financing offers from top developers.", city: { ar: "الرياض", en: "Riyadh" }, date: { ar: "٥–١٠ سبتمبر", en: "Sep 5–10" }, tint: "#e6eef7", img: IMG + "cat-kitchen.png", live: true },
 ];
 
-export interface Coupon { id: string; code: string; vendor: string; ar: string; en: string; pct: number; used: number; limit: number; active: boolean; until: { ar: string; en: string }; }
+export type CouponType = "percent" | "fixed"; // نسبة مئوية أو مبلغ ثابت
+export interface Coupon { id: string; code: string; vendor: string; ar: string; en: string; type: CouponType; pct: number; desc?: string; used: number; limit: number; active: boolean; until: { ar: string; en: string }; }
 export const COUPONS: Coupon[] = [
-  { id: "c1", code: "MASH50", vendor: "techzone", ar: "خصم ٥٠٪ — متجر تك زون", en: "50% off — Tech Zone", pct: 50, used: 128, limit: 200, active: true,  until: { ar: "٣٠ يوليو", en: "Jul 30" } },
-  { id: "c2", code: "OUD20",  vendor: "aloud", ar: "خصم ٢٠٪ — العربية للعود", en: "20% off — Al-Arabia Oud", pct: 20, used: 64,  limit: 150, active: true,  until: { ar: "١٥ أغسطس", en: "Aug 15" } },
-  { id: "c3", code: "WELCOME10", vendor: "nakhba", ar: "خصم ترحيبي ١٠٪", en: "Welcome 10%", pct: 10, used: 540, limit: 1000, active: false, until: { ar: "منتهٍ", en: "Expired" } },
+  { id: "c1", code: "MASH50", vendor: "techzone", ar: "خصم ٥٠٪ — متجر تك زون", en: "50% off — Tech Zone", type: "percent", pct: 50, desc: "خصم ٥٠٪ على السماعات المختارة", used: 128, limit: 200, active: true,  until: { ar: "٣٠ يوليو", en: "Jul 30" } },
+  { id: "c2", code: "OUD20",  vendor: "aloud", ar: "خصم ٢٠٪ — العربية للعود", en: "20% off — Al-Arabia Oud", type: "percent", pct: 20, desc: "خصم على العود الكمبودي", used: 64,  limit: 150, active: true,  until: { ar: "١٥ أغسطس", en: "Aug 15" } },
+  { id: "c3", code: "SAVE50", vendor: "nakhba", ar: "خصم ٥٠ ﷼ على الطلب", en: "50 SAR off", type: "fixed", pct: 50, desc: "خصم ٥٠ ريال على الطلبات فوق ٢٠٠ ريال", used: 540, limit: 1000, active: false, until: { ar: "منتهٍ", en: "Expired" } },
 ];
 
 export interface City { id: string; ar: string; en: string; stores: number; x: number; y: number; }

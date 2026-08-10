@@ -3,12 +3,15 @@ import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useApp } from "@/lib/AppContext";
 import { Icon, Btn, Thumb, money, RichText } from "../ui";
-import { VENDORS, PRODUCTS, CITIES, REELS, EVENTS, CATS, PLANS, type Cat, type Plan } from "@/lib/data";
+import { VENDORS, PRODUCTS, CITIES, REELS, EVENTS, CATS, PLANS, type Cat, type Plan, type Coupon, type CouponType } from "@/lib/data";
 import { useCouponStore } from "@/lib/couponStore";
 import { useGeoStore } from "@/lib/geoStore";
 import { useCatStore } from "@/lib/catStore";
 import { useStoreStore } from "@/lib/storeStore";
 import { useRepStore } from "@/lib/repStore";
+import { useOfferStore, type Offer } from "@/lib/offerStore";
+import { OfferModal, fmtDate } from "../OfferParts";
+import { useAdPackageStore, periodLabelOf, PERIOD_DAYS, addDays, type AdPackage, type AdPeriod } from "@/lib/adPackageStore";
 import { fetchCities } from "../CountryModal";
 import { GULF_COUNTRIES } from "@/lib/countries";
 
@@ -44,6 +47,8 @@ export function Admin({ go }: { go: Go }) {
     ["vendors", ar ? "المتاجر" : "Vendors", "store", pendingStores],
     ["approval", ar ? "موافقة المنتجات" : "Approvals", "check"],
     ["categories", ar ? "الأقسام والأقسام الفرعية" : "Categories", "grid"],
+    ["adpackages", ar ? "باقات الإعلانات" : "Ad packages", "box"],
+    ["offers", ar ? "العروض المموّلة" : "Sponsored offers", "tag"],
     ["coupons", ar ? "كوبونات الخصم" : "Coupons", "tag", unread],
     ["countries", ar ? "الدول" : "Countries", "globe"],
     ["cities", ar ? "المدن" : "Cities", "pin"],
@@ -76,6 +81,8 @@ export function Admin({ go }: { go: Go }) {
         {tab === "overview" && <AdminOverview ar={ar} lang={lang} />}
         {tab === "approval" && <AdminApproval ar={ar} lang={lang} />}
         {tab === "categories" && <AdminCategories ar={ar} />}
+        {tab === "adpackages" && <AdminAdPackages ar={ar} lang={lang} />}
+        {tab === "offers" && <AdminOffers ar={ar} />}
         {tab === "coupons" && <AdminCoupons ar={ar} />}
         {tab === "users" && <AdminUsers ar={ar} />}
         {tab === "vendors" && <AdminVendors ar={ar} go={go} />}
@@ -266,14 +273,222 @@ function AdminCategories({ ar }: { ar: boolean }) {
   );
 }
 
+/* ---- Sponsored offers (advertisements) CRUD — admin ---- */
+/* ---- Advertisement packages CRUD — admin ---- */
+function AdminAdPackages({ ar, lang }: { ar: boolean; lang: string }) {
+  const store = useAdPackageStore();
+  const [editing, setEditing] = useState<AdPackage | null | undefined>(undefined);
+  return (
+    <div>
+      <Head title={ar ? "باقات الإعلانات" : "Ad packages"}
+        action={<Btn size="sm" onClick={() => setEditing(null)}><Icon name="plus" size={15} />{ar ? "باقة جديدة" : "New package"}</Btn>} />
+      <p style={{ margin: "-8px 0 16px", fontSize: 13, color: "var(--text-3)" }}>{ar ? "يشترك التاجر في إحداها لنشر عروضه المموّلة؛ عدد الإعلانات يحدّد سقف عروضه." : "Vendors subscribe to publish sponsored offers; the ad count caps their offers."}</p>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+        {store.packages.map((p) => (
+          <div key={p.id} style={{ ...card, padding: 20, position: "relative", border: "2px solid " + (p.active ? "var(--brand)" : "var(--line)") }}>
+            <div style={{ position: "absolute", top: 12, insetInlineEnd: 12, display: "flex", gap: 6 }}>
+              <button onClick={() => setEditing(p)} title="edit" style={{ background: "transparent", border: "none", color: "var(--brand)", cursor: "pointer" }}><Icon name="edit" size={16} /></button>
+              <button onClick={() => store.removePackage(p.id)} title="delete" style={{ background: "transparent", border: "none", color: "var(--sale)", cursor: "pointer" }}><Icon name="trash" size={16} /></button>
+            </div>
+            <div style={{ fontSize: 17, fontWeight: 800 }}>{ar ? p.ar : p.en}</div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6, margin: "12px 0 10px" }}>
+              <span className="num" style={{ fontSize: 30, fontWeight: 800 }}>{money(p.price, lang as any)}</span>
+              <span style={{ color: "var(--text-3)", fontSize: 12.5 }}>/{ar ? "شهرياً" : "mo"}</span>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "var(--brand)", background: "var(--brand-soft)", borderRadius: 999, padding: "5px 12px" }}>
+                <Icon name="tag" size={14} /><span className="num">{p.ads}</span> {ar ? "إعلان" : "ads"}
+              </span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "var(--gold-deep)", background: "var(--gold-soft)", borderRadius: 999, padding: "5px 12px" }}>
+                <Icon name="calendar" size={14} />{periodLabelOf(p.period, ar)}
+              </span>
+              {p.autoRenew && <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, color: "var(--active)", background: "var(--active-bg)", borderRadius: 999, padding: "5px 11px" }}><Icon name="check" size={13} />{ar ? "تجديد تلقائي" : "Auto-renew"} · <span className="num">{p.renewPrice ?? p.price} ﷼</span></span>}
+            </div>
+            <button onClick={() => store.updatePackage(p.id, { active: !p.active })}
+              style={{ width: "100%", marginTop: 14, padding: "8px 0", borderRadius: 10, border: "1.5px solid " + (p.active ? "var(--brand)" : "var(--line)"), background: p.active ? "var(--brand-soft)" : "var(--surface)", color: p.active ? "var(--brand)" : "var(--text-2)", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>
+              {p.active ? (ar ? "متاحة ✓" : "Available ✓") : (ar ? "غير متاحة" : "Unavailable")}
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* subscribed stores */}
+      <h2 style={{ margin: "30px 0 14px", fontSize: 16, fontWeight: 800 }}>{ar ? "المتاجر المشتركة" : "Subscribed stores"}</h2>
+      <div style={{ ...card, overflow: "hidden" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1.2fr 1.6fr 1fr 0.9fr", gap: 12, padding: "12px 18px", borderBottom: "1px solid var(--line)", fontSize: 12, fontWeight: 700, color: "var(--text-3)" }}>
+          <span>{ar ? "المتجر" : "Store"}</span><span>{ar ? "الباقة" : "Package"}</span><span>{ar ? "الفترة" : "Period"}</span><span>{ar ? "الحالة" : "Status"}</span><span style={{ textAlign: "end" }}></span>
+        </div>
+        {store.allSubs().map((s) => {
+          const v = VENDORS[s.vendor];
+          return (
+            <div key={s.vendor} style={{ display: "grid", gridTemplateColumns: "1.4fr 1.2fr 1.6fr 1fr 0.9fr", gap: 12, padding: "13px 18px", borderBottom: "1px solid var(--line-soft)", alignItems: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                <span style={{ width: 28, height: 28, borderRadius: 8, flex: "none", background: v?.color || "var(--surface-2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}><Icon name="store" size={14} /></span>
+                <span style={{ fontSize: 13, fontWeight: 700 }}>{v ? (ar ? v.ar : v.en) : s.vendor}</span>
+              </div>
+              <span style={{ fontSize: 13, color: "var(--text-2)" }}>{s.pkg ? (ar ? s.pkg.ar : s.pkg.en) : "—"}</span>
+              <span className="num" style={{ fontSize: 12.5, color: "var(--text-2)" }}>{fmtDate(s.start, ar)} → {fmtDate(s.end, ar)}</span>
+              <span style={{ fontSize: 11.5, fontWeight: 800, padding: "4px 10px", borderRadius: 999, justifySelf: "start", background: s.expired ? "var(--brand-soft)" : "var(--active-bg)", color: s.expired ? "var(--sale)" : "var(--active)" }}>{s.expired ? (ar ? "منتهية" : "Expired") : (ar ? "فعّالة" : "Active")}</span>
+              <div style={{ justifySelf: "end" }}>
+                {s.expired
+                  ? <Btn size="sm" onClick={() => store.extend(s.vendor)}><Icon name="check" size={14} />{ar ? "تمديد" : "Extend"}</Btn>
+                  : <button onClick={() => store.unsubscribe(s.vendor)} title={ar ? "إلغاء" : "Cancel"} style={{ background: "transparent", border: "none", color: "var(--sale)", cursor: "pointer" }}><Icon name="trash" size={16} /></button>}
+              </div>
+            </div>
+          );
+        })}
+        {store.allSubs().length === 0 && <div style={{ padding: 30, textAlign: "center", color: "var(--text-3)", fontSize: 13 }}>{ar ? "لا توجد متاجر مشتركة بعد" : "No subscribed stores yet"}</div>}
+      </div>
+
+      {editing !== undefined && (
+        <AdPackageModal ar={ar} lang={lang} pkg={editing} onClose={() => setEditing(undefined)}
+          onSave={(p) => { if (p.id && store.packages.some((x) => x.id === p.id)) store.updatePackage(p.id, p); else store.addPackage({ ...p, id: "adp-" + Date.now().toString().slice(-6) }); setEditing(undefined); }} />
+      )}
+    </div>
+  );
+}
+
+/** Ad-package editor: period selector + start date → end date computed from the period. */
+function AdPackageModal({ ar, lang, pkg, onClose, onSave }: { ar: boolean; lang: string; pkg: AdPackage | null; onClose: () => void; onSave: (p: AdPackage) => void }) {
+  const [name, setName] = useState(pkg?.ar ?? "");
+  const [en, setEn] = useState(pkg?.en ?? "");
+  const [ads, setAds] = useState(String(pkg?.ads ?? 5));
+  const [price, setPrice] = useState(String(pkg?.price ?? 99));
+  const [period, setPeriod] = useState<AdPeriod>(pkg?.period ?? "month");
+  const [start, setStart] = useState(pkg?.start ?? new Date().toISOString().slice(0, 10));
+  const [autoRenew, setAutoRenew] = useState(pkg?.autoRenew ?? false);
+  const [renewPrice, setRenewPrice] = useState(String(pkg?.renewPrice ?? pkg?.price ?? 99));
+  const [showErr, setShowErr] = useState(false);
+  const end = addDays(start || new Date().toISOString().slice(0, 10), PERIOD_DAYS[period]); // auto from period
+  const save = () => {
+    if (!name.trim()) { setShowErr(true); return; }
+    onSave({ id: pkg?.id ?? "", ar: name.trim(), en: (en || name).trim(), ads: Number(ads) || 0, price: Number(price) || 0, period, start, autoRenew, renewPrice: autoRenew ? (Number(renewPrice) || 0) : undefined, active: pkg?.active ?? true });
+  };
+  const fld = (bad: boolean): React.CSSProperties => ({ height: 44, padding: "0 14px", borderRadius: 10, border: "1.5px solid " + (bad ? "var(--sale)" : "var(--line)"), background: "var(--surface-2)", color: "var(--text)", fontSize: 14, fontFamily: "inherit", width: "100%" });
+  const lab: React.CSSProperties = { fontSize: 12.5, fontWeight: 600, color: "var(--text-2)" };
+  return (
+    <Portal>
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(8,16,20,.6)", backdropFilter: "blur(3px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div onClick={(e) => e.stopPropagation()} dir={ar ? "rtl" : "ltr"} style={{ background: "var(--surface)", borderRadius: "var(--r-xl)", width: "min(560px, 100%)", maxHeight: "90vh", overflow: "auto", boxShadow: "var(--shadow-lg)", border: "1px solid var(--line)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid var(--line)" }}>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{pkg ? (ar ? "تعديل الباقة" : "Edit package") : (ar ? "باقة إعلانات جديدة" : "New ad package")}</h3>
+          <button onClick={onClose} style={{ background: "transparent", border: "none", fontSize: 24, color: "var(--text-3)", lineHeight: 1, cursor: "pointer" }}>×</button>
+        </div>
+        <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 15 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={lab}>{ar ? "اسم الباقة (عربي)" : "Name (AR)"}<span style={{ color: "var(--sale)", marginInlineStart: 4 }}>*</span></span>
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder={ar ? "مثال: باقة مميّزة" : "e.g. Premium"} style={fld(showErr && !name.trim())} />
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={lab}>{ar ? "الاسم بالإنجليزية" : "Name (EN)"}</span>
+              <input value={en} onChange={(e) => setEn(e.target.value)} placeholder="e.g. Premium" style={fld(false)} />
+            </label>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={lab}>{ar ? "عدد الإعلانات" : "Number of ads"}</span>
+              <input type="number" min={1} value={ads} onChange={(e) => setAds(e.target.value)} style={fld(false)} />
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={lab}>{ar ? "السعر (﷼)" : "Price (SAR)"}</span>
+              <input type="number" min={0} value={price} onChange={(e) => setPrice(e.target.value)} style={fld(false)} />
+            </label>
+          </div>
+          {/* period selector */}
+          <div>
+            <span style={{ ...lab, display: "block", marginBottom: 6 }}>{ar ? "المدة" : "Period"}</span>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {(["week", "month", "6months", "year"] as AdPeriod[]).map((k) => (
+                <button key={k} onClick={() => setPeriod(k)} style={{ flex: "1 1 40%", padding: 10, borderRadius: 10, border: "1.5px solid " + (period === k ? "var(--brand)" : "var(--line)"), background: period === k ? "var(--brand-soft)" : "var(--surface)", color: period === k ? "var(--brand)" : "var(--text-2)", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>{periodLabelOf(k, ar)}</button>
+              ))}
+            </div>
+          </div>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6, maxWidth: 240 }}>
+            <span style={lab}>{ar ? "تاريخ البداية" : "Start date"}</span>
+            <input type="date" value={start} onChange={(e) => setStart(e.target.value)} style={fld(false)} />
+          </label>
+          {/* end date auto-computed from the selected period */}
+          <div style={{ background: "var(--gold-soft)", borderRadius: 10, padding: "12px 14px", fontSize: 13, color: "var(--text)", display: "flex", alignItems: "center", gap: 8 }}>
+            <Icon name="calendar" size={16} style={{ color: "var(--gold-deep)" }} />
+            <span>{ar ? "تاريخ الانتهاء (تلقائي حسب المدة):" : "End date (auto from period):"} <b className="num">{fmtDate(end, ar)}</b></span>
+          </div>
+          {/* auto-renewal option + its price */}
+          <div style={{ border: "1.5px solid var(--line)", borderRadius: 10, padding: "12px 14px" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+              <input type="checkbox" checked={autoRenew} onChange={(e) => setAutoRenew(e.target.checked)} style={{ accentColor: "var(--brand)", width: 16, height: 16 }} />
+              <span style={{ fontWeight: 700, fontSize: 13.5 }}>{ar ? "التجديد التلقائي" : "Auto-renewal"}</span>
+              <span style={{ fontSize: 12, color: "var(--text-3)" }}>{ar ? "تُجدَّد الباقة تلقائياً عند انتهائها" : "renews automatically when it ends"}</span>
+            </label>
+            {autoRenew && (
+              <label style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 12, maxWidth: 240 }}>
+                <span style={lab}>{ar ? "سعر التجديد (﷼)" : "Renewal price (SAR)"}</span>
+                <input type="number" min={0} value={renewPrice} onChange={(e) => setRenewPrice(e.target.value)} style={fld(false)} />
+              </label>
+            )}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 12, padding: "16px 24px", borderTop: "1px solid var(--line)" }}>
+          <Btn variant="outline" onClick={onClose} style={{ flex: 1 }}>{ar ? "إلغاء" : "Cancel"}</Btn>
+          <Btn onClick={save} style={{ flex: 2 }}><Icon name="check" size={16} />{ar ? "حفظ الباقة" : "Save package"}</Btn>
+        </div>
+      </div>
+    </div>
+    </Portal>
+  );
+}
+
+function AdminOffers({ ar }: { ar: boolean }) {
+  const store = useOfferStore();
+  const vName = (id: string) => { const v = VENDORS[id]; return v ? (ar ? v.ar : v.en) : id; };
+  const [editing, setEditing] = useState<Offer | null | undefined>(undefined);
+  return (
+    <div>
+      <Head title={ar ? "العروض المموّلة" : "Sponsored offers"}
+        action={<Btn size="sm" onClick={() => setEditing(null)}><Icon name="plus" size={15} />{ar ? "عرض جديد" : "New offer"}</Btn>} />
+      <div style={{ ...card, overflow: "hidden" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "0.7fr 2fr 1.2fr 0.8fr 1.4fr 0.7fr", gap: 12, padding: "12px 18px", borderBottom: "1px solid var(--line)", fontSize: 12, fontWeight: 700, color: "var(--text-3)" }}>
+          <span>{ar ? "الصورة" : "Image"}</span><span>{ar ? "العرض" : "Offer"}</span><span>{ar ? "المتجر" : "Store"}</span><span>{ar ? "الخصم" : "Off"}</span><span>{ar ? "الفترة" : "Period"}</span><span style={{ textAlign: "end" }}></span>
+        </div>
+        {store.offers.map((o) => (
+          <div key={o.id} style={{ display: "grid", gridTemplateColumns: "0.7fr 2fr 1.2fr 0.8fr 1.4fr 0.7fr", gap: 12, padding: "12px 18px", borderBottom: "1px solid var(--line-soft)", alignItems: "center" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <div style={{ width: 52, height: 40, borderRadius: 8, overflow: "hidden", background: "var(--surface-2)" }}><img src={o.img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /></div>
+            <span style={{ fontWeight: 700, fontSize: 13.5 }}>{ar ? o.ar : o.en}</span>
+            <span style={{ fontSize: 13, color: "var(--text-2)" }}>{vName(o.vendor)}</span>
+            <span className="num" style={{ fontWeight: 800, color: "var(--brand)" }}>{o.discount}%</span>
+            <span className="num" style={{ fontSize: 12, color: "var(--text-2)" }}>{fmtDate(o.start, ar)} → {fmtDate(o.end, ar)}</span>
+            <div style={{ display: "flex", gap: 6, justifySelf: "end" }}>
+              <button onClick={() => setEditing(o)} title="edit" style={{ background: "transparent", border: "none", color: "var(--brand)", cursor: "pointer" }}><Icon name="edit" size={15} /></button>
+              <button onClick={() => store.removeOffer(o.id)} title="delete" style={{ background: "transparent", border: "none", color: "var(--sale)", cursor: "pointer" }}><Icon name="trash" size={15} /></button>
+            </div>
+          </div>
+        ))}
+        {store.offers.length === 0 && <div style={{ padding: 40, textAlign: "center", color: "var(--text-3)" }}>{ar ? "لا توجد عروض" : "No offers"}</div>}
+      </div>
+      {editing !== undefined && (
+        <Portal>
+          <OfferModal ar={ar} vendorId={editing?.vendor || Object.keys(VENDORS)[0]} offer={editing} onClose={() => setEditing(undefined)}
+            onSave={(o) => { if (o.id) store.updateOffer(o.id, o); else store.addOffer(o); setEditing(undefined); }} />
+        </Portal>
+      )}
+    </div>
+  );
+}
+
 function AdminCoupons({ ar }: { ar: boolean }) {
   const store = useCouponStore();
   const vName = (id: string) => { const v = VENDORS[id]; return v ? (ar ? v.ar : v.en) : id; };
   const notices = store.notices;
+  const [editing, setEditing] = useState<Coupon | null | undefined>(undefined); // undefined=closed, null=new
+  const discountLabel = (c: Coupon) => c.type === "fixed" ? `${c.pct} ﷼` : `${c.pct}%`;
   return (
     <div>
       <Head title={ar ? "كوبونات الخصم" : "Discount coupons"}
-        action={notices.some((n) => !n.read) ? <Btn size="sm" variant="outline" onClick={() => store.markNoticesRead()}><Icon name="check" size={15} />{ar ? "تعليم الكل كمقروء" : "Mark all read"}</Btn> : undefined} />
+        action={<div style={{ display: "flex", gap: 8 }}>
+          {notices.some((n) => !n.read) && <Btn size="sm" variant="outline" onClick={() => store.markNoticesRead()}><Icon name="check" size={15} />{ar ? "تعليم كمقروء" : "Mark read"}</Btn>}
+          <Btn size="sm" onClick={() => setEditing(null)}><Icon name="plus" size={15} />{ar ? "كوبون جديد" : "New coupon"}</Btn>
+        </div>} />
 
       {/* Notifications: which vendor added which coupon */}
       {notices.length > 0 && (
@@ -296,35 +511,137 @@ function AdminCoupons({ ar }: { ar: boolean }) {
         </div>
       )}
 
-      {/* All coupons across every vendor */}
+      {/* All coupons — full CRUD */}
       <div style={{ ...card, overflow: "hidden" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1.6fr .8fr 1.2fr 1fr .8fr", gap: 12, padding: "12px 18px", borderBottom: "1px solid var(--line)", fontSize: 12, fontWeight: 800, color: "var(--text-3)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1.4fr 1.1fr 1fr 1fr .9fr", gap: 12, padding: "12px 18px", borderBottom: "1px solid var(--line)", fontSize: 12, fontWeight: 800, color: "var(--text-3)" }}>
           <span>{ar ? "المتجر" : "Store"}</span>
           <span>{ar ? "الكود" : "Code"}</span>
-          <span>{ar ? "الخصم" : "Discount"}</span>
+          <span>{ar ? "النوع / القيمة" : "Type / value"}</span>
           <span>{ar ? "الاستخدام" : "Usage"}</span>
-          <span>{ar ? "حتى" : "Until"}</span>
-          <span style={{ textAlign: "end" }}>{ar ? "الحالة" : "Status"}</span>
+          <span>{ar ? "الحالة" : "Status"}</span>
+          <span style={{ textAlign: "end" }}></span>
         </div>
         {store.coupons.map((c) => (
-          <div key={c.id} style={{ display: "grid", gridTemplateColumns: "1.4fr 1.6fr .8fr 1.2fr 1fr .8fr", gap: 12, alignItems: "center", padding: "13px 18px", borderBottom: "1px solid var(--line-soft)" }}>
+          <div key={c.id} style={{ display: "grid", gridTemplateColumns: "1.3fr 1.4fr 1.1fr 1fr 1fr .9fr", gap: 12, alignItems: "center", padding: "13px 18px", borderBottom: "1px solid var(--line-soft)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
               <span style={{ width: 28, height: 28, borderRadius: 8, flex: "none", background: VENDORS[c.vendor]?.color || "var(--surface-2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}><Icon name="store" size={14} /></span>
               <span style={{ fontSize: 13, fontWeight: 700 }}>{vName(c.vendor)}</span>
             </div>
-            <span className="num" style={{ fontWeight: 800, fontSize: 13.5, letterSpacing: ".5px", border: "1.5px dashed var(--line)", borderRadius: 6, padding: "3px 10px", justifySelf: "start" }}>{c.code}</span>
-            <span className="num" style={{ fontWeight: 800, color: "var(--brand)" }}>{c.pct}%</span>
-            <div style={{ fontSize: 12.5 }}><span className="num">{c.used}/{c.limit}</span><div style={{ height: 5, borderRadius: 999, background: "var(--surface-2)", marginTop: 4 }}><div style={{ width: Math.round(c.used / c.limit * 100) + "%", height: "100%", borderRadius: 999, background: "var(--brand)" }} /></div></div>
-            <span className="num" style={{ fontSize: 12.5, color: "var(--text-2)" }}>{ar ? c.until.ar : c.until.en}</span>
+            <div style={{ minWidth: 0 }}>
+              <span className="num" style={{ fontWeight: 800, fontSize: 13, letterSpacing: ".5px", border: "1.5px dashed var(--line)", borderRadius: 6, padding: "2px 8px", display: "inline-block" }}>{c.code}</span>
+              {c.desc && <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.desc}</div>}
+            </div>
+            <div>
+              <span className="num" style={{ fontWeight: 800, color: "var(--brand)" }}>{discountLabel(c)}</span>
+              <span style={{ fontSize: 10.5, fontWeight: 700, background: "var(--surface-2)", color: "var(--text-3)", padding: "2px 7px", borderRadius: 999, marginInlineStart: 6 }}>{c.type === "fixed" ? (ar ? "مبلغ" : "Fixed") : (ar ? "نسبة" : "%")}</span>
+            </div>
+            <div style={{ fontSize: 12.5 }}><span className="num">{c.used}/{c.limit}</span><div style={{ height: 5, borderRadius: 999, background: "var(--surface-2)", marginTop: 4 }}><div style={{ width: Math.round(c.used / Math.max(c.limit, 1) * 100) + "%", height: "100%", borderRadius: 999, background: "var(--brand)" }} /></div></div>
             <button onClick={() => store.toggleCoupon(c.id)} title={c.active ? (ar ? "إيقاف" : "Disable") : (ar ? "تفعيل" : "Enable")}
-              style={{ justifySelf: "end", background: c.active ? "var(--active-bg)" : "var(--surface-2)", color: c.active ? "var(--active)" : "var(--text-3)", fontSize: 11.5, fontWeight: 800, padding: "5px 10px", borderRadius: 999, border: "none", cursor: "pointer" }}>
+              style={{ justifySelf: "start", background: c.active ? "var(--active-bg)" : "var(--surface-2)", color: c.active ? "var(--active)" : "var(--text-3)", fontSize: 11.5, fontWeight: 800, padding: "5px 10px", borderRadius: 999, border: "none", cursor: "pointer" }}>
               {c.active ? (ar ? "فعّال" : "Active") : (ar ? "موقوف" : "Off")}
             </button>
+            <div style={{ display: "flex", gap: 6, justifySelf: "end" }}>
+              <button onClick={() => setEditing(c)} title="edit" style={{ background: "transparent", border: "none", color: "var(--brand)", cursor: "pointer" }}><Icon name="edit" size={15} /></button>
+              <button onClick={() => store.removeCoupon(c.id)} title="delete" style={{ background: "transparent", border: "none", color: "var(--sale)", cursor: "pointer" }}><Icon name="trash" size={15} /></button>
+            </div>
           </div>
         ))}
         {store.coupons.length === 0 && <div style={{ padding: 40, textAlign: "center", color: "var(--text-3)" }}>{ar ? "لا توجد كوبونات" : "No coupons"}</div>}
       </div>
+
+      {editing !== undefined && (
+        <CouponModal ar={ar} coupon={editing} onClose={() => setEditing(undefined)}
+          onSave={(c) => { if (c.id && store.coupons.some((x) => x.id === c.id)) store.updateCoupon(c.id, c); else store.addCoupon(c); setEditing(undefined); }} />
+      )}
     </div>
+  );
+}
+
+/** Admin coupon editor: type (percent/fixed) + value + code + description + limit + expiry. */
+function CouponModal({ ar, coupon, onClose, onSave }: { ar: boolean; coupon: Coupon | null; onClose: () => void; onSave: (c: Coupon) => void }) {
+  const [code, setCode] = useState(coupon?.code ?? "");
+  const [vendor, setVendor] = useState(coupon?.vendor ?? Object.keys(VENDORS)[0]);
+  const [type, setType] = useState<CouponType>(coupon?.type ?? "percent");
+  const [value, setValue] = useState(String(coupon?.pct ?? 10));
+  const [desc, setDesc] = useState(coupon?.desc ?? "");
+  const [limit, setLimit] = useState(String(coupon?.limit ?? 100));
+  const [until, setUntil] = useState("");
+  const [showErr, setShowErr] = useState(false);
+  const save = () => {
+    const c = (code || "").trim().toUpperCase().replace(/\s+/g, "");
+    if (!c) { setShowErr(true); return; }
+    const v = VENDORS[vendor]; const vn = v ? (ar ? v.ar : v.en) : vendor;
+    const amount = Number(value) || 0;
+    const label = type === "fixed" ? `${amount} ﷼` : `${amount}٪`;
+    const untilOut = until
+      ? { ar: new Date(until + "T00:00:00").toLocaleDateString("ar-EG", { day: "numeric", month: "long" }), en: new Date(until + "T00:00:00").toLocaleDateString("en-US", { day: "numeric", month: "short" }) }
+      : (coupon?.until ?? { ar: "غير محدّد", en: "Open" });
+    onSave({
+      id: coupon?.id ?? "c" + Date.now(), code: c, vendor,
+      ar: `خصم ${label} — ${vn}`, en: `${label} off — ${vn}`,
+      type, pct: amount, desc: desc.trim() || undefined,
+      used: coupon?.used ?? 0, limit: Number(limit) || 0, active: coupon?.active ?? true, until: untilOut,
+    });
+  };
+  const fld = (bad: boolean): React.CSSProperties => ({ height: 44, padding: "0 14px", borderRadius: 10, border: "1.5px solid " + (bad ? "var(--sale)" : "var(--line)"), background: "var(--surface-2)", color: "var(--text)", fontSize: 14, fontFamily: "inherit", width: "100%" });
+  const lab: React.CSSProperties = { fontSize: 12.5, fontWeight: 600, color: "var(--text-2)" };
+  return (
+    <Portal>
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(8,16,20,.6)", backdropFilter: "blur(3px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div onClick={(e) => e.stopPropagation()} dir={ar ? "rtl" : "ltr"} style={{ background: "var(--surface)", borderRadius: "var(--r-xl)", width: "min(560px, 100%)", maxHeight: "90vh", overflow: "auto", boxShadow: "var(--shadow-lg)", border: "1px solid var(--line)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid var(--line)" }}>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{coupon ? (ar ? "تعديل الكوبون" : "Edit coupon") : (ar ? "كوبون جديد" : "New coupon")}</h3>
+          <button onClick={onClose} style={{ background: "transparent", border: "none", fontSize: 24, color: "var(--text-3)", lineHeight: 1, cursor: "pointer" }}>×</button>
+        </div>
+        <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 15 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={lab}>{ar ? "كود الكوبون" : "Coupon code"}<span style={{ color: "var(--sale)", marginInlineStart: 4 }}>*</span></span>
+              <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="SUMMER25" style={fld(showErr && !code.trim())} />
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={lab}>{ar ? "المتجر" : "Store"}</span>
+              <select value={vendor} onChange={(e) => setVendor(e.target.value)} style={{ ...fld(false), appearance: "none" }}>
+                {Object.values(VENDORS).map((v) => <option key={v.id} value={v.id}>{ar ? v.ar : v.en}</option>)}
+              </select>
+            </label>
+          </div>
+          {/* coupon type */}
+          <div>
+            <span style={{ ...lab, display: "block", marginBottom: 6 }}>{ar ? "نوع الكوبون" : "Coupon type"}</span>
+            <div style={{ display: "flex", gap: 10 }}>
+              {([["percent", ar ? "نسبة مئوية %" : "Percentage %"], ["fixed", ar ? "مبلغ ثابت ﷼" : "Fixed amount ﷼"]] as [CouponType, string][]).map(([k, l]) => (
+                <button key={k} onClick={() => setType(k)} style={{ flex: 1, padding: 11, borderRadius: 10, border: "1.5px solid " + (type === k ? "var(--brand)" : "var(--line)"), background: type === k ? "var(--brand-soft)" : "var(--surface)", color: type === k ? "var(--brand)" : "var(--text-2)", fontWeight: 700, fontSize: 13.5, cursor: "pointer" }}>{l}</button>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={lab}>{type === "fixed" ? (ar ? "المبلغ (﷼)" : "Amount (SAR)") : (ar ? "النسبة %" : "Percent %")}</span>
+              <input type="number" min={1} value={value} onChange={(e) => setValue(e.target.value)} style={fld(false)} />
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={lab}>{ar ? "حدّ الاستخدام" : "Usage limit"}</span>
+              <input type="number" min={1} value={limit} onChange={(e) => setLimit(e.target.value)} style={fld(false)} />
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={lab}>{ar ? "صالح حتى" : "Valid until"}</span>
+              <input type="date" value={until} onChange={(e) => setUntil(e.target.value)} style={fld(false)} />
+            </label>
+          </div>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={lab}>{ar ? "وصف الكوبون" : "Coupon description"}</span>
+            <textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={3} placeholder={ar ? "مثال: خصم على المنتجات المختارة فوق ٢٠٠ ريال" : "e.g. Applies to selected products over 200 SAR"}
+              style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1.5px solid var(--line)", background: "var(--surface-2)", color: "var(--text)", fontSize: 14, fontFamily: "inherit", lineHeight: 1.6, resize: "vertical" }} />
+          </label>
+        </div>
+        <div style={{ display: "flex", gap: 12, padding: "16px 24px", borderTop: "1px solid var(--line)" }}>
+          <Btn variant="outline" onClick={onClose} style={{ flex: 1 }}>{ar ? "إلغاء" : "Cancel"}</Btn>
+          <Btn onClick={save} style={{ flex: 2 }}><Icon name="check" size={16} />{ar ? "حفظ الكوبون" : "Save coupon"}</Btn>
+        </div>
+      </div>
+    </div>
+    </Portal>
   );
 }
 
@@ -1136,10 +1453,10 @@ function RoleModal({ ar, role, perms, groups, onClose, onSave }: { ar: boolean; 
 }
 
 /* ---- Shared admin form modal (used by Users / Cities / Ads add buttons) ---- */
-interface ModalField { key: string; label: string; placeholder?: string; type?: "text" | "number" | "select"; options?: string[]; required?: boolean; }
+interface ModalField { key: string; label: string; placeholder?: string; type?: "text" | "number" | "select"; options?: string[]; required?: boolean; value?: string | number; }
 function AdminModal({ ar, title, fields, onClose, onSave }: { ar: boolean; title: string; fields: ModalField[]; onClose: () => void; onSave: (values: Record<string, string>) => void }) {
   const [values, setValues] = useState<Record<string, string>>(() =>
-    Object.fromEntries(fields.map((f) => [f.key, f.type === "select" ? (f.options?.[0] ?? "") : ""])));
+    Object.fromEntries(fields.map((f) => [f.key, f.value != null ? String(f.value) : (f.type === "select" ? (f.options?.[0] ?? "") : "")])));
   const [showErrors, setShowErrors] = useState(false);
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setValues((v) => ({ ...v, [k]: e.target.value }));
   // a field is required by default for text fields unless required===false; selects always have a value

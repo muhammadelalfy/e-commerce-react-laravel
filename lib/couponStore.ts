@@ -30,6 +30,13 @@ export function addVendorCoupon(c: Coupon) {
   ];
   emit();
 }
+/** admin-created coupon (no vendor notification) */
+export function addCoupon(c: Coupon) { coupons = [c, ...coupons]; emit(); }
+export function updateCoupon(id: string, patch: Partial<Coupon>) {
+  coupons = coupons.map((c) => (c.id === id ? { ...c, ...patch } : c));
+  emit();
+}
+export function removeCoupon(id: string) { coupons = coupons.filter((c) => c.id !== id); emit(); }
 export function toggleCoupon(id: string) {
   coupons = coupons.map((c) => (c.id === id ? { ...c, active: !c.active } : c));
   emit();
@@ -49,5 +56,5 @@ export function useCouponStore() {
     listeners.add(l);
     return () => { listeners.delete(l); };
   }, []);
-  return { coupons, notices, addVendorCoupon, toggleCoupon, markNoticesRead };
+  return { coupons, notices, addVendorCoupon, addCoupon, updateCoupon, removeCoupon, toggleCoupon, markNoticesRead };
 }
