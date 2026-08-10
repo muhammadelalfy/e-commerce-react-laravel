@@ -315,13 +315,13 @@ function AdminAdPackages({ ar, lang }: { ar: boolean; lang: string }) {
       {/* subscribed stores */}
       <h2 style={{ margin: "30px 0 14px", fontSize: 16, fontWeight: 800 }}>{ar ? "المتاجر المشتركة" : "Subscribed stores"}</h2>
       <div style={{ ...card, overflow: "hidden" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1.2fr 1.6fr 1fr 0.9fr", gap: 12, padding: "12px 18px", borderBottom: "1px solid var(--line)", fontSize: 12, fontWeight: 700, color: "var(--text-3)" }}>
-          <span>{ar ? "المتجر" : "Store"}</span><span>{ar ? "الباقة" : "Package"}</span><span>{ar ? "الفترة" : "Period"}</span><span>{ar ? "الحالة" : "Status"}</span><span style={{ textAlign: "end" }}></span>
+        <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1.1fr 1.5fr 0.9fr 1.1fr 1.2fr", gap: 12, padding: "12px 18px", borderBottom: "1px solid var(--line)", fontSize: 12, fontWeight: 700, color: "var(--text-3)" }}>
+          <span>{ar ? "المتجر" : "Store"}</span><span>{ar ? "الباقة" : "Package"}</span><span>{ar ? "الفترة" : "Period"}</span><span>{ar ? "الحالة" : "Status"}</span><span>{ar ? "التجديد التلقائي" : "Auto-renew"}</span><span style={{ textAlign: "end" }}>{ar ? "إجراءات" : "Actions"}</span>
         </div>
         {store.allSubs().map((s) => {
           const v = VENDORS[s.vendor];
           return (
-            <div key={s.vendor} style={{ display: "grid", gridTemplateColumns: "1.4fr 1.2fr 1.6fr 1fr 0.9fr", gap: 12, padding: "13px 18px", borderBottom: "1px solid var(--line-soft)", alignItems: "center" }}>
+            <div key={s.vendor} style={{ display: "grid", gridTemplateColumns: "1.3fr 1.1fr 1.5fr 0.9fr 1.1fr 1.2fr", gap: 12, padding: "13px 18px", borderBottom: "1px solid var(--line-soft)", alignItems: "center" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                 <span style={{ width: 28, height: 28, borderRadius: 8, flex: "none", background: v?.color || "var(--surface-2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}><Icon name="store" size={14} /></span>
                 <span style={{ fontSize: 13, fontWeight: 700 }}>{v ? (ar ? v.ar : v.en) : s.vendor}</span>
@@ -329,10 +329,18 @@ function AdminAdPackages({ ar, lang }: { ar: boolean; lang: string }) {
               <span style={{ fontSize: 13, color: "var(--text-2)" }}>{s.pkg ? (ar ? s.pkg.ar : s.pkg.en) : "—"}</span>
               <span className="num" style={{ fontSize: 12.5, color: "var(--text-2)" }}>{fmtDate(s.start, ar)} → {fmtDate(s.end, ar)}</span>
               <span style={{ fontSize: 11.5, fontWeight: 800, padding: "4px 10px", borderRadius: 999, justifySelf: "start", background: s.expired ? "var(--brand-soft)" : "var(--active-bg)", color: s.expired ? "var(--sale)" : "var(--active)" }}>{s.expired ? (ar ? "منتهية" : "Expired") : (ar ? "فعّالة" : "Active")}</span>
-              <div style={{ justifySelf: "end" }}>
-                {s.expired
-                  ? <Btn size="sm" onClick={() => store.extend(s.vendor)}><Icon name="check" size={14} />{ar ? "تمديد" : "Extend"}</Btn>
-                  : <button onClick={() => store.unsubscribe(s.vendor)} title={ar ? "إلغاء" : "Cancel"} style={{ background: "transparent", border: "none", color: "var(--sale)", cursor: "pointer" }}><Icon name="trash" size={16} /></button>}
+              {/* auto-renew toggle */}
+              <button onClick={() => store.toggleSubAutoRenew(s.vendor)} title={ar ? "التجديد التلقائي" : "Auto-renew"}
+                style={{ justifySelf: "start", display: "inline-flex", alignItems: "center", gap: 6, background: "transparent", border: "none", cursor: "pointer", color: s.autoRenew ? "var(--active)" : "var(--text-3)", fontSize: 12, fontWeight: 700 }}>
+                <span style={{ width: 34, height: 19, borderRadius: 999, background: s.autoRenew ? "var(--active)" : "var(--line)", position: "relative", transition: "background .2s", flex: "none" }}>
+                  <span style={{ position: "absolute", top: 2, insetInlineStart: s.autoRenew ? 17 : 2, width: 15, height: 15, borderRadius: 999, background: "#fff", transition: "inset-inline-start .2s" }} />
+                </span>
+                {s.autoRenew ? (ar ? "مُفعّل" : "On") : (ar ? "موقوف" : "Off")}
+              </button>
+              {/* actions: extend (always) + cancel */}
+              <div style={{ display: "flex", gap: 8, justifySelf: "end", alignItems: "center" }}>
+                <Btn size="sm" variant={s.expired ? "primary" : "outline"} onClick={() => store.extend(s.vendor)}><Icon name="check" size={14} />{ar ? "تمديد" : "Extend"}</Btn>
+                <button onClick={() => store.unsubscribe(s.vendor)} title={ar ? "إلغاء" : "Cancel"} style={{ background: "transparent", border: "none", color: "var(--sale)", cursor: "pointer" }}><Icon name="trash" size={16} /></button>
               </div>
             </div>
           );
@@ -358,6 +366,7 @@ function AdPackageModal({ ar, lang, pkg, onClose, onSave }: { ar: boolean; lang:
   const [start, setStart] = useState(pkg?.start ?? new Date().toISOString().slice(0, 10));
   const [autoRenew, setAutoRenew] = useState(pkg?.autoRenew ?? false);
   const [renewPrice, setRenewPrice] = useState(String(pkg?.renewPrice ?? pkg?.price ?? 99));
+  const [renewModal, setRenewModal] = useState(false); // dedicated auto-renewal modal
   const [showErr, setShowErr] = useState(false);
   const end = addDays(start || new Date().toISOString().slice(0, 10), PERIOD_DAYS[period]); // auto from period
   const save = () => {
@@ -413,19 +422,15 @@ function AdPackageModal({ ar, lang, pkg, onClose, onSave }: { ar: boolean; lang:
             <Icon name="calendar" size={16} style={{ color: "var(--gold-deep)" }} />
             <span>{ar ? "تاريخ الانتهاء (تلقائي حسب المدة):" : "End date (auto from period):"} <b className="num">{fmtDate(end, ar)}</b></span>
           </div>
-          {/* auto-renewal option + its price */}
-          <div style={{ border: "1.5px solid var(--line)", borderRadius: 10, padding: "12px 14px" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-              <input type="checkbox" checked={autoRenew} onChange={(e) => setAutoRenew(e.target.checked)} style={{ accentColor: "var(--brand)", width: 16, height: 16 }} />
-              <span style={{ fontWeight: 700, fontSize: 13.5 }}>{ar ? "التجديد التلقائي" : "Auto-renewal"}</span>
-              <span style={{ fontSize: 12, color: "var(--text-3)" }}>{ar ? "تُجدَّد الباقة تلقائياً عند انتهائها" : "renews automatically when it ends"}</span>
-            </label>
-            {autoRenew && (
-              <label style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 12, maxWidth: 240 }}>
-                <span style={lab}>{ar ? "سعر التجديد (﷼)" : "Renewal price (SAR)"}</span>
-                <input type="number" min={0} value={renewPrice} onChange={(e) => setRenewPrice(e.target.value)} style={fld(false)} />
-              </label>
-            )}
+          {/* auto-renewal — configured in a dedicated modal */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, border: "1.5px solid var(--line)", borderRadius: 10, padding: "12px 14px" }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 13.5 }}>{ar ? "التجديد التلقائي" : "Auto-renewal"}</div>
+              <div style={{ fontSize: 12, color: autoRenew ? "var(--active)" : "var(--text-3)", marginTop: 2 }}>
+                {autoRenew ? <>{ar ? "مُفعّل — سعر التجديد" : "On — renewal price"} <b className="num">{Number(renewPrice) || 0} ﷼</b></> : (ar ? "غير مُفعّل" : "Off")}
+              </div>
+            </div>
+            <Btn size="sm" variant="outline" onClick={() => setRenewModal(true)}><Icon name="edit" size={14} />{ar ? "إعداد" : "Configure"}</Btn>
           </div>
         </div>
         <div style={{ display: "flex", gap: 12, padding: "16px 24px", borderTop: "1px solid var(--line)" }}>
@@ -433,6 +438,32 @@ function AdPackageModal({ ar, lang, pkg, onClose, onSave }: { ar: boolean; lang:
           <Btn onClick={save} style={{ flex: 2 }}><Icon name="check" size={16} />{ar ? "حفظ الباقة" : "Save package"}</Btn>
         </div>
       </div>
+
+      {/* dedicated auto-renewal modal */}
+      {renewModal && (
+        <div onClick={() => setRenewModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(8,16,20,.55)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div onClick={(e) => e.stopPropagation()} dir={ar ? "rtl" : "ltr"} style={{ background: "var(--surface)", borderRadius: "var(--r-xl)", width: "min(420px, 100%)", boxShadow: "var(--shadow-lg)", border: "1px solid var(--line)", overflow: "hidden" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px", borderBottom: "1px solid var(--line)" }}>
+              <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800 }}>{ar ? "التجديد التلقائي" : "Auto-renewal"}</h3>
+              <button onClick={() => setRenewModal(false)} style={{ background: "transparent", border: "none", fontSize: 24, color: "var(--text-3)", lineHeight: 1, cursor: "pointer" }}>×</button>
+            </div>
+            <div style={{ padding: 22, display: "flex", flexDirection: "column", gap: 16 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+                <input type="checkbox" checked={autoRenew} onChange={(e) => setAutoRenew(e.target.checked)} style={{ accentColor: "var(--brand)", width: 17, height: 17 }} />
+                <span style={{ fontWeight: 700, fontSize: 14 }}>{ar ? "تفعيل التجديد التلقائي" : "Enable auto-renewal"}</span>
+              </label>
+              <p style={{ margin: "-6px 0 0", fontSize: 12.5, color: "var(--text-3)" }}>{ar ? "تُجدَّد الباقة تلقائياً بنفس المدة عند انتهائها بالسعر المحدّد." : "The package renews automatically for the same period at the set price."}</p>
+              <label style={{ display: "flex", flexDirection: "column", gap: 6, opacity: autoRenew ? 1 : .5 }}>
+                <span style={lab}>{ar ? "سعر التجديد (﷼)" : "Renewal price (SAR)"}</span>
+                <input type="number" min={0} value={renewPrice} onChange={(e) => setRenewPrice(e.target.value)} disabled={!autoRenew} style={fld(false)} />
+              </label>
+            </div>
+            <div style={{ display: "flex", gap: 10, padding: "14px 22px", borderTop: "1px solid var(--line)" }}>
+              <Btn variant="outline" onClick={() => setRenewModal(false)} style={{ flex: 1 }}>{ar ? "تم" : "Done"}</Btn>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </Portal>
   );

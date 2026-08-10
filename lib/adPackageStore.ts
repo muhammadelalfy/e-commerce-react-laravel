@@ -17,7 +17,7 @@ export function periodLabelOf(p: AdPeriod, ar: boolean): string {
 }
 export interface AdPackage { id: string; ar: string; en: string; ads: number; price: number; period: AdPeriod; start?: string; autoRenew?: boolean; renewPrice?: number; active: boolean; }
 /** a vendor's subscription: which package + the chosen date range */
-export interface AdSub { pkg: string; start: string; end: string; }
+export interface AdSub { pkg: string; start: string; end: string; autoRenew?: boolean; }
 
 const LS_PKG = "mash_ad_packages";
 const LS_SUB = "mash_ad_subs"; // { [vendorId]: AdSub }
@@ -37,7 +37,13 @@ export function addDays(iso: string, days: number): string {
 }
 
 let packages: AdPackage[] = SEED;
-let subs: Record<string, AdSub> = {}; // vendor → subscription
+// demo subscriptions so the admin "subscribed stores" table isn't empty:
+// techzone = active monthly, aloud = expired weekly (shows the Extend button)
+const _today = new Date().toISOString().slice(0, 10);
+let subs: Record<string, AdSub> = {
+  techzone: { pkg: "adp-month", start: addDays(_today, -5), end: addDays(_today, 25) },
+  aloud: { pkg: "adp-week", start: addDays(_today, -14), end: addDays(_today, -7) },
+};
 let hydrated = false;
 
 const listeners = new Set<() => void>();
@@ -79,12 +85,18 @@ export function extend(vendorId: string) {
   subs = { ...subs, [vendorId]: { ...sub, start, end } };
   emit();
 }
-/** all vendor subscriptions with their package + expiry flag */
-export function allSubs(): { vendor: string; pkg: AdPackage | null; start: string; end: string; expired: boolean }[] {
+/** toggle auto-renewal on a specific subscription */
+export function toggleSubAutoRenew(vendorId: string) {
+  const sub = subs[vendorId]; if (!sub) return;
+  subs = { ...subs, [vendorId]: { ...sub, autoRenew: !sub.autoRenew } };
+  emit();
+}
+/** all vendor subscriptions with their package + expiry & auto-renew flags */
+export function allSubs(): { vendor: string; pkg: AdPackage | null; start: string; end: string; expired: boolean; autoRenew: boolean }[] {
   const today = new Date().toISOString().slice(0, 10);
   return Object.entries(subs).map(([vendor, s]) => ({
     vendor, pkg: packages.find((p) => p.id === s.pkg) ?? null,
-    start: s.start, end: s.end, expired: !!s.end && s.end < today,
+    start: s.start, end: s.end, expired: !!s.end && s.end < today, autoRenew: !!s.autoRenew,
   }));
 }
 /** current subscription = the package + the chosen date range (or null) */
@@ -103,5 +115,5 @@ export function useAdPackageStore() {
     hydrateOnce();
     return () => { listeners.delete(l); };
   }, []);
-  return { packages, subs, addPackage, updatePackage, removePackage, subscribe, unsubscribe, extend, subOf, allSubs };
+  return { packages, subs, addPackage, updatePackage, removePackage, subscribe, unsubscribe, extend, toggleSubAutoRenew, subOf, allSubs };
 }

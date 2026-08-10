@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useApp } from "@/lib/AppContext";
 import { Icon, Stars, Btn } from "../ui";
 import { ProductCard } from "../Shell";
-import { CATS, VENDORS, PRODUCTS } from "@/lib/data";
+import { CATS, VENDORS, PRODUCTS, SUBCATS } from "@/lib/data";
 import { useCatStore } from "@/lib/catStore";
 
 type Go = (page: string, id?: string | null) => void;
@@ -279,8 +279,26 @@ export function CategoryPage({ id, go }: { id: string; go: Go }) {
 
 export function Vendor({ id, go }: { id: string; go: Go }) {
   const { t, lang } = useApp();
+  const ar = lang === "ar";
   const v = VENDORS[id] || Object.values(VENDORS)[0];
-  const items = PRODUCTS.filter((p) => p.vendor === v.id);
+  const all = PRODUCTS.filter((p) => p.vendor === v.id);
+  // store-page search + filters
+  const [q, setQ] = useState("");
+  const [subF, setSubF] = useState("all");
+  const [sortV, setSortV] = useState("featured");
+  const [activeOnly, setActiveOnly] = useState(false);
+  // sub-categories actually present in this store's products
+  const storeSubs = SUBCATS.filter((s) => all.some((p) => p.subcat === s.id));
+  let items = all.filter((p) =>
+    (subF === "all" || p.subcat === subF) &&
+    (!activeOnly || p.active) &&
+    (!q.trim() || (p.ar + p.en).toLowerCase().includes(q.trim().toLowerCase())));
+  if (sortV === "low") items = [...items].sort((a, b) => a.price - b.price);
+  else if (sortV === "high") items = [...items].sort((a, b) => b.price - a.price);
+  else if (sortV === "rating") items = [...items].sort((a, b) => b.rating - a.rating);
+  else if (sortV === "discount") items = [...items].sort((a, b) => b.discount - a.discount);
+  const sorts: [string, string][] = [["featured", ar ? "مختار" : "Featured"], ["low", ar ? "الأقل سعراً" : "Price: low"], ["high", ar ? "الأعلى سعراً" : "Price: high"], ["rating", ar ? "الأعلى تقييماً" : "Top rated"], ["discount", ar ? "أكبر خصم" : "Biggest discount"]];
+  const ctrl: React.CSSProperties = { height: 42, padding: "0 14px", borderRadius: "var(--r-pill)", border: "1.5px solid var(--line)", background: "var(--surface)", color: "var(--text)", fontSize: 13.5, fontWeight: 600, fontFamily: "inherit" };
   return (
     <div>
       <div style={{ position: "relative", height: 200, background: v.color, overflow: "hidden" }}>
@@ -297,22 +315,113 @@ export function Vendor({ id, go }: { id: string; go: Go }) {
               <span style={{ background: "rgba(255,255,255,.2)", color: "#fff", fontSize: 11.5, fontWeight: 700, padding: "3px 9px", borderRadius: 999, display: "flex", alignItems: "center", gap: 5 }}><Icon name="check" size={13} />{t.multiTenant}</span>
             </div>
           </div>
-          <Btn variant="primary" style={{ marginBottom: 8 }}>{t.visit}</Btn>
+          {/* catalog above the visit-store button */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 8, alignItems: "stretch" }}>
+            <Btn variant="outline" onClick={() => go("catalog", v.id)}><Icon name="book" size={16} />{lang === "ar" ? "الكتالوج" : "Catalog"}</Btn>
+            <Btn variant="primary">{t.visit}</Btn>
+          </div>
         </div>
-        <div style={{ display: "flex", gap: 28, margin: "20px 2px 0", color: "var(--text-2)", fontSize: 13.5, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 28, margin: "20px 2px 0", color: "var(--text-2)", fontSize: 13.5, flexWrap: "wrap", alignItems: "center" }}>
           <span style={{ display: "flex", gap: 7, alignItems: "center" }}><Stars value={v.rating} /> <b className="num" style={{ color: "var(--text)" }}>{v.rating}</b> ({v.reviews})</span>
           <span><span className="num">{(v.followers / 1000).toFixed(1)}k</span> {t.followers}</span>
-          <span style={{ display: "flex", gap: 6, alignItems: "center" }}><Icon name="location" size={15} />{lang === "ar" ? v.city.ar : v.city.en}</span>
+          {/* location as a hyperlink to the stores map + a WhatsApp icon beside it */}
+          <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <a href="#" onClick={(e) => { e.preventDefault(); go("map"); }} style={{ display: "flex", gap: 5, alignItems: "center", color: "var(--brand)", fontWeight: 700 }}>
+              <Icon name="location" size={15} />{lang === "ar" ? v.city.ar : v.city.en}
+            </a>
+            <a href={`https://wa.me/9665xxxxxxxx`} target="_blank" rel="noopener noreferrer" title={lang === "ar" ? "تواصل عبر واتساب" : "Chat on WhatsApp"} style={{ display: "flex", alignItems: "center", color: "#25D366" }} onClick={(e) => e.stopPropagation()}>
+              <Icon name="whatsapp" size={18} />
+            </a>
+          </span>
           <span className="num">{t.since} {v.since}</span>
         </div>
         <p style={{ color: "var(--text-2)", fontSize: 14.5, marginTop: 16, maxWidth: 640 }}><b style={{ color: "var(--text)" }}>{t.aboutVendor}: </b>{lang === "ar" ? v.ar_about : v.en_about}</p>
         <div style={{ marginTop: 36 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 18 }}>{lang === "ar" ? "منتجات المتجر" : "Store products"} <span className="num" style={{ color: "var(--text-3)", fontWeight: 600 }}>({items.length})</span></h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 18 }}>
-            {items.map((p) => <ProductCard key={p.id} p={p} go={go} />)}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
+            <h2 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>{ar ? "منتجات المتجر" : "Store products"} <span className="num" style={{ color: "var(--text-3)", fontWeight: 600 }}>({items.length})</span></h2>
           </div>
+          {/* search + filters bar */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>
+            <span style={{ position: "relative", flex: "1 1 220px", minWidth: 180 }}>
+              <span style={{ position: "absolute", insetInlineStart: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-3)" }}><Icon name="search" size={17} /></span>
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={ar ? "ابحث في منتجات المتجر…" : "Search store products…"} style={{ ...ctrl, width: "100%", paddingInlineStart: 42 }} />
+            </span>
+            {storeSubs.length > 0 && (
+              <select value={subF} onChange={(e) => setSubF(e.target.value)} style={ctrl}>
+                <option value="all">{ar ? "كل الأقسام الفرعية" : "All sub-categories"}</option>
+                {storeSubs.map((s) => <option key={s.id} value={s.id}>{ar ? s.ar : s.en}</option>)}
+              </select>
+            )}
+            <select value={sortV} onChange={(e) => setSortV(e.target.value)} style={ctrl}>
+              {sorts.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+            </select>
+            <button onClick={() => setActiveOnly((o) => !o)} style={{ ...ctrl, cursor: "pointer", display: "flex", alignItems: "center", gap: 7, border: "1.5px solid " + (activeOnly ? "var(--brand)" : "var(--line)"), background: activeOnly ? "var(--brand-soft)" : "var(--surface)", color: activeOnly ? "var(--brand)" : "var(--text-2)" }}>
+              <Icon name={activeOnly ? "check" : "tag"} size={15} />{ar ? "العروض الفعّالة" : "Active offers"}
+            </button>
+          </div>
+          {items.length ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 18 }}>
+              {items.map((p) => <ProductCard key={p.id} p={p} go={go} />)}
+            </div>
+          ) : (
+            <div style={{ textAlign: "center", padding: "50px 0", color: "var(--text-3)" }}>
+              <Icon name="search" size={38} /><p style={{ marginTop: 12 }}>{ar ? "لا توجد منتجات مطابقة" : "No matching products"}</p>
+            </div>
+          )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// Store catalog: the store's products laid out as a browsable catalog, grouped
+// by sub-category, with a print action.
+export function StoreCatalog({ id, go }: { id: string; go: Go }) {
+  const { t, lang } = useApp();
+  const ar = lang === "ar";
+  const v = VENDORS[id] || Object.values(VENDORS)[0];
+  const items = PRODUCTS.filter((p) => p.vendor === v.id);
+  // group products by their sub-category id (fallback bucket for those without one)
+  const groups = new Map<string, typeof items>();
+  items.forEach((p) => { const k = p.subcat || "_"; if (!groups.has(k)) groups.set(k, []); groups.get(k)!.push(p); });
+  return (
+    <div className="container" style={{ paddingTop: 24, paddingBottom: 32 }}>
+      {/* breadcrumb + header */}
+      <div style={{ fontSize: 13, color: "var(--text-3)", display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+        <a href="#" onClick={(e) => { e.preventDefault(); go("home"); }}>{t.backHome}</a><span>/</span>
+        <a href="#" onClick={(e) => { e.preventDefault(); go("vendor", v.id); }}>{ar ? v.ar : v.en}</a><span>/</span>
+        <span style={{ color: "var(--text-2)" }}>{ar ? "الكتالوج" : "Catalog"}</span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 22 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <span style={{ width: 56, height: 56, borderRadius: 14, background: v.color, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Icon name="store" size={26} /></span>
+          <div>
+            <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>{ar ? `كتالوج ${v.ar}` : `${v.en} Catalog`}</h1>
+            <div style={{ fontSize: 13, color: "var(--text-3)", marginTop: 3 }}><span className="num">{items.length}</span> {ar ? "منتج" : "products"} · {ar ? v.city.ar : v.city.en}</div>
+          </div>
+        </div>
+        <Btn variant="outline" onClick={() => { if (typeof window !== "undefined") window.print(); }}><Icon name="filePdf" size={16} />{ar ? "طباعة الكتالوج" : "Print catalog"}</Btn>
+      </div>
+      {/* grouped catalog */}
+      {items.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-3)" }}><Icon name="box" size={40} /><p style={{ marginTop: 12 }}>{ar ? "لا توجد منتجات في هذا المتجر" : "No products in this store"}</p></div>
+      ) : (
+        Array.from(groups.entries()).map(([k, list]) => {
+          const sc = SUBCATS.find((s) => s.id === k);
+          return (
+            <div key={k} style={{ marginBottom: 30 }}>
+              <h2 style={{ fontSize: 16, fontWeight: 800, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ width: 6, height: 18, borderRadius: 3, background: "var(--brand)" }} />
+                {sc ? (ar ? sc.ar : sc.en) : (ar ? "منتجات أخرى" : "Other products")}
+                <span className="num" style={{ color: "var(--text-3)", fontWeight: 600, fontSize: 13 }}>({list.length})</span>
+              </h2>
+              <div className="mash-catalog-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 18 }}>
+                {list.map((p) => <ProductCard key={p.id} p={p} go={go} />)}
+              </div>
+            </div>
+          );
+        })
+      )}
     </div>
   );
 }

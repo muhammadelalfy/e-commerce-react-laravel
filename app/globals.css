@@ -341,9 +341,15 @@ img { display: block; max-width: 100%; }
   .mash-footer-grid { grid-template-columns: 1fr 1fr !important; gap: 24px !important; }
   .mash-footer-brand { grid-column: 1 / -1 !important; }
 }
-@media (max-width: 460px) {
-  .mash-footer-grid { grid-template-columns: 1fr 1fr !important; }
-  .mash-footer-bottom { flex-direction: column !important; align-items: flex-start !important; text-align: start; }
+@media (max-width: 640px) {
+  /* center the whole footer on mobile */
+  .mash-footer-grid { grid-template-columns: 1fr !important; text-align: center; justify-items: center; gap: 26px !important; }
+  .mash-footer-grid > div { align-items: center; }
+  .mash-footer-brand { display: flex; flex-direction: column; align-items: center; }
+  .mash-footer-brand p { margin-inline: auto !important; }
+  .mash-footer-grid ul { align-items: center; }
+  .mash-footer-bottom { flex-direction: column !important; align-items: center !important; text-align: center; justify-content: center !important; }
+  .mash-footer-bottom > span { justify-content: center; }
 }
 
 /* horizontal scroll safety — nothing should overflow the viewport width */

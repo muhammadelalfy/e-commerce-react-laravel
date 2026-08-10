@@ -58,20 +58,34 @@ export function Logo() {
   );
 }
 
-export function TopBar() {
-  const { t, toggleLang } = useApp();
+export function TopBar({ go, favCount = 0, unread = 0 }: { go: (p: string, id?: string | null) => void; favCount?: number; unread?: number }) {
+  const { t, toggleLang, theme, toggleTheme, lang } = useApp();
+  const [notifOpen, setNotifOpen] = useState(false);
+  // white-on-navy top-bar action button
+  const tbBtn: React.CSSProperties = { position: "relative", width: 32, height: 32, borderRadius: 8, border: "none", background: "transparent", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" };
+  const tbBadge: React.CSSProperties = { position: "absolute", top: -4, insetInlineEnd: -4, minWidth: 15, height: 15, padding: "0 4px", borderRadius: 999, background: "var(--sale)", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" };
   return (
     <div style={{ background: "var(--topbar)", color: "rgba(255,255,255,.85)", fontSize: 12.5 }}>
-      <div className="container mash-topbar-row" style={{ height: 38, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-          <Icon name="phone" size={14} /><span className="num">{t.phone}</span>
+      <div className="container mash-topbar-row" style={{ height: 44, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+        {/* LEFT: action icons + language switcher */}
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <button onClick={() => go("auth")} style={{ ...tbBtn, width: "auto", padding: "0 8px", gap: 6 }}><Icon name="user" size={16} /><span className="mash-topbar-city" style={{ fontSize: 12.5, fontWeight: 700 }}>{t.account}</span></button>
+          <button onClick={() => go("favorites")} title="favourites" style={tbBtn}><Icon name="heart" size={17} />{favCount > 0 && <span className="num" style={tbBadge}>{favCount}</span>}</button>
+          <div style={{ position: "relative" }} onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setNotifOpen((o) => !o)} title="notifications" style={tbBtn}><Icon name="bell" size={17} />{unread > 0 && <span className="num" style={tbBadge}>{unread}</span>}</button>
+            {notifOpen && <NotifDropdown go={go} onClose={() => setNotifOpen(false)} lang={lang} />}
+          </div>
+          <button onClick={toggleTheme} title="theme" style={tbBtn}><Icon name={theme === "dark" ? "sun" : "moon"} size={17} /></button>
+          <span style={{ width: 1, height: 18, background: "rgba(255,255,255,.25)", margin: "0 4px" }} />
+          <button onClick={toggleLang} style={{ ...tbBtn, width: "auto", padding: "0 6px", gap: 6, fontWeight: 700, fontSize: 12.5 }}>
+            <Icon name="globe" size={15} />{t.other}
+          </button>
         </div>
         <div className="mash-topbar-promo" style={{ flex: 1, textAlign: "center", fontWeight: 600, color: "#fff" }}>{t.promo}</div>
+        {/* RIGHT: phone + city */}
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <button onClick={toggleLang} style={{ background: "transparent", border: "none", color: "#fff", display: "flex", alignItems: "center", gap: 6, fontWeight: 700, fontSize: 12.5 }}>
-            <Icon name="globe" size={14} />{t.other}
-          </button>
           <span className="mash-topbar-city" style={{ display: "flex", alignItems: "center", gap: 6 }}><Icon name="location" size={14} />{t.city}</span>
+          <span className="mash-topbar-phone" style={{ display: "flex", alignItems: "center", gap: 7 }}><Icon name="phone" size={14} /><span className="num">{t.phone}</span></span>
         </div>
       </div>
     </div>
@@ -110,13 +124,10 @@ function NotifDropdown({ go, onClose, lang }: { go: (p: string, id?: string | nu
 }
 
 const iconBtn: React.CSSProperties = { width: 40, height: 40, borderRadius: 10, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--text-2)", display: "flex", alignItems: "center", justifyContent: "center" };
-const iconBtnText: React.CSSProperties = { height: 40, padding: "0 12px", borderRadius: 10, border: "none", background: "transparent", color: "var(--text)", display: "flex", alignItems: "center", gap: 7 };
-const badge: React.CSSProperties = { position: "absolute", top: -7, insetInlineEnd: -8, minWidth: 17, height: 17, padding: "0 4px", borderRadius: 999, background: "var(--sale)", color: "#fff", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" };
 
-export function Header({ go, onSearch, cur, favCount = 0, unread = 0 }: { go: (p: string, id?: string | null) => void; onSearch?: (v: string) => void; cur: string; favCount?: number; unread?: number; }) {
-  const { t, theme, toggleTheme, lang } = useApp();
+export function Header({ go, onSearch, cur }: { go: (p: string, id?: string | null) => void; onSearch?: (v: string) => void; cur: string; }) {
+  const { t, theme } = useApp();
   const [scrolled, setScrolled] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -124,12 +135,6 @@ export function Header({ go, onSearch, cur, favCount = 0, unread = 0 }: { go: (p
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-  useEffect(() => {
-    if (!notifOpen) return;
-    const close = () => setNotifOpen(false);
-    window.addEventListener("click", close);
-    return () => window.removeEventListener("click", close);
-  }, [notifOpen]);
   useEffect(() => {
     if (!menuOpen) return;
     const close = () => setMenuOpen(false);
@@ -165,23 +170,9 @@ export function Header({ go, onSearch, cur, favCount = 0, unread = 0 }: { go: (p
           <input placeholder={t.search} onChange={(e) => onSearch && onSearch(e.target.value)}
             style={{ width: "100%", height: 42, paddingInlineStart: 42, paddingInlineEnd: 16, borderRadius: "var(--r-pill)", border: "1.5px solid var(--line)", background: "var(--surface-2)", color: "var(--text)", fontSize: 14, fontFamily: "inherit" }} />
         </div>
+        {/* action icons (theme/notifications/favourites/account) moved to the TopBar; keep the location chip here */}
         <div style={{ display: "flex", alignItems: "center", gap: 4, marginInlineStart: "auto" }}>
           <LocationChip />
-          <button onClick={toggleTheme} title="theme" style={iconBtn}><Icon name={theme === "dark" ? "sun" : "moon"} size={19} /></button>
-          <div style={{ position: "relative" }} onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setNotifOpen((o) => !o)} title="notifications" style={{ ...iconBtn, position: "relative" }}>
-              <Icon name="bell" size={19} />
-              {unread > 0 && <span className="num" style={badge}>{unread}</span>}
-            </button>
-            {notifOpen && <NotifDropdown go={go} onClose={() => setNotifOpen(false)} lang={lang} />}
-          </div>
-          <button onClick={() => go("favorites")} title="favourites" style={{ ...iconBtn, position: "relative" }}>
-            <Icon name="heart" size={19} />
-            {favCount > 0 && <span className="num" style={badge}>{favCount}</span>}
-          </button>
-          <button onClick={() => go("auth")} style={iconBtnText}>
-            <Icon name="user" size={19} /><span className="mash-topbar-city" style={{ fontSize: 13, fontWeight: 600 }}>{t.account}</span>
-          </button>
         </div>
       </div>
 

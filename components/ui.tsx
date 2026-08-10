@@ -60,6 +60,7 @@ export const PATHS: Record<string, string> = {
   logout: "M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9",
   x: "M6 6l12 12M18 6L6 18",
   filter: "M3 5h18M6 12h12M10 19h4",
+  whatsapp: "M12 3a9 9 0 00-7.7 13.6L3 21l4.5-1.2A9 9 0 1012 3zM9 8.5c.2 0 .4 0 .6.5l.6 1.4c0 .2 0 .3-.1.5l-.5.6c-.1.1-.2.3 0 .6.3.5.8 1.2 1.6 1.6.3.2.5.1.6 0l.6-.6c.2-.2.3-.1.5-.1l1.4.7c.2.1.3.2.3.3 0 .5-.2 1.2-1.1 1.4-.6.1-1.4.1-3-.6-2.1-1-3.4-3-3.5-3.2-.1-.2-.8-1-.8-2s.5-1.4.7-1.6c.1-.2.3-.2.5-.2z",
 };
 
 export function Icon({ name, size = 20, stroke = 1.7, fill = "none", style = {} }: { name: string; size?: number; stroke?: number; fill?: string; style?: React.CSSProperties; }) {

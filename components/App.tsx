@@ -4,7 +4,7 @@ import { AppCtx, type AppState, type AppUser } from "@/lib/AppContext";
 import { STR, NOTIFS, type Lang } from "@/lib/data";
 import { TopBar, Header, Footer } from "./Shell";
 import { Home } from "./pages/Home";
-import { CategoryPage, Vendor } from "./pages/Catalog";
+import { CategoryPage, Vendor, StoreCatalog } from "./pages/Catalog";
 import { Auctions } from "./pages/Auctions";
 import { Dashboard } from "./pages/Dashboard";
 import { Info } from "./pages/Info";
@@ -59,6 +59,7 @@ export default function App() {
 
   let body: React.ReactNode;
   if (page === "vendor") body = <Vendor id={param!} go={go} />;
+  else if (page === "catalog") body = <StoreCatalog id={param!} go={go} />;
   else if (page === "category") body = <CategoryPage id={param!} go={go} />;
   else if (page === "shop") body = <CategoryPage id="all" go={go} />;
   else if (page === "auctions") body = <Auctions go={go} active={page === "auctions"} />;
@@ -78,8 +79,8 @@ export default function App() {
   return (
     <AppCtx.Provider value={ctx}>
       <CountryModal />
-      <TopBar />
-      <Header go={go} onSearch={setQuery} cur={page} favCount={favs.length} unread={unread} />
+      <TopBar go={go} favCount={favs.length} unread={unread} />
+      <Header go={go} onSearch={setQuery} cur={page} />
       <main ref={mainRef} style={{ minHeight: "60vh", paddingBottom: 20 }}>{body}</main>
       <Footer />
     </AppCtx.Provider>
