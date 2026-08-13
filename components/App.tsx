@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { AppCtx, type AppState, type AppUser } from "@/lib/AppContext";
 import { STR, NOTIFS, type Lang } from "@/lib/data";
 import { TopBar, Header, Footer } from "./Shell";
+import { Icon } from "./ui";
 import { Home } from "./pages/Home";
 import { CategoryPage, Vendor, StoreCatalog } from "./pages/Catalog";
 import { Auctions } from "./pages/Auctions";
@@ -21,6 +22,7 @@ export default function App() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [page, setPage] = useState("home");
   const [param, setParam] = useState<string | null>(null);
+  const [history, setHistory] = useState<{ page: string; param: string | null }[]>([]);
   const [favs, setFavs] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const [user, setUser] = useState<AppUser | null>(null);
@@ -45,7 +47,19 @@ export default function App() {
     localStorage.setItem("mash_theme", theme);
   }, [lang, theme]);
 
-  const go = (p: string, id: string | null = null) => { setPage(p); setParam(id); setQuery(""); window.scrollTo({ top: 0 }); };
+  const go = (p: string, id: string | null = null) => {
+    // remember where we came from so the back button can return there
+    if (p !== page || id !== param) setHistory((h) => [...h, { page, param }]);
+    setPage(p); setParam(id); setQuery(""); window.scrollTo({ top: 0 });
+  };
+  const back = () => {
+    setHistory((h) => {
+      if (h.length === 0) return h;
+      const prev = h[h.length - 1];
+      setPage(prev.page); setParam(prev.param); setQuery(""); window.scrollTo({ top: 0 });
+      return h.slice(0, -1);
+    });
+  };
   const toggleLang = () => setLang((l) => (l === "ar" ? "en" : "ar"));
   const toggleTheme = () => setTheme((th) => (th === "light" ? "dark" : "light"));
   const toggleFav = (id: string) => setFavs((f) => (f.includes(id) ? f.filter((x) => x !== id) : [...f, id]));
@@ -81,6 +95,17 @@ export default function App() {
       <CountryModal />
       <TopBar go={go} favCount={favs.length} unread={unread} />
       <Header go={go} onSearch={setQuery} cur={page} />
+      {page !== "home" && (
+        <div className="container" style={{ paddingTop: 14, display: "flex", justifyContent: "center" }}>
+          <button onClick={() => (history.length ? back() : go("home"))}
+            style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, height: 38, padding: "0 20px", borderRadius: "var(--r-pill)", border: "1.5px solid var(--line)", background: "var(--surface)", color: "var(--text-2)", fontWeight: 700, fontSize: 13.5, cursor: "pointer", fontFamily: "inherit" }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--brand)"; e.currentTarget.style.color = "var(--brand)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--line)"; e.currentTarget.style.color = "var(--text-2)"; }}>
+            <Icon name="back" size={17} style={{ transform: t.dir === "rtl" ? "scaleX(-1)" : "none" }} />
+            {lang === "ar" ? "رجوع" : "Back"}
+          </button>
+        </div>
+      )}
       <main ref={mainRef} style={{ minHeight: "60vh", paddingBottom: 20 }}>{body}</main>
       <Footer />
     </AppCtx.Provider>

@@ -4,6 +4,18 @@ import { useApp } from "@/lib/AppContext";
 import { Icon, Stars, Thumb, money } from "./ui";
 import { NOTIFS, VENDORS, type Product } from "@/lib/data";
 import { useGeoStore } from "@/lib/geoStore";
+import { useCouponStore } from "@/lib/couponStore";
+
+/** Google-Maps-style marker (multi-color teardrop pin) used for the "Maps" link. */
+function GoogleMapPin({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" style={{ flex: "none" }}>
+      <path d="M12 2C7.6 2 4 5.5 4 9.8c0 5.6 6.6 11.2 7.2 11.7.5.4 1.2.4 1.6 0 .6-.5 7.2-6.1 7.2-11.7C20 5.5 16.4 2 12 2z" fill="#EA4335"/>
+      <path d="M12 2v7.5a2.7 2.7 0 000-5.4V2z" fill="#C5221F" opacity=".35"/>
+      <circle cx="12" cy="9.7" r="2.8" fill="#fff"/>
+    </svg>
+  );
+}
 
 /** Header chip showing the chosen country flag + city; click reopens the picker. */
 export function LocationChip() {
@@ -43,12 +55,12 @@ export function LocationChip() {
 }
 
 export function Logo() {
-  // أوفرز brand mark — logo2 (gold + rose + navy geometric mark).
+  // أوفرز brand mark — the OFFERZ wordmark (rose + navy).
   return (
     <div style={{ display: "flex", alignItems: "center" }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/logo2.png"
+        src="/logo-offerz.png"
         alt="أوفرز · Offers"
         height={52}
         style={{ height: 52, width: "auto", display: "block" }}
@@ -75,6 +87,7 @@ export function TopBar({ go, favCount = 0, unread = 0 }: { go: (p: string, id?: 
             <button onClick={() => setNotifOpen((o) => !o)} title="notifications" style={tbBtn}><Icon name="bell" size={17} />{unread > 0 && <span className="num" style={tbBadge}>{unread}</span>}</button>
             {notifOpen && <NotifDropdown go={go} onClose={() => setNotifOpen(false)} lang={lang} />}
           </div>
+          <button onClick={() => go("map")} title={lang === "ar" ? "خريطة المتاجر" : "Stores map"} style={{ ...tbBtn, width: "auto", padding: "0 8px", gap: 6 }}><GoogleMapPin size={16} /><span className="mash-topbar-city" style={{ fontSize: 12.5, fontWeight: 700 }}>{lang === "ar" ? "الخرائط" : "Maps"}</span></button>
           <button onClick={toggleTheme} title="theme" style={tbBtn}><Icon name={theme === "dark" ? "sun" : "moon"} size={17} /></button>
           <span style={{ width: 1, height: 18, background: "rgba(255,255,255,.25)", margin: "0 4px" }} />
           <button onClick={toggleLang} style={{ ...tbBtn, width: "auto", padding: "0 6px", gap: 6, fontWeight: 700, fontSize: 12.5 }}>
@@ -215,8 +228,8 @@ export function Footer() {
   const cols = data[t.dir === "rtl" ? "ar" : "en"];
   const nav = (target: Target) => Array.isArray(target) ? go(target[0], target[1]) : go(target);
   return (
-    <footer style={{ background: "var(--header)", borderTop: "1px solid var(--line)", marginTop: 64 }}>
-      <div className="container mash-footer-grid" style={{ padding: "48px 0 28px", display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr 1fr", gap: 28 }}>
+    <footer dir={t.dir} style={{ background: "var(--header)", borderTop: "1px solid var(--line)", marginTop: 64 }}>
+      <div className="container mash-footer-grid" style={{ paddingBlock: "48px 28px", display: "grid", gridTemplateColumns: "1.6fr repeat(4, 1fr)", gap: 40, alignItems: "start" }}>
         <div className="mash-footer-brand">
           <Logo />
           <p style={{ color: "var(--text-2)", fontSize: 13.5, marginTop: 14, maxWidth: 260 }}>{t.tagline}. {t.multiTenant}.</p>
@@ -230,7 +243,7 @@ export function Footer() {
           </div>
         ))}
       </div>
-      <div className="container mash-footer-bottom" style={{ padding: "18px 0", borderTop: "1px solid var(--line)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, color: "var(--text-3)", fontSize: 12.5, flexWrap: "wrap" }}>
+      <div className="container mash-footer-bottom" style={{ paddingBlock: "18px", borderTop: "1px solid var(--line)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, color: "var(--text-3)", fontSize: 12.5, flexWrap: "wrap" }}>
         <span>© 2026 {t.brand}. {t.dir === "rtl" ? "جميع الحقوق محفوظة." : "All rights reserved."}</span>
         <span style={{ display: "flex", gap: 16, flexWrap: "wrap" }}><span>Visa</span><span>Mastercard</span><span>mada</span><span>Apple Pay</span></span>
       </div>
@@ -241,10 +254,13 @@ export function Footer() {
 /* ---- Shared ProductCard ---- */
 export function ProductCard({ p, go }: { p: Product; go: (page: string, id?: string | null) => void }) {
   const { t, lang, favs = [], toggleFav } = useApp();
+  const { coupons } = useCouponStore();
   const name = lang === "ar" ? p.ar : p.en;
   const v = VENDORS[p.vendor];
   const vname = v ? (lang === "ar" ? v.ar : v.en) : "";
   const isFav = favs.includes(p.id);
+  // a product "has a coupon" when its vendor has an active one
+  const coupon = coupons.find((c) => c.vendor === p.vendor && c.active);
   return (
     <div style={{ background: "var(--surface)", borderRadius: "var(--r-lg)", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "var(--shadow-sm)", border: "1px solid var(--line-soft)", transition: "box-shadow .18s, transform .18s", cursor: "pointer" }}
       onClick={() => go("vendor", p.vendor)}
@@ -252,6 +268,13 @@ export function ProductCard({ p, go }: { p: Product; go: (page: string, id?: str
       onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "var(--shadow-sm)"; e.currentTarget.style.transform = "none"; }}>
       <div style={{ position: "relative" }}>
         <Thumb p={p} ratio="16 / 10" radius="0" />
+        {/* coupon badge — shows the vendor's active coupon code applies here */}
+        {coupon && (
+          <span title={lang === "ar" ? "كوبون مطبّق: " + coupon.code : "Coupon applies: " + coupon.code}
+            style={{ position: "absolute", top: 10, insetInlineStart: 10, display: "inline-flex", alignItems: "center", gap: 5, background: "var(--gold)", color: "#3a2c00", fontWeight: 800, fontSize: 11.5, padding: "4px 9px", borderRadius: 999, boxShadow: "var(--shadow-sm)" }}>
+            <Icon name="ticket" size={13} /><span className="num">{coupon.code}</span>
+          </span>
+        )}
         <button onClick={(e) => { e.stopPropagation(); toggleFav && toggleFav(p.id); }} style={{ position: "absolute", top: 10, insetInlineEnd: 10, width: 34, height: 34, borderRadius: 999, border: "none", background: "rgba(255,255,255,.92)", color: "var(--brand)", boxShadow: "var(--shadow-sm)", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Icon name="heart" size={17} fill={isFav ? "var(--brand)" : "none"} />
         </button>

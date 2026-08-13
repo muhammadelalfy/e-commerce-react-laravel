@@ -24,7 +24,7 @@ export function OfferCard({ o, ar, go }: { o: Offer; ar: boolean; go: Go }) {
       {/* sponsored ribbon */}
       <span style={{ position: "absolute", top: 10, insetInlineStart: 10, zIndex: 2, background: "var(--gold)", color: "#3a2c00", fontSize: 10.5, fontWeight: 800, padding: "3px 9px", borderRadius: 999, display: "flex", alignItems: "center", gap: 4 }}><Icon name="tag" size={11} />{ar ? "عرض مموّل" : "Sponsored"}</span>
       {o.discount > 0 && <span style={{ position: "absolute", top: 10, insetInlineEnd: 10, zIndex: 2, background: "var(--brand)", color: "#fff", fontSize: 12, fontWeight: 800, padding: "3px 9px", borderRadius: 999 }}>-{o.discount}%</span>}
-      <div style={{ position: "relative", height: 150, background: "var(--surface-2)" }}>
+      <div className="mash-offer-thumb" style={{ position: "relative", height: 150, background: "var(--surface-2)" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={o.img} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
       </div>

@@ -50,6 +50,7 @@ export const PATHS: Record<string, string> = {
   users: "M9 11a4 4 0 100-8 4 4 0 000 8zM2 21a7 7 0 0114 0M17 11a4 4 0 000-8M22 21a7 7 0 00-5-6.7",
   reel: "M3 6h18v12H3zM3 10h18M8 6l-2 4M13 6l-2 4M18 6l-2 4",
   pin: "M12 21s-6-5.3-6-10a6 6 0 1112 0c0 4.7-6 10-6 10zM12 13a2.5 2.5 0 100-5 2.5 2.5 0 000 5z",
+  map: "M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14",
   trend: "M3 17l6-6 4 4 8-8M21 7v5h-5",
   bars: "M4 20V10M10 20V4M16 20v-7M22 20H2",
   trash: "M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13",
@@ -120,7 +121,7 @@ export function Thumb({ p, ratio = "1 / 1", radius = "var(--r-md)" }: { p: { cat
   const cat = CATS.find((c) => c.id === p.cat);
   return (
     <div style={{ position: "relative", width: "100%", aspectRatio: ratio, borderRadius: radius, overflow: "hidden",
-      background: p.img ? "#fff" : `radial-gradient(120% 120% at 30% 20%, ${p.color} 0%, ${p.color} 55%, rgba(0,0,0,.06) 100%)`,
+      background: p.img ? "var(--photo-bg)" : `radial-gradient(120% 120% at 30% 20%, ${p.color} 0%, ${p.color} 55%, rgba(0,0,0,.06) 100%)`,
       display: "flex", alignItems: "center", justifyContent: "center" }}>
       {p.img
         ? <img src={p.img} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />

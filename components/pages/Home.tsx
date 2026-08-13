@@ -27,12 +27,12 @@ const QUICK: Record<"ar" | "en", [string, string][]> = {
 function QuickFilters({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const { lang } = useApp();
   return (
-    <div className="mash-scroll-x" style={{ display: "flex", gap: 12, marginTop: 28, flexWrap: "nowrap", overflowX: "auto", paddingBottom: 4 }}>
+    <div style={{ display: "flex", gap: 10, marginTop: 24, flexWrap: "wrap" }}>
       {QUICK[lang === "ar" ? "ar" : "en"].map(([label, ic], i) => {
         const on = i === value;
         return (
-          <button key={label} onClick={() => onChange(on ? -1 : i)} style={{ flex: "none", display: "flex", alignItems: "center", gap: 9, padding: "10px 18px", borderRadius: "var(--r-pill)", border: "1.5px solid " + (on ? "var(--brand)" : "var(--line)"), background: on ? "var(--brand)" : "var(--surface)", color: on ? "#fff" : "var(--text)", fontWeight: 700, fontSize: 14, whiteSpace: "nowrap" }}>
-            <Icon name={ic} size={17} />{label}
+          <button key={label} onClick={() => onChange(on ? -1 : i)} style={{ flex: "none", display: "flex", alignItems: "center", gap: 7, padding: "8px 14px", borderRadius: "var(--r-pill)", border: "1.5px solid " + (on ? "var(--brand)" : "var(--line)"), background: on ? "var(--brand)" : "var(--surface)", color: on ? "#fff" : "var(--text)", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap" }}>
+            <Icon name={ic} size={15} />{label}
           </button>
         );
       })}
@@ -59,25 +59,6 @@ function buildHeroStores(lang: "ar" | "en"): HeroStore[] {
     cta: ar ? "زيارة المتجر" : "Visit store",
   }));
 }
-// turn active sponsored offers into hero slides (same shape/logic; shown first)
-function buildHeroOffers(offers: Offer[], lang: "ar" | "en"): HeroStore[] {
-  const ar = lang === "ar";
-  return offers.filter((o) => o.active && VENDORS[o.vendor]).map((o) => {
-    const v = VENDORS[o.vendor];
-    return {
-      vendor: o.vendor,
-      img: o.img,
-      color: v.color,
-      kicker: ar ? "عرض مموّل" : "Sponsored offer",
-      title: ar ? o.ar : o.en,
-      sub: v ? (ar ? v.ar_about : v.en_about) : "",
-      cta: ar ? "احصل على العرض" : "Get the offer",
-      promoted: true,
-      discount: o.discount,
-    };
-  });
-}
-
 function OffersTicker({ go }: { go: Go }) {
   const { lang } = useApp();
   const ar = lang === "ar";
@@ -119,8 +100,18 @@ const heroArrow: React.CSSProperties = { position: "absolute", top: "50%", trans
 function HeroSlider({ go, offers = [] }: { go: Go; onCat?: (id: string) => void; offers?: Offer[] }) {
   const { lang } = useApp();
   const l = lang === "ar" ? "ar" : "en";
-  // sponsored offers first, then featured stores — same slide shape/logic
-  const slides = [...buildHeroOffers(offers, l), ...buildHeroStores(l)];
+  // one slide per featured store; every slide shows a big offer %. Prefer the
+  // store's best active sponsored-offer discount; otherwise fall back to the
+  // biggest discount among the store's own products so no slide is left blank.
+  const bestDiscount = (vendorId: string) => {
+    const fromOffers = offers.filter((o) => o.active && o.vendor === vendorId && o.discount > 0)
+      .reduce((m, o) => Math.max(m, o.discount), 0);
+    if (fromOffers > 0) return fromOffers;
+    const fromProducts = PRODUCTS.filter((p) => p.vendor === vendorId && p.active)
+      .reduce((m, p) => Math.max(m, p.discount), 0);
+    return fromProducts;
+  };
+  const slides = buildHeroStores(l).map((s) => ({ ...s, discount: bestDiscount(s.vendor) }));
   const rtl = lang === "ar";
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -140,42 +131,28 @@ function HeroSlider({ go, offers = [] }: { go: Go; onCat?: (id: string) => void;
     <section ref={heroRef} className="mash-hero" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
       style={{ position: "relative", height: 340, borderRadius: "var(--r-xl)", overflow: "hidden", background: "var(--hero)" }}>
       {slides.map((s, idx) => {
-        const v = VENDORS[s.vendor];
         return (
-        <div key={idx} className="mash-hero-slide" aria-hidden={idx !== i} style={{ position: "absolute", inset: 0, opacity: idx === i ? 1 : 0, transition: "opacity .45s ease", pointerEvents: idx === i ? "auto" : "none" }}>
-          {/* store banner photo fills the trailing half, dimmed */}
+        <div key={idx} className="mash-hero-slide" aria-hidden={idx !== i} onClick={() => act(s)} style={{ position: "absolute", inset: 0, opacity: idx === i ? 1 : 0, transition: "opacity .45s ease", pointerEvents: idx === i ? "auto" : "none", cursor: "pointer" }}>
+          {/* store banner photo behind, dimmed */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={s.img} alt="" style={{ position: "absolute", insetInlineEnd: 0, top: 0, height: "100%", width: "56%", objectFit: "cover" }} />
-          {/* dark + brand-tinted wash */}
-          <div style={{ position: "absolute", inset: 0, background: rtl
-            ? `linear-gradient(270deg, ${s.color}55 0%, rgba(20,27,36,.82) 42%, #10161d 78%)`
-            : `linear-gradient(90deg, ${s.color}55 0%, rgba(20,27,36,.82) 42%, #10161d 78%)` }} />
-          {/* logo / offer tile in a glowing card */}
-          <div className="mash-hero-card" data-active={idx === i} style={{ position: "absolute", insetInlineEnd: "6%", top: "50%", transform: "translateY(-50%)", width: 200, height: 200, borderRadius: 28, background: `linear-gradient(150deg, ${s.color}, ${s.color}cc)`, boxShadow: "0 30px 70px rgba(0,0,0,.55)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-            {s.promoted ? (
-              <>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={s.img} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
-                {!!s.discount && s.discount > 0 && <span className="num" style={{ position: "absolute", top: 12, insetInlineStart: 12, background: "var(--brand)", color: "#fff", fontWeight: 800, fontSize: 15, padding: "4px 11px", borderRadius: 999 }}>-{s.discount}%</span>}
-              </>
-            ) : (<>
-              <span className="mash-hero-glow" style={{ position: "absolute", inset: "10%", borderRadius: "50%", background: "radial-gradient(circle, rgba(255,255,255,.35) 0%, transparent 65%)", filter: "blur(6px)" }} />
-              <span className="mash-hero-img" style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, color: "#fff" }}>
-                <Icon name="store" size={64} stroke={1.4} />
-                <span style={{ fontWeight: 800, fontSize: 17 }}>{rtl ? v.ar : v.en}</span>
-              </span>
-            </>)}
-          </div>
-          <div className="mash-hero-copy" style={{ position: "relative", height: "100%", maxWidth: 560, padding: "0 56px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 14 }}>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 7, background: s.promoted ? "var(--gold)" : "rgba(255,255,255,.14)", color: s.promoted ? "#3a2c00" : "#fff", padding: "5px 12px", borderRadius: 999, fontSize: 12.5, fontWeight: 800, width: "fit-content" }}><Icon name="tag" size={14} />{s.kicker}</span>
-            <h1 style={{ margin: 0, fontSize: 40, fontWeight: 800, lineHeight: 1.15, color: "#fff", fontFamily: "var(--font-display)" }}>{s.title}</h1>
-            <div style={{ display: "flex", alignItems: "center", gap: 14, color: "rgba(255,255,255,.85)", fontSize: 13.5 }}>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="star" size={15} fill="var(--star)" /><b className="num">{v.rating}</b> ({v.reviews})</span>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="location" size={14} />{rtl ? v.city.ar : v.city.en}</span>
-              <span className="num">{(v.followers / 1000).toFixed(1)}k {rtl ? "متابع" : "followers"}</span>
+          <img src={s.img} alt="" style={{ position: "absolute", inset: 0, height: "100%", width: "100%", objectFit: "cover" }} />
+          {/* dark + brand-tinted wash so the centered content stays readable */}
+          <div style={{ position: "absolute", inset: 0, background: `radial-gradient(120% 120% at 50% 42%, ${s.color}44 0%, rgba(16,22,29,.82) 55%, #10161d 100%)` }} />
+          {/* everything centered in the middle: store logo + name + big offer % */}
+          <div className="mash-hero-copy" style={{ position: "relative", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: 16, padding: "0 56px" }}>
+            {/* store logo glyph in a glowing badge */}
+            <div className="mash-hero-card" data-active={idx === i} style={{ width: 96, height: 96, borderRadius: 24, background: `linear-gradient(150deg, ${s.color}, ${s.color}cc)`, boxShadow: "0 22px 55px rgba(0,0,0,.5)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flex: "none" }}>
+              <span className="mash-hero-img"><Icon name="store" size={48} stroke={1.4} /></span>
             </div>
-            <p style={{ margin: 0, fontSize: 15, color: "rgba(255,255,255,.78)", maxWidth: 400 }}>{s.sub}</p>
-            <div style={{ marginTop: 4 }}><Btn size="lg" onClick={() => act(s)}><Icon name="store" size={17} />{s.cta}</Btn></div>
+            {/* store name */}
+            <h1 style={{ margin: 0, fontSize: 32, fontWeight: 800, lineHeight: 1.15, color: "#fff", fontFamily: "var(--font-display)" }}>{s.title}</h1>
+            {/* big offer % — centered in the middle */}
+            {!!s.discount && s.discount > 0 && (
+              <div className="mash-hero-off" style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 10, color: "var(--gold)", lineHeight: 1, fontFamily: "var(--font-display)", textShadow: "0 4px 24px rgba(0,0,0,.45)" }}>
+                <span style={{ fontSize: 24, fontWeight: 800 }}>{rtl ? "خصم" : "SAVE"}</span>
+                <span className="num" style={{ fontSize: 84, fontWeight: 800 }}>{s.discount}%</span>
+              </div>
+            )}
           </div>
         </div>
       );})}
@@ -256,13 +233,14 @@ function CatBannerTile({ c, ar, go, onPick, subs }: { c: { id: string; img: stri
   const dur = Math.max(14, subs.length * 5) + "s";
   return (
     <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
-      <button onClick={() => onPick(c.id)} style={{ width: "100%", position: "relative", height: 180, border: "none", borderBottom: subs.length ? "1px solid var(--line)" : "none", background: c.bg, padding: 0, cursor: "pointer", display: "block" }}
+      <button className="mash-cat-banner" onClick={() => onPick(c.id)} style={{ width: "100%", position: "relative", height: 180, border: "none", borderBottom: subs.length ? "1px solid var(--line)" : "none", background: c.bg, padding: 0, cursor: "pointer", display: "block" }}
         onMouseEnter={(e) => { const im = e.currentTarget.querySelector("img"); if (im) (im as HTMLElement).style.transform = "scale(1.06)"; }}
         onMouseLeave={(e) => { const im = e.currentTarget.querySelector("img"); if (im) (im as HTMLElement).style.transform = "scale(1)"; }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={c.img} alt="" loading="lazy" style={{ position: "absolute", insetInlineStart: 0, insetInlineEnd: 0, top: 0, height: "72%", width: "100%", objectFit: "contain", padding: "18px 18px 4px", transition: "transform .35s ease" }} />
-        <span style={{ position: "absolute", insetInline: 0, bottom: 0, height: "42%", background: "linear-gradient(to top, rgba(255,255,255,.96) 40%, rgba(255,255,255,0) 100%)" }} />
-        <span style={{ position: "absolute", insetInlineStart: 16, bottom: 14, insetInlineEnd: 16, display: "flex", alignItems: "center", justifyContent: "space-between", color: "var(--text)" }}>
+        <span className="mash-cat-scrim" style={{ position: "absolute", insetInline: 0, bottom: 0, height: "42%", background: "linear-gradient(to top, rgba(255,255,255,.96) 40%, rgba(255,255,255,0) 100%)" }} />
+        {/* scrim + title flip with the theme (see .mash-cat-* in globals.css) */}
+        <span className="mash-cat-title" style={{ position: "absolute", insetInlineStart: 16, bottom: 14, insetInlineEnd: 16, display: "flex", alignItems: "center", justifyContent: "space-between", color: "#1e3d47" }}>
           <span style={{ fontWeight: 800, fontSize: 18, fontFamily: "var(--font-display)" }}>{ar ? c.ar : c.en}</span>
           <span style={{ width: 34, height: 34, borderRadius: 999, background: "var(--brand)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}><Icon name="arrow" size={17} /></span>
         </span>
@@ -322,6 +300,7 @@ export function Home({ go, query }: { go: Go; query: string }) {
   const [activeCat, setActiveCat] = useState("all");
   const [quick, setQuick] = useState(-1);
   const [sort, setSort] = useState("featured");
+  const [dealsOpen, setDealsOpen] = useState(false); // "عروض مختارة لك" starts collapsed
   // active sponsored offers matching the selected category filter
   const promoted = offerStore.offers.filter((o) => o.active && (activeCat === "all" || o.cat === activeCat));
   const dealsGrid = useZoomIn<HTMLDivElement>([activeCat, quick, sort, query, lang]);
@@ -340,18 +319,25 @@ export function Home({ go, query }: { go: Go; query: string }) {
     else if (sort === "discount") l = [...l].sort((a, b) => b.discount - a.discount);
     return l;
   }, [activeCat, quick, query, sort]);
-  const scrollDeals = () => { const el = document.getElementById("deals-anchor"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); };
 
   return (
     <div className="container" style={{ paddingTop: 24 }}>
       <HeroSlider go={go} onCat={(id) => setActiveCat(id)} offers={offerStore.offers} />
       <OffersTicker go={go} />
-      <QuickFilters value={quick} onChange={(v) => { setQuick(v); if (v !== -1) requestAnimationFrame(scrollDeals); }} />
+      <QuickFilters value={quick} onChange={(v) => { setQuick(v); if (v !== -1) setDealsOpen(true); }} />
 
       <CategoryBanners go={go} onPick={(id) => go("category", id)} />
 
       <section id="deals-anchor" style={{ marginTop: 44 }}>
-        <SectionHead title={t.dealsTitle} />
+        {/* collapsible header — the whole section starts collapsed */}
+        <button onClick={() => setDealsOpen((o) => !o)} aria-expanded={dealsOpen} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", background: "transparent", border: "none", padding: 0, marginBottom: dealsOpen ? 20 : 0, cursor: "pointer" }}>
+          <h2 style={{ margin: 0, fontSize: 23, fontWeight: 800, fontFamily: "var(--font-display)" }}><span className="hl">{t.dealsTitle}</span></h2>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--brand)", fontWeight: 700, fontSize: 14 }}>
+            {dealsOpen ? (lang === "ar" ? "طيّ" : "Collapse") : (lang === "ar" ? "عرض" : "Show")}
+            <Icon name="chevron" size={18} style={{ transition: "transform .2s", transform: dealsOpen ? "rotate(180deg)" : "none" }} />
+          </span>
+        </button>
+        {dealsOpen && (<>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
           <Chip active={activeCat === "all"} onClick={() => setActiveCat("all")}>{lang === "ar" ? "الكل" : "All"}</Chip>
           {CATS.filter((c) => PRODUCTS.some((p) => p.cat === c.id)).map((c) => (
@@ -367,16 +353,17 @@ export function Home({ go, query }: { go: Go; query: string }) {
             </select>
           </div>
         </div>
-        {/* sponsored vendor offers appear first */}
+        {/* sponsored vendor offers appear first — show at most 6 */}
         {promoted.length > 0 && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 18, marginBottom: 22 }}>
-            {promoted.map((o) => <OfferCard key={o.id} o={o} ar={lang === "ar"} go={go} />)}
+            {promoted.slice(0, 6).map((o) => <OfferCard key={o.id} o={o} ar={lang === "ar"} go={go} />)}
           </div>
         )}
         <div ref={dealsGrid} style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 18 }}>
-          {list.length ? list.map((p) => <ProductCard key={p.id} p={p} go={go} />)
+          {list.length ? list.slice(0, 6).map((p) => <ProductCard key={p.id} p={p} go={go} />)
             : <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "50px 0", color: "var(--text-3)" }}>{lang === "ar" ? "لا توجد منتجات مطابقة" : "No matching products"}</div>}
         </div>
+        </>)}
       </section>
 
       <section style={{ marginTop: 48 }}>

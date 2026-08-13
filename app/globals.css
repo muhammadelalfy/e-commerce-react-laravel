@@ -38,6 +38,7 @@
   --hero:      #1e3d47;      /* logo2 navy-teal hero */
   --line:      #ece5e2;
   --line-soft: #f3eeec;
+  --photo-bg:  #ffffff;      /* frame behind product photos (white catalog shots) */
 
   /* Text */
   --text:   #1e3d47;         /* logo2 navy-teal ink */
@@ -88,6 +89,7 @@
   --hero:      #16272e;
   --line:      #2a3f47;
   --line-soft: #1d3138;
+  --photo-bg:  linear-gradient(135deg, #16272e, #1d3138);  /* dark frame behind photos */
 
   --text:   #eaf1f3;
   --text-2: #9fb0b6;
@@ -95,6 +97,23 @@
   --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
   --shadow-md: 0 6px 20px rgba(0,0,0,.45);
   --shadow-lg: 0 16px 48px rgba(0,0,0,.55);
+}
+
+/* "Shop by category" tiles: match the dark card backgrounds in dark mode
+   (the light product-photo gradients only read well on a light page). */
+:root[data-theme="dark"] .mash-cat-banner {
+  background: linear-gradient(135deg, var(--surface), var(--surface-2)) !important;
+}
+:root[data-theme="dark"] .mash-cat-scrim {
+  background: linear-gradient(to top, var(--surface) 40%, rgba(22,39,46,0) 100%) !important;
+}
+:root[data-theme="dark"] .mash-cat-title {
+  color: var(--text) !important;
+}
+/* "عروض مختارة لك" offer thumbnails: dark frame behind the photo in dark mode,
+   matching the tile/card backgrounds instead of a light panel. */
+:root[data-theme="dark"] .mash-offer-thumb {
+  background: linear-gradient(135deg, var(--surface), var(--surface-2)) !important;
 }
 
 * { box-sizing: border-box; }
@@ -261,64 +280,34 @@ img { display: block; max-width: 100%; }
 }
 @keyframes mash-slidedown { from { transform: translateY(-8px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
 
-/* ---- HERO SLIDER responsive ---- */
-@media (max-width: 1024px) {
-  .mash-hero-card { width: 240px !important; height: 240px !important; }
-  .mash-hero-card .mash-hero-img { width: 200px !important; height: 200px !important; }
-}
+/* ---- HERO SLIDER responsive ----
+   Centered layout: store logo badge + name + big offer %, all in the middle. */
 @media (max-width: 900px) {
   .mash-hero { height: 300px !important; }
-  .mash-hero-card { width: 190px !important; height: 190px !important; }
-  .mash-hero-card .mash-hero-img { width: 160px !important; height: 160px !important; }
-  .mash-hero-copy { padding: 0 40px !important; }  /* clearance for arrows */
+  .mash-hero-card { width: 84px !important; height: 84px !important; }
+  .mash-hero-card .mash-hero-img svg { width: 42px !important; height: 42px !important; }
+  .mash-hero-copy h1 { font-size: 28px !important; }
+  .mash-hero-off > span:first-child { font-size: 20px !important; }
+  .mash-hero-off .num { font-size: 64px !important; }
 }
 @media (max-width: 640px) {
   /* snappier slide crossfade on mobile */
   .mash-hero-slide { transition: opacity .3s ease !important; }
+  .mash-hero { height: 240px !important; }
+  .mash-hero-copy { padding: 0 48px !important; gap: 12px !important; }
+  .mash-hero-card { width: 68px !important; height: 68px !important; border-radius: 18px !important; }
+  .mash-hero-card .mash-hero-img svg { width: 34px !important; height: 34px !important; }
+  .mash-hero-copy h1 { font-size: 22px !important; margin: 0 !important; }
+  .mash-hero-off > span:first-child { font-size: 16px !important; }
+  .mash-hero-off .num { font-size: 48px !important; }
 
-  /* product card small at the top corner, copy fills width below it */
-  .mash-hero { height: 220px !important; }
-  .mash-hero-card {
-    width: 90px !important; height: 90px !important;
-    inset-inline-end: 10px !important; top: 10px !important;
-    transform: none !important; border-radius: 18px !important;
-  }
-  .mash-hero-card .mash-hero-img { width: auto !important; height: auto !important; gap: 2px !important; }
-  /* shrink the store glyph + its inner label so they fit the smaller card */
-  .mash-hero-card .mash-hero-img svg { width: 36px !important; height: 36px !important; }
-  .mash-hero-card .mash-hero-img > span { font-size: 11px !important; }
-
-  /* copy sits at the bottom; generous side padding so text NEVER hits the arrows,
-     and bottom padding so it clears the dots */
-  .mash-hero-copy {
-    padding: 0 48px 30px !important;
-    justify-content: flex-end !important;
-    max-width: 100% !important;
-  }
-  .mash-hero-copy h1 { font-size: 18px !important; margin: 0 !important; }
-  .mash-hero-copy p { font-size: 11.5px !important; }
-  /* drop the long description on mobile to keep the shorter hero uncluttered */
-  .mash-hero-copy p { display: none !important; }
-  /* tighten spacing between the copy's rows */
-  .mash-hero-copy { gap: 6px !important; }
-  /* smaller rating / meta row (stars · city · followers) */
-  .mash-hero-copy > div:nth-child(3) { font-size: 11px !important; gap: 8px !important; }
-  /* smaller "visit store" button */
-  .mash-hero-copy > div:last-child a,
-  .mash-hero-copy > div:last-child button {
-    padding: 8px 16px !important; font-size: 12.5px !important;
-  }
-
-  /* smaller arrows, sitting beside the copy (not over it) */
+  /* smaller arrows */
   .mash-hero-arrow {
-    width: 28px !important; height: 28px !important;
-    top: auto !important; bottom: 12px !important;
-    transform: none !important;
+    width: 30px !important; height: 30px !important;
     background: rgba(255,255,255,.22) !important;
   }
-  .mash-hero-arrow svg { width: 14px !important; height: 14px !important; }
-
-  /* dots centered at the very bottom, above everything */
+  .mash-hero-arrow svg { width: 15px !important; height: 15px !important; }
+  /* dots centered at the very bottom */
   .mash-hero-dots {
     inset-inline: 0 !important;
     bottom: 12px !important;
@@ -326,14 +315,12 @@ img { display: block; max-width: 100%; }
   }
 }
 @media (max-width: 400px) {
-  .mash-hero { height: 190px !important; }
-  .mash-hero-card { width: 76px !important; height: 76px !important; }
-  .mash-hero-card .mash-hero-img svg { width: 30px !important; height: 30px !important; }
-  .mash-hero-card .mash-hero-img > span { font-size: 10px !important; }
-  .mash-hero-copy { padding: 0 44px 26px !important; }
-  .mash-hero-copy h1 { font-size: 16px !important; }
-  /* hide the small "متجر مميّز" badge too, so name + rating + button fit cleanly */
-  .mash-hero-copy > span:first-child { display: none !important; }
+  .mash-hero { height: 210px !important; }
+  .mash-hero-card { width: 58px !important; height: 58px !important; }
+  .mash-hero-card .mash-hero-img svg { width: 28px !important; height: 28px !important; }
+  .mash-hero-copy h1 { font-size: 19px !important; }
+  .mash-hero-off > span:first-child { font-size: 14px !important; }
+  .mash-hero-off .num { font-size: 40px !important; }
 }
 
 /* ---- FOOTER responsive ---- */
@@ -342,14 +329,15 @@ img { display: block; max-width: 100%; }
   .mash-footer-brand { grid-column: 1 / -1 !important; }
 }
 @media (max-width: 640px) {
-  /* center the whole footer on mobile */
-  .mash-footer-grid { grid-template-columns: 1fr !important; text-align: center; justify-items: center; gap: 26px !important; }
-  .mash-footer-grid > div { align-items: center; }
-  .mash-footer-brand { display: flex; flex-direction: column; align-items: center; }
-  .mash-footer-brand p { margin-inline: auto !important; }
-  .mash-footer-grid ul { align-items: center; }
-  .mash-footer-bottom { flex-direction: column !important; align-items: center !important; text-align: center; justify-content: center !important; }
-  .mash-footer-bottom > span { justify-content: center; }
+  /* single full-width column on mobile; columns STRETCH to the full width so they
+     don't shrink-wrap and stick to the edge — text stays in reading direction. */
+  .mash-footer-grid { grid-template-columns: 1fr !important; text-align: start; justify-items: stretch; gap: 26px !important; }
+  .mash-footer-grid > div { align-items: stretch; width: 100%; }
+  .mash-footer-brand { display: flex; flex-direction: column; align-items: flex-start; }
+  .mash-footer-brand p { margin-inline: 0 !important; }
+  .mash-footer-grid ul { align-items: flex-start; }
+  .mash-footer-bottom { flex-direction: column !important; align-items: flex-start !important; text-align: start; justify-content: flex-start !important; }
+  .mash-footer-bottom > span { justify-content: flex-start; }
 }
 
 /* horizontal scroll safety — nothing should overflow the viewport width */
