@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تقرير إصلاح الأعطال · أوفرز</title>
+<style>
+  :root{--brand:#c8305e;--gold:#f5c518;--ink:#1e3d47;--ink2:#5f6b72;--line:#ece5e2;--bg:#f5f2f0;--surface:#fff;--ok:#2e9d63;--dark:#16272e}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Tajawal","Cairo","Segoe UI",system-ui,sans-serif;line-height:1.9;font-size:16px}
+  .page{max-width:920px;margin:0 auto;padding:48px 34px;background:var(--surface);box-shadow:0 1px 40px rgba(30,61,71,.07);min-height:100vh}
+  .brandbar{height:8px;border-radius:999px;background:linear-gradient(90deg,var(--gold) 0 33%,var(--brand) 33% 66%,var(--ink) 66% 100%);margin-bottom:26px}
+  h1{font-size:30px;font-weight:800;margin:0 0 4px}
+  h1 .sub{display:block;font-size:18px;color:var(--brand);font-weight:700;margin-top:8px}
+  h2{font-size:22px;font-weight:800;margin:40px 0 14px;padding-bottom:8px;border-bottom:3px solid var(--gold)}
+  h3{font-size:17px;font-weight:800;margin:22px 0 8px;color:var(--brand)}
+  .meta{background:#fdf3cf;border:1px solid #f0e3a8;border-radius:12px;padding:14px 18px;margin:18px 0 8px;font-size:14.5px}
+  .meta b{color:var(--brand)}
+  .status{display:inline-block;background:#e7f4ec;color:var(--ok);border:1px solid #bfe5cf;font-weight:800;font-size:14px;padding:5px 16px;border-radius:999px;margin-top:10px}
+  .lead{font-size:15.5px;color:var(--ink2);background:#faf6f8;border-inline-start:4px solid var(--brand);border-radius:0 10px 10px 0;padding:14px 18px;margin:18px 0}
+  .note{font-size:13.5px;color:var(--ink2);background:#fbf7ee;border:1px dashed #e6d9b8;border-radius:10px;padding:12px 16px;margin:14px 0}
+  hr{border:none;border-top:1px solid var(--line);margin:32px 0}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px}
+  th,td{border:1px solid var(--line);padding:10px 12px;text-align:right;vertical-align:top}
+  th{background:#f3eeec;font-weight:800}
+  tr:nth-child(even) td{background:#faf8f7}
+  ul,ol{padding-inline-start:26px}
+  li{margin:6px 0}
+  .value{font-size:13.5px;color:var(--ok);font-weight:700;margin:6px 0 2px}
+  .value::before{content:"◆ الأثر: "}
+  .bug{border:1px solid var(--line);border-radius:14px;padding:2px 20px 14px;margin:18px 0;background:#fff;box-shadow:0 1px 3px rgba(30,61,71,.05)}
+  .bug .tag{display:inline-block;font-size:12.5px;font-weight:800;padding:3px 12px;border-radius:999px;margin:14px 0 2px}
+  .tag.before{background:#fdeaef;color:var(--brand);border:1px solid #f5cdd8}
+  .tag.after{background:#e7f4ec;color:var(--ok);border:1px solid #bfe5cf}
+  .swatch{display:inline-flex;align-items:center;gap:8px;background:#faf8f7;border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:6px 8px 6px 0;font-size:13px;font-weight:700}
+  .chip{width:26px;height:20px;border-radius:5px;border:1px solid rgba(0,0,0,.12);flex:none}
+  .foot{text-align:center;color:var(--ink2);font-size:14px;margin-top:36px}
+  .summ{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin:18px 0}
+  .summ .box{border:1px solid var(--line);border-radius:12px;padding:16px;text-align:center;background:#faf8f7}
+  .summ .n{font-size:30px;font-weight:800;color:var(--brand);line-height:1}
+  .summ .l{font-size:13px;color:var(--ink2);margin-top:6px}
+  @media print{body{background:#fff}.page{box-shadow:none;max-width:none;padding:0}}
+  @media (max-width:640px){.summ{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="page">
+<div class="brandbar"></div>
+
+<h1>تقرير إصلاح الأعطال — منصّة «أوفرز»<span class="sub">تقرير أعمال موجّه للعميل · الأعطال التي عولجت في هذه الجولة</span></h1>
+
+<div class="meta">
+<b>التاريخ:</b> 2026-08-10 &nbsp;·&nbsp; <b>النطاق:</b> إصلاح أعطال ظهرت بعد المرحلة الرابعة — مشاكل عرض في «الوضع الليلي» + استرجاع الشعار
+<br><span class="status">✅ جميع الأعطال مُصلَحة ومُتحقَّق منها في الوضعين الفاتح والليلي</span>
+</div>
+
+<p class="lead">هذه الجولة مخصّصة <strong>لإصلاح الأعطال فقط</strong> — لا ميزات جديدة. المشكلة الرئيسية كانت أن <strong>الوضع الليلي (Dark Mode)</strong> يُظهر بعض العناصر بخلفيات فاتحة ونصوص غير مقروءة، إضافةً إلى طلب استرجاع الشعار السابق. أدناه كل عطل بحالته «قبل» و«بعد».</p>
+
+<div class="summ">
+  <div class="box"><div class="n">4</div><div class="l">أعطال مُصلَحة</div></div>
+  <div class="box"><div class="n">2</div><div class="l">وضعان مُتحقَّق منهما<br>(فاتح + ليلي)</div></div>
+  <div class="box"><div class="n">0</div><div class="l">أعطال متبقّية</div></div>
+</div>
+
+<h2>1. الوضع الليلي — عناوين بطاقات «تسوّق حسب القسم» غير مقروءة</h2>
+<div class="bug">
+  <span class="tag before">قبل الإصلاح</span>
+  <p>في الوضع الليلي كان اسم القسم (مثل «الأزياء»، «العطور والجمال») يظهر باهتاً وغير مقروء، لأن لون النص كان يتحوّل إلى الفاتح بينما يجلس فوق طبقة بيضاء أسفل الصورة — فأصبح «فاتح فوق فاتح».</p>
+  <span class="tag after">بعد الإصلاح</span>
+  <p>ثُبِّت لون عنوان القسم على الكحلي الداكن في الوضعين، لأنه دائماً فوق طبقة بيضاء — فأصبح واضحاً تماماً.</p>
+  <div class="swatch"><span class="chip" style="background:#1e3d47"></span> العنوان الآن كحلي داكن مقروء</div>
+  <p class="value">اسم كل قسم أصبح واضحاً ومقروءاً في الوضع الليلي.</p>
+</div>
+
+<h2>2. الوضع الليلي — خلفيات بطاقات الأقسام فاتحة</h2>
+<div class="bug">
+  <span class="tag before">قبل الإصلاح</span>
+  <p>خلفية بطاقات «تسوّق حسب القسم» كانت تبقى فاتحة (تدرّج فاتح ثابت) حتى في الوضع الليلي، فتبدو غريبة ومتنافرة مع باقي الصفحة الداكنة.</p>
+  <span class="tag after">بعد الإصلاح</span>
+  <p>أصبحت خلفية البطاقة في الوضع الليلي تدرّجاً داكناً مطابقاً لباقي البطاقات، وتتلاشى الطبقة السفلية مع الخلفية بدل الأبيض.</p>
+  <div class="swatch"><span class="chip" style="background:linear-gradient(135deg,#16272e,#1d3138)"></span> الخلفية الآن داكنة متناسقة</div>
+  <p class="value">بطاقات الأقسام أصبحت متناسقة مع تصميم الوضع الليلي.</p>
+</div>
+
+<h2>3. الوضع الليلي — خلفية بيضاء خلف صور المنتجات والعروض</h2>
+<div class="bug">
+  <span class="tag before">قبل الإصلاح</span>
+  <p>خلف كل صورة منتج/عرض كانت هناك <strong>خلفية بيضاء ناصعة</strong> ثابتة، تظهر بوضوح مزعج في الوضع الليلي (كما في بطاقات السماعات والمنتجات) وتكسر تناسق الصفحة الداكنة. شمل ذلك قسم «عروض مختارة لك» وكل شبكات المنتجات.</p>
+  <span class="tag after">بعد الإصلاح</span>
+  <p>أنشأنا خلفية «ذكية» للصور تتبدّل مع الوضع تلقائياً: تبقى بيضاء نظيفة في الوضع الفاتح (لصور الكتالوج)، وتتحوّل إلى تدرّج داكن في الوضع الليلي. الإصلاح يشمل <strong>كل صور المنتجات في الموقع</strong> — الرئيسية، صفحة المتجر، الأقسام، والمفضّلة.</p>
+  <div class="swatch"><span class="chip" style="background:#fff"></span> الوضع الفاتح: أبيض نظيف</div>
+  <div class="swatch"><span class="chip" style="background:linear-gradient(135deg,#16272e,#1d3138)"></span> الوضع الليلي: داكن متناسق</div>
+  <p class="value">اختفت الخلفيات البيضاء المزعجة، وأصبح الموقع مريحاً للعين في الوضع الليلي عبر جميع الصفحات.</p>
+</div>
+
+<h2>4. استرجاع الشعار السابق</h2>
+<div class="bug">
+  <span class="tag before">قبل</span>
+  <p>كان الموقع يستخدم الشعار الأحدث (النسخة الهندسية).</p>
+  <span class="tag after">بعد</span>
+  <p>أُعيد الشعار إلى النسخة السابقة <strong>«OFFERZ · أوفرز»</strong> (الوردي/الكحلي) في كل مكان دفعةً واحدة — الهيدر والفوتر — عبر مكوّن الشعار المشترك.</p>
+  <p class="value">توحيد الهوية البصرية على الشعار المطلوب في كامل الموقع.</p>
+</div>
+
+<hr>
+
+<h2>ملخّص الأعطال</h2>
+<table>
+  <thead><tr><th>#</th><th>العطل</th><th>الموضع</th><th>الحالة</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>عناوين أقسام غير مقروءة في الوضع الليلي</td><td>«تسوّق حسب القسم» — الرئيسية</td><td>✅ مُصلَح</td></tr>
+    <tr><td>2</td><td>خلفيات بطاقات الأقسام فاتحة في الوضع الليلي</td><td>«تسوّق حسب القسم» — الرئيسية</td><td>✅ مُصلَح</td></tr>
+    <tr><td>3</td><td>خلفية بيضاء خلف صور المنتجات/العروض</td><td>كل صور المنتجات في الموقع</td><td>✅ مُصلَح</td></tr>
+    <tr><td>4</td><td>استرجاع الشعار السابق</td><td>الهيدر + الفوتر (كامل الموقع)</td><td>✅ مُنفّذ</td></tr>
+  </tbody>
+</table>
+
+<div class="note"><b>ملاحظة فنية للتوثيق:</b> جميع الإصلاحات لا تؤثّر إطلاقاً على الوضع الفاتح — تم التحقّق من كل عنصر في الوضعين. كما اجتاز المشروع فحص الأنواع (TypeScript) بلا أخطاء.</div>
+
+<div class="foot">منصّة أوفرز · تقرير إصلاح الأعطال · 2026-08-10</div>
+
+</div>
+</body>
+</html>
