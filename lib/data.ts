@@ -235,8 +235,8 @@ export const EVENTS: EventItem[] = [
   { id: "e5", ar: "معرض العقارات", en: "Real Estate Expo", ar_d: "شقق وفلل وأراضٍ بعروض تمويل حصرية من أفضل المطوّرين.", en_d: "Apartments, villas and land with exclusive financing offers from top developers.", city: { ar: "الرياض", en: "Riyadh" }, date: { ar: "٥–١٠ سبتمبر", en: "Sep 5–10" }, tint: "#e6eef7", img: IMG + "cat-kitchen.png", live: true },
 ];
 
-export type CouponType = "percent" | "fixed"; // نسبة مئوية أو مبلغ ثابت
-export interface Coupon { id: string; code: string; vendor: string; ar: string; en: string; type: CouponType; pct: number; desc?: string; used: number; limit: number; active: boolean; until: { ar: string; en: string }; }
+export type CouponType = "percent" | "fixed" | "item"; // نسبة · مبلغ ثابت · اشترِ X واحصل على Y هدية
+export interface Coupon { id: string; code: string; vendor: string; ar: string; en: string; type: CouponType; pct: number; desc?: string; used: number; limit: number; active: boolean; until: { ar: string; en: string }; buyQty?: number; giftQty?: number; }
 export const COUPONS: Coupon[] = [
   { id: "c1", code: "MASH50", vendor: "techzone", ar: "خصم ٥٠٪ — متجر تك زون", en: "50% off — Tech Zone", type: "percent", pct: 50, desc: "خصم ٥٠٪ على السماعات المختارة", used: 128, limit: 200, active: true,  until: { ar: "٣٠ يوليو", en: "Jul 30" } },
   { id: "c2", code: "OUD20",  vendor: "aloud", ar: "خصم ٢٠٪ — العربية للعود", en: "20% off — Al-Arabia Oud", type: "percent", pct: 20, desc: "خصم على العود الكمبودي", used: 64,  limit: 150, active: true,  until: { ar: "١٥ أغسطس", en: "Aug 15" } },
@@ -253,7 +253,7 @@ export const CITIES: City[] = [
   { id: "abha", ar: "أبها", en: "Abha", stores: 21, x: 40, y: 80 },
 ];
 
-export interface Plan { id: string; ar: string; en: string; price: number; active: boolean; desc?: string; }
+export interface Plan { id: string; ar: string; en: string; price: number; active: boolean; desc?: string; start?: string; }
 export const PLANS: Plan[] = [
   { id: "basic", ar: "أساسي", en: "Basic", price: 0, active: false, desc: "<ul><li>متجر واحد</li><li>حتى ٥ منتجات</li><li>دعم عبر البريد</li></ul>" },
   { id: "pro", ar: "احترافي", en: "Pro", price: 199, active: true, desc: "<p><b>الأكثر شيوعاً</b></p><ul><li>منتجات غير محدودة</li><li>خصومات ومزادات</li><li>إحصائيات الزوار</li></ul>" },

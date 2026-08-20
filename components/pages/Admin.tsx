@@ -3,15 +3,14 @@ import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useApp } from "@/lib/AppContext";
 import { Icon, Btn, Thumb, money, RichText } from "../ui";
-import { VENDORS, PRODUCTS, CITIES, REELS, EVENTS, CATS, PLANS, type Cat, type Plan, type Coupon, type CouponType } from "@/lib/data";
-import { useCouponStore } from "@/lib/couponStore";
+import { VENDORS, PRODUCTS, CITIES, REELS, EVENTS, CATS, PLANS, type Cat, type Plan } from "@/lib/data";
 import { useGeoStore } from "@/lib/geoStore";
 import { useCatStore } from "@/lib/catStore";
 import { useStoreStore } from "@/lib/storeStore";
 import { useRepStore } from "@/lib/repStore";
 import { useOfferStore, type Offer } from "@/lib/offerStore";
 import { OfferModal, fmtDate } from "../OfferParts";
-import { useAdPackageStore, periodLabelOf, PERIOD_DAYS, addDays, type AdPackage, type AdPeriod } from "@/lib/adPackageStore";
+import { useAdPackageStore, periodLabelOf, priceForPeriod, PERIOD_DAYS, addDays, type AdPackage, type AdPeriod } from "@/lib/adPackageStore";
 import { fetchCities } from "../CountryModal";
 import { GULF_COUNTRIES } from "@/lib/countries";
 
@@ -37,9 +36,7 @@ export function Admin({ go }: { go: Go }) {
   const { lang } = useApp();
   const ar = lang === "ar";
   const [tab, setTab] = useState("overview");
-  const store = useCouponStore();
   const storeApps = useStoreStore();
-  const unread = store.notices.filter((n) => !n.read).length;
   const pendingStores = storeApps.apps.filter((a) => a.status === "PENDING").length;
   const nav: [string, string, string, number?][] = [
     ["overview", ar ? "نظرة عامة" : "Overview", "grid"],
@@ -49,7 +46,6 @@ export function Admin({ go }: { go: Go }) {
     ["categories", ar ? "الأقسام والأقسام الفرعية" : "Categories", "grid"],
     ["adpackages", ar ? "باقات الإعلانات" : "Ad packages", "box"],
     ["offers", ar ? "العروض المموّلة" : "Sponsored offers", "tag"],
-    ["coupons", ar ? "كوبونات الخصم" : "Coupons", "tag", unread],
     ["countries", ar ? "الدول" : "Countries", "globe"],
     ["cities", ar ? "المدن" : "Cities", "pin"],
     ["reps", ar ? "المندوبون" : "Representatives", "users"],
@@ -83,7 +79,6 @@ export function Admin({ go }: { go: Go }) {
         {tab === "categories" && <AdminCategories ar={ar} />}
         {tab === "adpackages" && <AdminAdPackages ar={ar} lang={lang} />}
         {tab === "offers" && <AdminOffers ar={ar} />}
-        {tab === "coupons" && <AdminCoupons ar={ar} />}
         {tab === "users" && <AdminUsers ar={ar} />}
         {tab === "vendors" && <AdminVendors ar={ar} go={go} />}
         {tab === "countries" && <AdminCountries ar={ar} />}
@@ -291,16 +286,22 @@ function AdminAdPackages({ ar, lang }: { ar: boolean; lang: string }) {
               <button onClick={() => store.removePackage(p.id)} title="delete" style={{ background: "transparent", border: "none", color: "var(--sale)", cursor: "pointer" }}><Icon name="trash" size={16} /></button>
             </div>
             <div style={{ fontSize: 17, fontWeight: 800 }}>{ar ? p.ar : p.en}</div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 6, margin: "12px 0 10px" }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6, margin: "12px 0 4px" }}>
               <span className="num" style={{ fontSize: 30, fontWeight: 800 }}>{money(p.price, lang as any)}</span>
-              <span style={{ color: "var(--text-3)", fontSize: 12.5 }}>/{ar ? "شهرياً" : "mo"}</span>
+              <span style={{ color: "var(--text-3)", fontSize: 12.5 }}>/{periodLabelOf(p.period, ar)}</span>
+            </div>
+            {/* price for every period (weekly / monthly / 6-months / yearly) */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 6, margin: "8px 0 12px" }}>
+              {(["week", "month", "6months", "year"] as AdPeriod[]).map((per) => (
+                <div key={per} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, fontSize: 12, padding: "5px 9px", borderRadius: 8, border: "1px solid " + (per === p.period ? "var(--brand)" : "var(--line)"), background: per === p.period ? "var(--brand-soft)" : "var(--surface-2)" }}>
+                  <span style={{ color: "var(--text-2)", fontWeight: 600 }}>{periodLabelOf(per, ar)}</span>
+                  <span className="num" style={{ fontWeight: 800, color: per === p.period ? "var(--brand)" : "var(--text)" }}>{priceForPeriod(p.price, p.period, per)} ﷼</span>
+                </div>
+              ))}
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "var(--brand)", background: "var(--brand-soft)", borderRadius: 999, padding: "5px 12px" }}>
                 <Icon name="tag" size={14} /><span className="num">{p.ads}</span> {ar ? "إعلان" : "ads"}
-              </span>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "var(--gold-deep)", background: "var(--gold-soft)", borderRadius: 999, padding: "5px 12px" }}>
-                <Icon name="calendar" size={14} />{periodLabelOf(p.period, ar)}
               </span>
               {p.autoRenew && <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, color: "var(--active)", background: "var(--active-bg)", borderRadius: 999, padding: "5px 11px" }}><Icon name="check" size={13} />{ar ? "تجديد تلقائي" : "Auto-renew"} · <span className="num">{p.renewPrice ?? p.price} ﷼</span></span>}
             </div>
@@ -504,175 +505,6 @@ function AdminOffers({ ar }: { ar: boolean }) {
         </Portal>
       )}
     </div>
-  );
-}
-
-function AdminCoupons({ ar }: { ar: boolean }) {
-  const store = useCouponStore();
-  const vName = (id: string) => { const v = VENDORS[id]; return v ? (ar ? v.ar : v.en) : id; };
-  const notices = store.notices;
-  const [editing, setEditing] = useState<Coupon | null | undefined>(undefined); // undefined=closed, null=new
-  const discountLabel = (c: Coupon) => c.type === "fixed" ? `${c.pct} ﷼` : `${c.pct}%`;
-  return (
-    <div>
-      <Head title={ar ? "كوبونات الخصم" : "Discount coupons"}
-        action={<div style={{ display: "flex", gap: 8 }}>
-          {notices.some((n) => !n.read) && <Btn size="sm" variant="outline" onClick={() => store.markNoticesRead()}><Icon name="check" size={15} />{ar ? "تعليم كمقروء" : "Mark read"}</Btn>}
-          <Btn size="sm" onClick={() => setEditing(null)}><Icon name="plus" size={15} />{ar ? "كوبون جديد" : "New coupon"}</Btn>
-        </div>} />
-
-      {/* Notifications: which vendor added which coupon */}
-      {notices.length > 0 && (
-        <div style={{ ...card, overflow: "hidden", marginBottom: 18 }}>
-          <div style={{ padding: "12px 18px", borderBottom: "1px solid var(--line)", fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
-            <Icon name="bell" size={16} style={{ color: "var(--brand)" }} />{ar ? "إشعارات كوبونات التجّار" : "Vendor coupon notifications"}
-          </div>
-          {notices.map((n) => (
-            <div key={n.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 18px", borderBottom: "1px solid var(--line-soft)", background: n.read ? "transparent" : "var(--brand-soft)" }}>
-              <span style={{ width: 36, height: 36, borderRadius: 10, flex: "none", background: "var(--brand-soft)", color: "var(--brand)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="tag" size={18} /></span>
-              <div style={{ flex: 1, fontSize: 13.5 }}>
-                {ar
-                  ? <>التاجر <b>{vName(n.vendor)}</b> أضاف كود خصم <span className="num" style={{ fontWeight: 800 }}>{n.code}</span> بنسبة <span className="num">{n.pct}%</span></>
-                  : <>Vendor <b>{vName(n.vendor)}</b> added coupon <span className="num" style={{ fontWeight: 800 }}>{n.code}</span> — <span className="num">{n.pct}%</span> off</>}
-              </div>
-              <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>{timeAgo(n.time, ar)}</span>
-              {!n.read && <span style={{ width: 9, height: 9, borderRadius: 999, background: "var(--brand)", flex: "none" }} />}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* All coupons — full CRUD */}
-      <div style={{ ...card, overflow: "hidden" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1.4fr 1.1fr 1fr 1fr .9fr", gap: 12, padding: "12px 18px", borderBottom: "1px solid var(--line)", fontSize: 12, fontWeight: 800, color: "var(--text-3)" }}>
-          <span>{ar ? "المتجر" : "Store"}</span>
-          <span>{ar ? "الكود" : "Code"}</span>
-          <span>{ar ? "النوع / القيمة" : "Type / value"}</span>
-          <span>{ar ? "الاستخدام" : "Usage"}</span>
-          <span>{ar ? "الحالة" : "Status"}</span>
-          <span style={{ textAlign: "end" }}></span>
-        </div>
-        {store.coupons.map((c) => (
-          <div key={c.id} style={{ display: "grid", gridTemplateColumns: "1.3fr 1.4fr 1.1fr 1fr 1fr .9fr", gap: 12, alignItems: "center", padding: "13px 18px", borderBottom: "1px solid var(--line-soft)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-              <span style={{ width: 28, height: 28, borderRadius: 8, flex: "none", background: VENDORS[c.vendor]?.color || "var(--surface-2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}><Icon name="store" size={14} /></span>
-              <span style={{ fontSize: 13, fontWeight: 700 }}>{vName(c.vendor)}</span>
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <span className="num" style={{ fontWeight: 800, fontSize: 13, letterSpacing: ".5px", border: "1.5px dashed var(--line)", borderRadius: 6, padding: "2px 8px", display: "inline-block" }}>{c.code}</span>
-              {c.desc && <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.desc}</div>}
-            </div>
-            <div>
-              <span className="num" style={{ fontWeight: 800, color: "var(--brand)" }}>{discountLabel(c)}</span>
-              <span style={{ fontSize: 10.5, fontWeight: 700, background: "var(--surface-2)", color: "var(--text-3)", padding: "2px 7px", borderRadius: 999, marginInlineStart: 6 }}>{c.type === "fixed" ? (ar ? "مبلغ" : "Fixed") : (ar ? "نسبة" : "%")}</span>
-            </div>
-            <div style={{ fontSize: 12.5 }}><span className="num">{c.used}/{c.limit}</span><div style={{ height: 5, borderRadius: 999, background: "var(--surface-2)", marginTop: 4 }}><div style={{ width: Math.round(c.used / Math.max(c.limit, 1) * 100) + "%", height: "100%", borderRadius: 999, background: "var(--brand)" }} /></div></div>
-            <button onClick={() => store.toggleCoupon(c.id)} title={c.active ? (ar ? "إيقاف" : "Disable") : (ar ? "تفعيل" : "Enable")}
-              style={{ justifySelf: "start", background: c.active ? "var(--active-bg)" : "var(--surface-2)", color: c.active ? "var(--active)" : "var(--text-3)", fontSize: 11.5, fontWeight: 800, padding: "5px 10px", borderRadius: 999, border: "none", cursor: "pointer" }}>
-              {c.active ? (ar ? "فعّال" : "Active") : (ar ? "موقوف" : "Off")}
-            </button>
-            <div style={{ display: "flex", gap: 6, justifySelf: "end" }}>
-              <button onClick={() => setEditing(c)} title="edit" style={{ background: "transparent", border: "none", color: "var(--brand)", cursor: "pointer" }}><Icon name="edit" size={15} /></button>
-              <button onClick={() => store.removeCoupon(c.id)} title="delete" style={{ background: "transparent", border: "none", color: "var(--sale)", cursor: "pointer" }}><Icon name="trash" size={15} /></button>
-            </div>
-          </div>
-        ))}
-        {store.coupons.length === 0 && <div style={{ padding: 40, textAlign: "center", color: "var(--text-3)" }}>{ar ? "لا توجد كوبونات" : "No coupons"}</div>}
-      </div>
-
-      {editing !== undefined && (
-        <CouponModal ar={ar} coupon={editing} onClose={() => setEditing(undefined)}
-          onSave={(c) => { if (c.id && store.coupons.some((x) => x.id === c.id)) store.updateCoupon(c.id, c); else store.addCoupon(c); setEditing(undefined); }} />
-      )}
-    </div>
-  );
-}
-
-/** Admin coupon editor: type (percent/fixed) + value + code + description + limit + expiry. */
-function CouponModal({ ar, coupon, onClose, onSave }: { ar: boolean; coupon: Coupon | null; onClose: () => void; onSave: (c: Coupon) => void }) {
-  const [code, setCode] = useState(coupon?.code ?? "");
-  const [vendor, setVendor] = useState(coupon?.vendor ?? Object.keys(VENDORS)[0]);
-  const [type, setType] = useState<CouponType>(coupon?.type ?? "percent");
-  const [value, setValue] = useState(String(coupon?.pct ?? 10));
-  const [desc, setDesc] = useState(coupon?.desc ?? "");
-  const [limit, setLimit] = useState(String(coupon?.limit ?? 100));
-  const [until, setUntil] = useState("");
-  const [showErr, setShowErr] = useState(false);
-  const save = () => {
-    const c = (code || "").trim().toUpperCase().replace(/\s+/g, "");
-    if (!c) { setShowErr(true); return; }
-    const v = VENDORS[vendor]; const vn = v ? (ar ? v.ar : v.en) : vendor;
-    const amount = Number(value) || 0;
-    const label = type === "fixed" ? `${amount} ﷼` : `${amount}٪`;
-    const untilOut = until
-      ? { ar: new Date(until + "T00:00:00").toLocaleDateString("ar-EG", { day: "numeric", month: "long" }), en: new Date(until + "T00:00:00").toLocaleDateString("en-US", { day: "numeric", month: "short" }) }
-      : (coupon?.until ?? { ar: "غير محدّد", en: "Open" });
-    onSave({
-      id: coupon?.id ?? "c" + Date.now(), code: c, vendor,
-      ar: `خصم ${label} — ${vn}`, en: `${label} off — ${vn}`,
-      type, pct: amount, desc: desc.trim() || undefined,
-      used: coupon?.used ?? 0, limit: Number(limit) || 0, active: coupon?.active ?? true, until: untilOut,
-    });
-  };
-  const fld = (bad: boolean): React.CSSProperties => ({ height: 44, padding: "0 14px", borderRadius: 10, border: "1.5px solid " + (bad ? "var(--sale)" : "var(--line)"), background: "var(--surface-2)", color: "var(--text)", fontSize: 14, fontFamily: "inherit", width: "100%" });
-  const lab: React.CSSProperties = { fontSize: 12.5, fontWeight: 600, color: "var(--text-2)" };
-  return (
-    <Portal>
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(8,16,20,.6)", backdropFilter: "blur(3px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div onClick={(e) => e.stopPropagation()} dir={ar ? "rtl" : "ltr"} style={{ background: "var(--surface)", borderRadius: "var(--r-xl)", width: "min(560px, 100%)", maxHeight: "90vh", overflow: "auto", boxShadow: "var(--shadow-lg)", border: "1px solid var(--line)" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid var(--line)" }}>
-          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{coupon ? (ar ? "تعديل الكوبون" : "Edit coupon") : (ar ? "كوبون جديد" : "New coupon")}</h3>
-          <button onClick={onClose} style={{ background: "transparent", border: "none", fontSize: 24, color: "var(--text-3)", lineHeight: 1, cursor: "pointer" }}>×</button>
-        </div>
-        <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 15 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <span style={lab}>{ar ? "كود الكوبون" : "Coupon code"}<span style={{ color: "var(--sale)", marginInlineStart: 4 }}>*</span></span>
-              <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="SUMMER25" style={fld(showErr && !code.trim())} />
-            </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <span style={lab}>{ar ? "المتجر" : "Store"}</span>
-              <select value={vendor} onChange={(e) => setVendor(e.target.value)} style={{ ...fld(false), appearance: "none" }}>
-                {Object.values(VENDORS).map((v) => <option key={v.id} value={v.id}>{ar ? v.ar : v.en}</option>)}
-              </select>
-            </label>
-          </div>
-          {/* coupon type */}
-          <div>
-            <span style={{ ...lab, display: "block", marginBottom: 6 }}>{ar ? "نوع الكوبون" : "Coupon type"}</span>
-            <div style={{ display: "flex", gap: 10 }}>
-              {([["percent", ar ? "نسبة مئوية %" : "Percentage %"], ["fixed", ar ? "مبلغ ثابت ﷼" : "Fixed amount ﷼"]] as [CouponType, string][]).map(([k, l]) => (
-                <button key={k} onClick={() => setType(k)} style={{ flex: 1, padding: 11, borderRadius: 10, border: "1.5px solid " + (type === k ? "var(--brand)" : "var(--line)"), background: type === k ? "var(--brand-soft)" : "var(--surface)", color: type === k ? "var(--brand)" : "var(--text-2)", fontWeight: 700, fontSize: 13.5, cursor: "pointer" }}>{l}</button>
-              ))}
-            </div>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <span style={lab}>{type === "fixed" ? (ar ? "المبلغ (﷼)" : "Amount (SAR)") : (ar ? "النسبة %" : "Percent %")}</span>
-              <input type="number" min={1} value={value} onChange={(e) => setValue(e.target.value)} style={fld(false)} />
-            </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <span style={lab}>{ar ? "حدّ الاستخدام" : "Usage limit"}</span>
-              <input type="number" min={1} value={limit} onChange={(e) => setLimit(e.target.value)} style={fld(false)} />
-            </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <span style={lab}>{ar ? "صالح حتى" : "Valid until"}</span>
-              <input type="date" value={until} onChange={(e) => setUntil(e.target.value)} style={fld(false)} />
-            </label>
-          </div>
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={lab}>{ar ? "وصف الكوبون" : "Coupon description"}</span>
-            <textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={3} placeholder={ar ? "مثال: خصم على المنتجات المختارة فوق ٢٠٠ ريال" : "e.g. Applies to selected products over 200 SAR"}
-              style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1.5px solid var(--line)", background: "var(--surface-2)", color: "var(--text)", fontSize: 14, fontFamily: "inherit", lineHeight: 1.6, resize: "vertical" }} />
-          </label>
-        </div>
-        <div style={{ display: "flex", gap: 12, padding: "16px 24px", borderTop: "1px solid var(--line)" }}>
-          <Btn variant="outline" onClick={onClose} style={{ flex: 1 }}>{ar ? "إلغاء" : "Cancel"}</Btn>
-          <Btn onClick={save} style={{ flex: 2 }}><Icon name="check" size={16} />{ar ? "حفظ الكوبون" : "Save coupon"}</Btn>
-        </div>
-      </div>
-    </div>
-    </Portal>
   );
 }
 
@@ -1132,11 +964,12 @@ function PackageModal({ ar, plan, onClose, onSave }: { ar: boolean; plan: Plan; 
   const [name, setName] = useState(plan.ar);
   const [en, setEn] = useState(plan.en);
   const [price, setPrice] = useState(String(plan.price));
+  const [start, setStart] = useState(plan.start ?? "");
   const [desc, setDesc] = useState(plan.desc ?? "");
   const [showErr, setShowErr] = useState(false);
   const save = () => {
     if (!name.trim()) { setShowErr(true); return; }
-    onSave({ id: plan.id, ar: name.trim(), en: (en || name).trim(), price: Number(price) || 0, active: plan.active, desc });
+    onSave({ id: plan.id, ar: name.trim(), en: (en || name).trim(), price: Number(price) || 0, active: plan.active, desc, start: start || undefined });
   };
   const fld = (bad: boolean): React.CSSProperties => ({ height: 44, padding: "0 14px", borderRadius: 10, border: "1.5px solid " + (bad ? "var(--sale)" : "var(--line)"), background: "var(--surface-2)", color: "var(--text)", fontSize: 14, fontFamily: "inherit", width: "100%" });
   const lab: React.CSSProperties = { fontSize: 12.5, fontWeight: 600, color: "var(--text-2)" };
@@ -1159,10 +992,16 @@ function PackageModal({ ar, plan, onClose, onSave }: { ar: boolean; plan: Plan; 
               <input value={en} onChange={(e) => setEn(e.target.value)} placeholder="e.g. Premium" style={fld(false)} />
             </label>
           </div>
-          <label style={{ display: "flex", flexDirection: "column", gap: 6, maxWidth: 240 }}>
-            <span style={lab}>{ar ? "السعر الشهري (﷼)" : "Monthly price (SAR)"}</span>
-            <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} style={fld(false)} />
-          </label>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={lab}>{ar ? "السعر الشهري (﷼)" : "Monthly price (SAR)"}</span>
+              <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} style={fld(false)} />
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={lab}>{ar ? "تاريخ البداية" : "Start date"}</span>
+              <input type="date" value={start} onChange={(e) => setStart(e.target.value)} style={fld(false)} />
+            </label>
+          </div>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <span style={lab}>{ar ? "وصف الباقة" : "Description"}</span>
             <RichText value={desc} onChange={setDesc} dir={ar ? "rtl" : "ltr"} placeholder={ar ? "اكتب وصف الباقة ومميزاتها…" : "Describe the package and its features…"} />

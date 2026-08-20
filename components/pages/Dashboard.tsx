@@ -3,8 +3,9 @@ import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useApp } from "@/lib/AppContext";
 import { Icon, Btn, Thumb, money } from "../ui";
-import { PRODUCTS, VENDORS, PLANS, CITIES, type Coupon } from "@/lib/data";
+import { PRODUCTS, VENDORS, PLANS, CITIES, type Coupon, type CouponType } from "@/lib/data";
 import { useCouponStore } from "@/lib/couponStore";
+import { useVendorProfileStore } from "@/lib/vendorProfileStore";
 import { useCatStore } from "@/lib/catStore";
 import { useOfferStore, type Offer } from "@/lib/offerStore";
 import { OfferModal, fmtDate } from "../OfferParts";
@@ -268,11 +269,19 @@ function LocationModal({ ar, pos, onClose, onSave }: { ar: boolean; pos: { x: nu
 
 function SettingsPanel({ lang, vendor }: { lang: string; vendor: (typeof VENDORS)[string] }) {
   const ar = lang === "ar";
+  const profiles = useVendorProfileStore();
+  const brochure = profiles.brochureOf(vendor.id);
   const [logo, setLogo] = useState<string | null>(null);
   const [cover, setCover] = useState<string | null>(null);
   const pick = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; if (!f) return;
     const r = new FileReader(); r.onload = () => setter(String(r.result)); r.readAsDataURL(f);
+  };
+  const onBrochure = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => profiles.setBrochure(vendor.id, { name: f.name, type: f.type, data: String(r.result) });
+    r.readAsDataURL(f);
   };
   const fld = (label: string, val: string) => (
     <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -312,6 +321,27 @@ function SettingsPanel({ lang, vendor }: { lang: string; vendor: (typeof VENDORS
           {fld(ar ? "البريد" : "Email", "store@mashhoor.sa")}
           {fld(ar ? "رابط الموقع" : "Website", "https://")}
           {fld(ar ? "رابط الخريطة" : "Map link", "https://maps")}
+        </div>
+        {/* brochure (بروشور): the store's profile document (PDF or image) */}
+        <div style={{ marginTop: 22, paddingTop: 20, borderTop: "1px solid var(--line)" }}>
+          <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 4 }}>{ar ? "بروشور المتجر" : "Store brochure"}</div>
+          <div style={{ fontSize: 12.5, color: "var(--text-3)", marginBottom: 12 }}>{ar ? "ارفع ملف تعريفي لمتجرك (PDF أو صورة) — يظهر للعملاء في صفحة المتجر." : "Upload your store profile document (PDF or image) — shown to customers on your store page."}</div>
+          {brochure ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, border: "1px solid var(--line)", background: "var(--surface-2)" }}>
+              <span style={{ width: 40, height: 40, borderRadius: 10, background: "var(--brand-soft)", color: "var(--brand)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Icon name="filePdf" size={20} /></span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: 13.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{brochure.name}</div>
+                <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{ar ? "تم الرفع" : "Uploaded"}</div>
+              </div>
+              <a href={brochure.data} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 5, color: "var(--brand)", fontWeight: 700, fontSize: 13, flex: "none" }}><Icon name="eye" size={15} />{ar ? "معاينة" : "Preview"}</a>
+              <button onClick={() => profiles.removeBrochure(vendor.id)} title={ar ? "حذف" : "Remove"} style={{ background: "transparent", border: "none", color: "var(--sale)", cursor: "pointer", flex: "none" }}><Icon name="trash" size={16} /></button>
+            </div>
+          ) : (
+            <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, height: 88, border: "1.5px dashed var(--line)", borderRadius: 12, cursor: "pointer", background: "var(--surface-2)", color: "var(--text-3)", fontSize: 13, fontWeight: 600 }}>
+              <Icon name="plus" size={18} />{ar ? "ارفع ملف البروشور (PDF أو صورة)" : "Upload brochure (PDF or image)"}
+              <input type="file" accept="application/pdf,image/*" onChange={onBrochure} style={{ display: "none" }} />
+            </label>
+          )}
         </div>
         <div style={{ marginTop: 20 }}><Btn><Icon name="check" size={16} />{ar ? "حفظ التغييرات" : "Save changes"}</Btn></div>
       </div>
@@ -461,7 +491,9 @@ function CouponsPanel({ lang, vendorId }: { lang: string; vendorId: string }) {
         {rows.map((c) => (
           <div key={c.id} style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-sm)", padding: 18, display: "flex", alignItems: "center", gap: 18 }}>
             <div style={{ width: 56, height: 56, borderRadius: 12, background: "var(--brand-soft)", color: "var(--brand)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: "none" }}>
-              <span className="num" style={{ fontWeight: 800, fontSize: 18 }}>{c.pct}%</span>
+              {c.type === "item"
+                ? <><Icon name="bag" size={18} /><span className="num" style={{ fontWeight: 800, fontSize: 12, marginTop: 2 }}>{c.buyQty}+{c.giftQty}</span></>
+                : <span className="num" style={{ fontWeight: 800, fontSize: 18 }}>{c.type === "fixed" ? c.pct + "﷼" : c.pct + "%"}</span>}
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -490,7 +522,10 @@ function NewCouponModal({ lang, vendorId, onClose, onAdd }: { lang: string; vend
   const v = VENDORS[vendorId];
   const vName = v ? (ar ? v.ar : v.en) : vendorId;
   const [code, setCode] = useState("");
-  const [pct, setPct] = useState(10);
+  const [type, setType] = useState<CouponType>("percent");
+  const [pct, setPct] = useState(10);       // percent % or fixed amount ﷼
+  const [buyQty, setBuyQty] = useState(2);  // "by item": buy this many
+  const [giftQty, setGiftQty] = useState(1); // "by item": get this many free
   const [limit, setLimit] = useState(100);
   const [until, setUntil] = useState("");
   const submit = () => {
@@ -501,14 +536,21 @@ function NewCouponModal({ lang, vendorId, onClose, onAdd }: { lang: string; vend
       untilAr = d.toLocaleDateString("ar-EG", { day: "numeric", month: "long", year: "numeric" });
       untilEn = d.toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });
     }
+    // localized title per type
+    let arT = "", enT = "";
+    if (type === "percent") { arT = `خصم ${pct}٪ — ${vName}`; enT = `${pct}% off — ${vName}`; }
+    else if (type === "fixed") { arT = `خصم ${pct} ﷼ — ${vName}`; enT = `${pct} SAR off — ${vName}`; }
+    else { arT = `اشترِ ${buyQty} واحصل على ${giftQty} مجاناً — ${vName}`; enT = `Buy ${buyQty} get ${giftQty} free — ${vName}`; }
     onAdd({
       id: "c" + Date.now(),
       code: c,
       vendor: vendorId,
-      ar: `خصم ${pct}٪ — ${vName}`,
-      en: `${pct}% off — ${vName}`,
-      type: "percent",
-      pct,
+      ar: arT,
+      en: enT,
+      type,
+      pct: type === "item" ? 0 : pct,
+      buyQty: type === "item" ? buyQty : undefined,
+      giftQty: type === "item" ? giftQty : undefined,
       used: 0,
       limit,
       active: true,
@@ -517,6 +559,7 @@ function NewCouponModal({ lang, vendorId, onClose, onAdd }: { lang: string; vend
   };
   const field: React.CSSProperties = { width: "100%", padding: "10px 12px", borderRadius: 10, border: "1.5px solid var(--line)", background: "var(--surface)", color: "var(--text)", fontSize: 14 };
   const label: React.CSSProperties = { fontSize: 12.5, fontWeight: 700, color: "var(--text-2)", marginBottom: 6, display: "block" };
+  const types: [CouponType, string][] = [["percent", ar ? "نسبة %" : "Percent %"], ["fixed", ar ? "مبلغ ﷼" : "Amount ﷼"], ["item", ar ? "بالصنف" : "By item"]];
   return createPortal(
     <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(10,12,16,.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
       <div onClick={(e) => e.stopPropagation()} dir={ar ? "rtl" : "ltr"} style={{ width: "100%", maxWidth: 440, background: "var(--surface)", borderRadius: "var(--r-xl)", border: "1px solid var(--line)", boxShadow: "var(--shadow-lg)", padding: 24 }}>
@@ -526,10 +569,26 @@ function NewCouponModal({ lang, vendorId, onClose, onAdd }: { lang: string; vend
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div><label style={label}>{ar ? "كود الكوبون" : "Coupon code"}</label><input value={code} onChange={(e) => setCode(e.target.value)} placeholder="SUMMER25" style={field} /></div>
-          <div style={{ display: "flex", gap: 12 }}>
-            <div style={{ flex: 1 }}><label style={label}>{ar ? "نسبة الخصم %" : "Discount %"}</label><input type="number" min={1} max={100} value={pct} onChange={(e) => setPct(+e.target.value)} style={field} /></div>
-            <div style={{ flex: 1 }}><label style={label}>{ar ? "حدّ الاستخدام" : "Usage limit"}</label><input type="number" min={1} value={limit} onChange={(e) => setLimit(+e.target.value)} style={field} /></div>
+          {/* coupon type selector */}
+          <div>
+            <label style={label}>{ar ? "نوع الكوبون" : "Coupon type"}</label>
+            <div style={{ display: "flex", gap: 8 }}>
+              {types.map(([k, l]) => (
+                <button key={k} onClick={() => setType(k)} style={{ flex: 1, padding: 10, borderRadius: 10, border: "1.5px solid " + (type === k ? "var(--brand)" : "var(--line)"), background: type === k ? "var(--brand-soft)" : "var(--surface)", color: type === k ? "var(--brand)" : "var(--text-2)", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>{l}</button>
+              ))}
+            </div>
           </div>
+          {/* value fields depend on type */}
+          {type === "item" ? (
+            <div style={{ display: "flex", gap: 12 }}>
+              <div style={{ flex: 1 }}><label style={label}>{ar ? "عدد الأصناف للشراء" : "Items to buy"}</label><input type="number" min={1} value={buyQty} onChange={(e) => setBuyQty(+e.target.value)} style={field} /></div>
+              <div style={{ flex: 1 }}><label style={label}>{ar ? "عدد الأصناف المجانية" : "Gift items"}</label><input type="number" min={1} value={giftQty} onChange={(e) => setGiftQty(+e.target.value)} style={field} /></div>
+            </div>
+          ) : (
+            <div><label style={label}>{type === "fixed" ? (ar ? "قيمة الخصم ﷼" : "Discount amount ﷼") : (ar ? "نسبة الخصم %" : "Discount %")}</label><input type="number" min={1} max={type === "percent" ? 100 : undefined} value={pct} onChange={(e) => setPct(+e.target.value)} style={field} /></div>
+          )}
+          {type === "item" && <div style={{ fontSize: 12.5, color: "var(--text-2)", background: "var(--brand-soft)", borderRadius: 10, padding: "8px 12px" }}>{ar ? `العرض: اشترِ ${buyQty} واحصل على ${giftQty} مجاناً.` : `Offer: buy ${buyQty}, get ${giftQty} free.`}</div>}
+          <div><label style={label}>{ar ? "حدّ الاستخدام" : "Usage limit"}</label><input type="number" min={1} value={limit} onChange={(e) => setLimit(+e.target.value)} style={field} /></div>
           <div><label style={label}>{ar ? "صالح حتى" : "Valid until"}</label><input type="date" min={new Date().toISOString().slice(0, 10)} value={until} onChange={(e) => setUntil(e.target.value)} style={field} /></div>
         </div>
         <div style={{ display: "flex", gap: 10, marginTop: 22 }}>

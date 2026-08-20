@@ -5,6 +5,7 @@ import { Icon, Stars, Btn } from "../ui";
 import { ProductCard } from "../Shell";
 import { CATS, VENDORS, PRODUCTS, SUBCATS } from "@/lib/data";
 import { useCatStore } from "@/lib/catStore";
+import { useVendorProfileStore } from "@/lib/vendorProfileStore";
 
 type Go = (page: string, id?: string | null) => void;
 
@@ -281,6 +282,8 @@ export function Vendor({ id, go }: { id: string; go: Go }) {
   const { t, lang } = useApp();
   const ar = lang === "ar";
   const v = VENDORS[id] || Object.values(VENDORS)[0];
+  const profiles = useVendorProfileStore();
+  const brochure = profiles.brochureOf(v.id);
   const all = PRODUCTS.filter((p) => p.vendor === v.id);
   // store-page search + filters
   const [q, setQ] = useState("");
@@ -315,11 +318,20 @@ export function Vendor({ id, go }: { id: string; go: Go }) {
               <span style={{ background: "rgba(255,255,255,.2)", color: "#fff", fontSize: 11.5, fontWeight: 700, padding: "3px 9px", borderRadius: 999, display: "flex", alignItems: "center", gap: 5 }}><Icon name="check" size={13} />{t.multiTenant}</span>
             </div>
           </div>
-          {/* catalog above the visit-store button */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 8, alignItems: "stretch" }}>
-            <Btn variant="outline" onClick={() => go("catalog", v.id)}><Icon name="book" size={16} />{lang === "ar" ? "الكتالوج" : "Catalog"}</Btn>
+          {/* visit-store button stays in the header cluster */}
+          <div style={{ marginBottom: 8 }}>
             <Btn variant="primary">{t.visit}</Btn>
           </div>
+        </div>
+        {/* catalog + brochure — centered on the page, side by side */}
+        <div style={{ display: "flex", justifyContent: "center", gap: 14, margin: "26px 0 4px", flexWrap: "wrap" }}>
+          <Btn variant="outline" onClick={() => go("catalog", v.id)}><Icon name="book" size={16} />{lang === "ar" ? "الكتالوج" : "Catalog"}</Btn>
+          <Btn variant="outline" disabled={!brochure}
+            title={brochure ? undefined : (lang === "ar" ? "لم يرفع المتجر بروشوراً بعد" : "This store hasn't uploaded a brochure yet")}
+            style={brochure ? undefined : { opacity: .5, cursor: "not-allowed" }}
+            onClick={() => { if (brochure && typeof window !== "undefined") window.open(brochure.data, "_blank", "noopener,noreferrer"); }}>
+            <Icon name="filePdf" size={16} />{lang === "ar" ? "معاينة البروشور" : "View brochure"}
+          </Btn>
         </div>
         <div style={{ display: "flex", gap: 28, margin: "20px 2px 0", color: "var(--text-2)", fontSize: 13.5, flexWrap: "wrap", alignItems: "center" }}>
           <span style={{ display: "flex", gap: 7, alignItems: "center" }}><Stars value={v.rating} /> <b className="num" style={{ color: "var(--text)" }}>{v.rating}</b> ({v.reviews})</span>
@@ -329,8 +341,8 @@ export function Vendor({ id, go }: { id: string; go: Go }) {
             <a href="#" onClick={(e) => { e.preventDefault(); go("map"); }} style={{ display: "flex", gap: 5, alignItems: "center", color: "var(--brand)", fontWeight: 700 }}>
               <Icon name="location" size={15} />{lang === "ar" ? v.city.ar : v.city.en}
             </a>
-            <a href={`https://wa.me/9665xxxxxxxx`} target="_blank" rel="noopener noreferrer" title={lang === "ar" ? "تواصل عبر واتساب" : "Chat on WhatsApp"} style={{ display: "flex", alignItems: "center", color: "#25D366" }} onClick={(e) => e.stopPropagation()}>
-              <Icon name="whatsapp" size={18} />
+            <a href={`https://wa.me/9665xxxxxxxx`} target="_blank" rel="noopener noreferrer" title={lang === "ar" ? "تواصل عبر واتساب" : "Chat on WhatsApp"} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 999, background: "#25D366", color: "#fff", boxShadow: "var(--shadow-sm)" }} onClick={(e) => e.stopPropagation()}>
+              <Icon name="whatsapp" size={20} />
             </a>
           </span>
           <span className="num">{t.since} {v.since}</span>
