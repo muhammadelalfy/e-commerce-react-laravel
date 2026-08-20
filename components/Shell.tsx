@@ -87,7 +87,6 @@ export function TopBar({ go, favCount = 0, unread = 0 }: { go: (p: string, id?: 
             <button onClick={() => setNotifOpen((o) => !o)} title="notifications" style={tbBtn}><Icon name="bell" size={17} />{unread > 0 && <span className="num" style={tbBadge}>{unread}</span>}</button>
             {notifOpen && <NotifDropdown go={go} onClose={() => setNotifOpen(false)} lang={lang} />}
           </div>
-          <button onClick={() => go("map")} title={lang === "ar" ? "خريطة المتاجر" : "Stores map"} style={{ ...tbBtn, width: "auto", padding: "0 8px", gap: 6 }}><GoogleMapPin size={16} /><span className="mash-topbar-city" style={{ fontSize: 12.5, fontWeight: 700 }}>{lang === "ar" ? "الخرائط" : "Maps"}</span></button>
           <button onClick={toggleTheme} title="theme" style={tbBtn}><Icon name={theme === "dark" ? "sun" : "moon"} size={17} /></button>
           <span style={{ width: 1, height: 18, background: "rgba(255,255,255,.25)", margin: "0 4px" }} />
           <button onClick={toggleLang} style={{ ...tbBtn, width: "auto", padding: "0 6px", gap: 6, fontWeight: 700, fontSize: 12.5 }}>
@@ -155,11 +154,11 @@ export function Header({ go, onSearch, cur }: { go: (p: string, id?: string | nu
     return () => window.removeEventListener("click", close);
   }, [menuOpen]);
   const navs = [
-    { k: "discounts", page: "home" }, { k: "auctions", page: "auctions" },
-    { k: "shop", page: "shop" },
-    { k: "reels", page: "reels", lbl: { ar: "ريلز", en: "Reels" } },
+    { k: "discounts", page: "home", lbl: { ar: "الرئيسية", en: "Home" } },
+    { k: "products", page: "shop", lbl: { ar: "المنتجات", en: "Products" } },
     { k: "events", page: "events", lbl: { ar: "الفعاليات", en: "Events" } },
-    { k: "map", page: "map", lbl: { ar: "خريطة المتاجر", en: "Stores map" } },
+    { k: "reels", page: "reels", lbl: { ar: "ريلز", en: "Reels" } },
+    { k: "auctions", page: "auctions" },
   ] as const;
   const navBg = theme === "dark" ? "rgba(22,28,38,0.82)" : "rgba(255,255,255,0.85)";
   return (
@@ -183,8 +182,11 @@ export function Header({ go, onSearch, cur }: { go: (p: string, id?: string | nu
           <input placeholder={t.search} onChange={(e) => onSearch && onSearch(e.target.value)}
             style={{ width: "100%", height: 42, paddingInlineStart: 42, paddingInlineEnd: 16, borderRadius: "var(--r-pill)", border: "1.5px solid var(--line)", background: "var(--surface-2)", color: "var(--text)", fontSize: 14, fontFamily: "inherit" }} />
         </div>
-        {/* action icons (theme/notifications/favourites/account) moved to the TopBar; keep the location chip here */}
-        <div style={{ display: "flex", alignItems: "center", gap: 4, marginInlineStart: "auto" }}>
+        {/* action icons (theme/notifications/favourites/account) moved to the TopBar; keep the location chip + maps icon here */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginInlineStart: "auto" }}>
+          <button onClick={() => go("map", "nearest")} title={t.dir === "rtl" ? "أقرب متجر لديه عروض" : "Nearest store with offers"} style={{ ...iconBtn, width: 42, height: 42 }}>
+            <GoogleMapPin size={20} />
+          </button>
           <LocationChip />
         </div>
       </div>

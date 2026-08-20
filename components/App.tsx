@@ -85,7 +85,7 @@ export default function App() {
   else if (page === "reels-studio") body = <ReelsStudio go={go} />;
   else if (page === "reels") body = <Reels />;
   else if (page === "events") body = <Events go={go} />;
-  else if (page === "map") body = <StoresMap go={go} />;
+  else if (page === "map") body = <StoresMap go={go} focus={param} />;
   else if (page === "favorites") body = <Favorites go={go} favs={favs} toggleFav={toggleFav} />;
   else if (page === "admin") body = <Admin go={go} />;
   else body = <Home go={go} query={query} />;

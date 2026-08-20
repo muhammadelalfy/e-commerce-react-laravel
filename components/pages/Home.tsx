@@ -209,59 +209,89 @@ const CAT_BANNERS = [
   { id: "books", img: "/img/cat-books.png", ar: "الكتب", en: "Books", bg: "linear-gradient(135deg,#f3efe8,#e6ddcf)" },
   { id: "furniture", img: "/img/cat-kitchen.png", ar: "الأثاث والأجهزة", en: "Home & Appliances", bg: "linear-gradient(135deg,#eef2f6,#dde5ee)" },
 ];
-function CategoryBanners({ go, onPick }: { go: Go; onPick: (id: string) => void }) {
+function CategoryBanners({ go }: { go: Go }) {
   const { t, lang } = useApp();
   const ar = lang === "ar";
-  const catStore = useCatStore();
   const grid = useSlideIn<HTMLDivElement>("right", [lang]);
   return (
     <section style={{ marginTop: 44 }}>
       <SectionHead title={ar ? "تسوّق حسب القسم" : "Shop by category"} action={t.viewAll} onAction={() => { const el = document.getElementById("deals-anchor"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
       <div ref={grid} style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 18 }}>
         {CAT_BANNERS.map((c) => (
-          <CatBannerTile key={c.id} c={c} ar={ar} go={go} onPick={onPick} subs={catStore.subsOf(c.id)} />
+          <CatBannerTile key={c.id} c={c} ar={ar} go={go} />
         ))}
       </div>
     </section>
   );
 }
 
-// one "Shop by category" tile: photo banner + an infinite auto-scrolling
-// (marquee) strip of its sub-categories underneath.
-function CatBannerTile({ c, ar, go, onPick, subs }: { c: { id: string; img: string; ar: string; en: string; bg: string }; ar: boolean; go: Go; onPick: (id: string) => void; subs: { id: string; ar: string; en: string }[] }) {
-  // loop duration scales with chip count so speed feels consistent
-  const dur = Math.max(14, subs.length * 5) + "s";
+// one "Shop by category" tile. Clicking it expands an in-place accordion:
+// sub-categories → (nested) the stores under each sub-category → store profile.
+function CatBannerTile({ c, ar, go }: { c: { id: string; img: string; ar: string; en: string; bg: string }; ar: boolean; go: Go }) {
+  const catStore = useCatStore();
+  const subs = catStore.subsOf(c.id);
+  const [open, setOpen] = useState(false);
+  const [openSub, setOpenSub] = useState<string | null>(null);
+  // stores that actually sell products in a given sub-category of this category
+  const storesInSub = (subId: string) =>
+    Array.from(new Set(PRODUCTS.filter((p) => p.cat === c.id && p.subcat === subId).map((p) => p.vendor)))
+      .map((vid) => VENDORS[vid]).filter(Boolean);
+  const toggle = () => { setOpen((o) => !o); setOpenSub(null); };
   return (
     <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
-      <button className="mash-cat-banner" onClick={() => onPick(c.id)} style={{ width: "100%", position: "relative", height: 180, border: "none", borderBottom: subs.length ? "1px solid var(--line)" : "none", background: c.bg, padding: 0, cursor: "pointer", display: "block" }}
+      <button className="mash-cat-banner" onClick={toggle} aria-expanded={open} style={{ width: "100%", position: "relative", height: 180, border: "none", borderBottom: open ? "1px solid var(--line)" : "none", background: c.bg, padding: 0, cursor: "pointer", display: "block" }}
         onMouseEnter={(e) => { const im = e.currentTarget.querySelector("img"); if (im) (im as HTMLElement).style.transform = "scale(1.06)"; }}
         onMouseLeave={(e) => { const im = e.currentTarget.querySelector("img"); if (im) (im as HTMLElement).style.transform = "scale(1)"; }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={c.img} alt="" loading="lazy" style={{ position: "absolute", insetInlineStart: 0, insetInlineEnd: 0, top: 0, height: "72%", width: "100%", objectFit: "contain", padding: "18px 18px 4px", transition: "transform .35s ease" }} />
         <span className="mash-cat-scrim" style={{ position: "absolute", insetInline: 0, bottom: 0, height: "42%", background: "linear-gradient(to top, rgba(255,255,255,.96) 40%, rgba(255,255,255,0) 100%)" }} />
-        {/* scrim + title flip with the theme (see .mash-cat-* in globals.css) */}
         <span className="mash-cat-title" style={{ position: "absolute", insetInlineStart: 16, bottom: 14, insetInlineEnd: 16, display: "flex", alignItems: "center", justifyContent: "space-between", color: "#1e3d47" }}>
           <span style={{ fontWeight: 800, fontSize: 18, fontFamily: "var(--font-display)" }}>{ar ? c.ar : c.en}</span>
-          <span style={{ width: 34, height: 34, borderRadius: 999, background: "var(--brand)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}><Icon name="arrow" size={17} /></span>
+          <span style={{ width: 34, height: 34, borderRadius: 999, background: "var(--brand)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}><Icon name="chevron" size={17} style={{ transition: "transform .2s", transform: open ? "rotate(180deg)" : "none" }} /></span>
         </span>
       </button>
 
-      {subs.length > 0 && (
-        <div className="mash-submarquee" style={{ padding: "10px 0" }}>
-          <div className="mash-submarquee-track" style={{ ["--dur" as any]: dur }}>
-            {[0, 1].map((half) => subs.map((s) => (
-              <button key={s.id + "-" + half} onClick={() => { go("category", c.id + "~" + s.id); window.scrollTo({ top: 0 }); }}
-                style={{ flex: "none", display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 13px", borderRadius: "var(--r-pill)", border: "1.5px solid var(--line)", background: "var(--surface-2)", color: "var(--text)", fontWeight: 600, fontSize: 12.5, cursor: "pointer", whiteSpace: "nowrap" }}>
-                {ar ? s.ar : s.en}
-              </button>
-            )))}
-          </div>
+      {/* level 1: sub-categories collapse */}
+      {open && (
+        <div style={{ padding: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+          {subs.length === 0 && <div style={{ padding: "10px 12px", color: "var(--text-3)", fontSize: 13 }}>{ar ? "لا توجد أقسام فرعية" : "No sub-categories"}</div>}
+          {subs.map((s) => {
+            const stores = storesInSub(s.id);
+            const expanded = openSub === s.id;
+            return (
+              <div key={s.id}>
+                <button onClick={() => setOpenSub((v) => (v === s.id ? null : s.id))} aria-expanded={expanded}
+                  style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "10px 12px", borderRadius: 10, border: "1px solid var(--line)", background: expanded ? "var(--brand-soft)" : "var(--surface-2)", color: "var(--text)", fontWeight: 700, fontSize: 13.5, cursor: "pointer" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Icon name="grid" size={15} />{ar ? s.ar : s.en}</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--text-3)", fontSize: 12 }}>
+                    <span className="num">{stores.length}</span>
+                    <Icon name="chevron" size={15} style={{ transition: "transform .2s", transform: expanded ? "rotate(180deg)" : "none" }} />
+                  </span>
+                </button>
+                {/* level 2: stores under this sub-category */}
+                {expanded && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4, padding: "6px 6px 2px" }}>
+                    {stores.length === 0 && <div style={{ padding: "8px 12px", color: "var(--text-3)", fontSize: 12.5 }}>{ar ? "لا توجد متاجر" : "No stores"}</div>}
+                    {stores.map((v) => (
+                      <button key={v.id} onClick={() => { go("vendor", v.id); window.scrollTo({ top: 0 }); }}
+                        style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, border: "1px solid var(--line-soft)", background: "var(--surface)", color: "var(--text)", fontWeight: 600, fontSize: 13, cursor: "pointer", textAlign: "start" }}
+                        onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--brand)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--line-soft)")}>
+                        <span style={{ width: 26, height: 26, borderRadius: 7, background: v.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flex: "none" }}><Icon name="store" size={14} /></span>
+                        <span style={{ flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ar ? v.ar : v.en}</span>
+                        <Icon name="arrow" size={15} style={{ color: "var(--brand)", flex: "none" }} />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
-
 const VENDOR_BANNERS: Record<string, string> = {
   electronics: "/img/cat-electronics.png",
   perfumes: "/img/cat-beauty.png",
@@ -326,7 +356,7 @@ export function Home({ go, query }: { go: Go; query: string }) {
       <OffersTicker go={go} />
       <QuickFilters value={quick} onChange={(v) => { setQuick(v); if (v !== -1) setDealsOpen(true); }} />
 
-      <CategoryBanners go={go} onPick={(id) => go("category", id)} />
+      <CategoryBanners go={go} />
 
       <section id="deals-anchor" style={{ marginTop: 44 }}>
         {/* collapsible header — the whole section starts collapsed */}

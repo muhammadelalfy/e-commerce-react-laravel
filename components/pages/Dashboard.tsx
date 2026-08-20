@@ -268,6 +268,12 @@ function LocationModal({ ar, pos, onClose, onSave }: { ar: boolean; pos: { x: nu
 
 function SettingsPanel({ lang, vendor }: { lang: string; vendor: (typeof VENDORS)[string] }) {
   const ar = lang === "ar";
+  const [logo, setLogo] = useState<string | null>(null);
+  const [cover, setCover] = useState<string | null>(null);
+  const pick = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    const r = new FileReader(); r.onload = () => setter(String(r.result)); r.readAsDataURL(f);
+  };
   const fld = (label: string, val: string) => (
     <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-2)" }}>{label}</span>
@@ -278,9 +284,26 @@ function SettingsPanel({ lang, vendor }: { lang: string; vendor: (typeof VENDORS
     <div>
       <h2 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 800 }}>{ar ? "إعدادات المتجر" : "Store settings"}</h2>
       <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-sm)", padding: 22, maxWidth: 620 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 22 }}>
-          <span style={{ width: 56, height: 56, borderRadius: 14, background: vendor.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}><Icon name="store" size={26} /></span>
-          <div><div style={{ fontWeight: 800, fontSize: 16 }}>{ar ? vendor.ar : vendor.en}</div><div style={{ fontSize: 12.5, color: "var(--text-3)" }}>{ar ? "متجر موثّق" : "Verified store"}</div></div>
+        {/* store branding: cover photo + logo (as they appear on the public store page) */}
+        <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 10 }}>{ar ? "هوية المتجر (الغلاف والشعار)" : "Store branding (cover & logo)"}</div>
+        <div style={{ position: "relative", marginBottom: 44 }}>
+          {/* cover */}
+          <label style={{ display: "block", position: "relative", height: 150, borderRadius: 14, overflow: "hidden", cursor: "pointer", border: "1.5px dashed var(--line)", background: cover ? "transparent" : "var(--surface-2)" }}>
+            {cover
+              ? <img src={cover} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+              : <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, color: "var(--text-3)", fontSize: 13, fontWeight: 600 }}><Icon name="plus" size={18} />{ar ? "ارفع صورة الغلاف" : "Upload cover photo"}</span>}
+            <span style={{ position: "absolute", top: 10, insetInlineEnd: 10, background: "rgba(0,0,0,.5)", color: "#fff", fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 999, display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="edit" size={12} />{ar ? "الغلاف" : "Cover"}</span>
+            <input type="file" accept="image/*" onChange={pick(setCover)} style={{ display: "none" }} />
+          </label>
+          {/* logo overlapping the cover bottom-start */}
+          <label style={{ position: "absolute", bottom: -34, insetInlineStart: 20, width: 82, height: 82, borderRadius: 18, overflow: "hidden", cursor: "pointer", border: "3px solid var(--surface)", background: logo ? "transparent" : vendor.color, boxShadow: "var(--shadow-md)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {logo
+              ? <img src={logo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              : <Icon name="store" size={30} style={{ color: "#fff" }} />}
+            <span style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.35)", opacity: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", transition: "opacity .15s" }}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")} onMouseLeave={(e) => (e.currentTarget.style.opacity = "0")}><Icon name="edit" size={18} /></span>
+            <input type="file" accept="image/*" onChange={pick(setLogo)} style={{ display: "none" }} />
+          </label>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
           {fld(ar ? "اسم المتجر" : "Store name", ar ? vendor.ar : vendor.en)}

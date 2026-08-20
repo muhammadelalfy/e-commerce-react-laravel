@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useApp } from "@/lib/AppContext";
 import { Icon, Btn, Stars } from "../ui";
 import { ProductCard } from "../Shell";
@@ -126,15 +126,87 @@ export function Events({ go }: { go: Go }) {
   );
 }
 
-export function StoresMap({ go }: { go: Go }) {
+export function StoresMap({ go, focus }: { go: Go; focus?: string | null }) {
   const { lang } = useApp();
   const ar = lang === "ar";
   const [city, setCity] = useState("riyadh");
+  // browser geolocation: 'idle' → ask, 'asking', 'granted' (coords stored), 'denied', 'unavailable'
+  const [geoStatus, setGeoStatus] = useState<"idle" | "asking" | "granted" | "denied" | "unavailable">("idle");
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  // restore a previously granted location so we don't re-ask on every visit
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("mash_geo");
+      if (saved) { setCoords(JSON.parse(saved)); setGeoStatus("granted"); }
+    } catch {}
+  }, []);
+  const requestLocation = () => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) { setGeoStatus("unavailable"); return; }
+    setGeoStatus("asking");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const c = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setCoords(c); setGeoStatus("granted");
+        try { localStorage.setItem("mash_geo", JSON.stringify(c)); } catch {}
+      },
+      () => setGeoStatus("denied"),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  };
   const sel = CITIES.find((c) => c.id === city)!;
   const cityVendors = Object.values(VENDORS).filter((v) => (ar ? v.city.ar : v.city.en) === (ar ? sel.ar : sel.en));
-  const shown = cityVendors.length ? cityVendors : Object.values(VENDORS).slice(0, 3);
+  const base = cityVendors.length ? cityVendors : Object.values(VENDORS).slice(0, 3);
+  // a store "has offers" if it has active discounted products
+  const hasOffers = (vid: string) => PRODUCTS.some((p) => p.vendor === vid && p.active && p.discount > 0);
+  // per-store distance (km): real-ish when we have the user's coords, else a fixed spread.
+  // stores WITH offers are pulled closer so the "nearest with offers" is meaningful.
+  const distOf = (v: (typeof VENDORS)[string], i: number) => {
+    const seed = coords ? Math.abs((coords.lat * 31 + coords.lng * 17 + v.id.charCodeAt(0) * 7) % 90) / 10 : 2 + i * 1.3;
+    return +(hasOffers(v.id) ? Math.max(0.4, seed * 0.5) : seed + 1).toFixed(1);
+  };
+  // when location is known, order the list by real distance
+  const shown = coords ? [...base].sort((a, b) => distOf(a, base.indexOf(a)) - distOf(b, base.indexOf(b))) : base;
+  // nearest store WITH offers
+  const withOffers = shown.filter((v) => hasOffers(v.id));
+  const nearestWithOffers = (focus === "nearest" || coords) ? withOffers[0] : undefined;
   return (
     <PageWrap title={ar ? "خريطة المتاجر" : "Stores Map"} sub={ar ? "اكتشف المتاجر القريبة منك على الخريطة (OpenStreetMap)." : "Find stores near you on the map (OpenStreetMap)."}>
+      {/* location-access prompt — explains WHY we ask, then requests the browser permission */}
+      {geoStatus !== "granted" && (
+        <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", marginBottom: 18, borderRadius: "var(--r-lg)", border: "1.5px solid var(--brand)", background: "var(--brand-soft)", flexWrap: "wrap" }}>
+          <span style={{ width: 44, height: 44, borderRadius: 12, background: "var(--brand)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flex: "none" }}><Icon name="location" size={22} /></span>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{ fontWeight: 800, fontSize: 15 }}>{ar ? "نحتاج إذن الوصول لموقعك" : "We need access to your location"}</div>
+            <div style={{ fontSize: 13, color: "var(--text-2)", marginTop: 3 }}>
+              {geoStatus === "denied"
+                ? (ar ? "تم رفض الإذن. فعّل الوصول للموقع من إعدادات المتصفّح ثم أعد المحاولة." : "Permission denied. Enable location in your browser settings and try again.")
+                : geoStatus === "unavailable"
+                ? (ar ? "المتصفّح لا يدعم تحديد الموقع." : "Your browser does not support geolocation.")
+                : (ar ? "لعرض أقرب المتاجر التي لديها عروض إليك." : "To show you the nearest stores that have offers.")}
+            </div>
+          </div>
+          <Btn onClick={requestLocation} disabled={geoStatus === "asking"} style={{ flex: "none" }}>
+            <Icon name="location" size={16} />
+            {geoStatus === "asking" ? (ar ? "جارٍ التحديد…" : "Locating…") : geoStatus === "denied" ? (ar ? "إعادة المحاولة" : "Try again") : (ar ? "تفعيل الموقع" : "Enable location")}
+          </Btn>
+        </div>
+      )}
+      {geoStatus === "granted" && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", marginBottom: 18, borderRadius: "var(--r-pill)", background: "var(--active-bg)", color: "var(--active)", fontWeight: 700, fontSize: 13, width: "fit-content" }}>
+          <Icon name="check" size={16} />{ar ? "تم تفعيل موقعك — نعرض أقرب المتاجر التي لديها عروض" : "Location enabled — showing nearest stores with offers"}
+        </div>
+      )}
+      {nearestWithOffers && (
+        <button onClick={() => go("vendor", nearestWithOffers.id)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", marginBottom: 18, borderRadius: "var(--r-lg)", border: "1.5px solid var(--gold)", background: "var(--gold-soft)", color: "var(--text)", cursor: "pointer", textAlign: "start" }}>
+          <span style={{ width: 46, height: 46, borderRadius: 12, background: nearestWithOffers.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flex: "none" }}><Icon name="store" size={22} /></span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 11.5, fontWeight: 800, color: "var(--gold-deep)", display: "flex", alignItems: "center", gap: 5 }}><Icon name="location" size={13} />{ar ? "أقرب متجر لديه عروض" : "Nearest store with offers"}</div>
+            <div style={{ fontWeight: 800, fontSize: 16, marginTop: 3 }}>{ar ? nearestWithOffers.ar : nearestWithOffers.en}</div>
+            <div style={{ fontSize: 12.5, color: "var(--text-3)", marginTop: 2 }}>{ar ? nearestWithOffers.city.ar : nearestWithOffers.city.en} · <span className="num">{distOf(nearestWithOffers, 0).toFixed(1)} {ar ? "كم" : "km"}</span></div>
+          </div>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--brand)", fontWeight: 700, fontSize: 13.5, flex: "none" }}>{ar ? "زيارة المتجر" : "Visit store"}<Icon name="arrow" size={16} /></span>
+        </button>
+      )}
       <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 20, alignItems: "start" }}>
         <div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
@@ -148,7 +220,7 @@ export function StoresMap({ go }: { go: Go }) {
                 <span style={{ width: 40, height: 40, borderRadius: 10, background: v.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flex: "none" }}><Icon name="store" size={20} /></span>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 700, fontSize: 14 }}>{ar ? v.ar : v.en}</div>
-                  <div style={{ fontSize: 12, color: "var(--text-3)", display: "flex", gap: 6, alignItems: "center" }}><Stars value={v.rating} size={11} /> · <span className="num">{(2 + i * 1.3).toFixed(1)} {ar ? "كم" : "km"}</span></div>
+                  <div style={{ fontSize: 12, color: "var(--text-3)", display: "flex", gap: 6, alignItems: "center" }}><Stars value={v.rating} size={11} /> · <span className="num">{distOf(v, i).toFixed(1)} {ar ? "كم" : "km"}</span>{hasOffers(v.id) && <span style={{ background: "var(--gold-soft)", color: "var(--gold-deep)", fontWeight: 800, fontSize: 10.5, padding: "1px 6px", borderRadius: 999 }}>{ar ? "عروض" : "Offers"}</span>}</div>
                 </div>
                 <Icon name="arrow" size={16} style={{ color: "var(--text-3)" }} />
               </button>
