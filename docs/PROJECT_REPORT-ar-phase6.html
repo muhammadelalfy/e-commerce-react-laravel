@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تقرير المرحلة السادسة · أوفرز</title>
+<style>
+  :root{--brand:#c8305e;--gold:#f5c518;--ink:#1e3d47;--ink2:#5f6b72;--line:#ece5e2;--bg:#f5f2f0;--surface:#fff;--ok:#2e9d63}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Tajawal","Cairo","Segoe UI",system-ui,sans-serif;line-height:1.9;font-size:16px}
+  .page{max-width:920px;margin:0 auto;padding:48px 34px;background:var(--surface);box-shadow:0 1px 40px rgba(30,61,71,.07);min-height:100vh}
+  .brandbar{height:8px;border-radius:999px;background:linear-gradient(90deg,var(--gold) 0 33%,var(--brand) 33% 66%,var(--ink) 66% 100%);margin-bottom:26px}
+  h1{font-size:30px;font-weight:800;margin:0 0 4px}
+  h1 .sub{display:block;font-size:18px;color:var(--brand);font-weight:700;margin-top:8px}
+  h2{font-size:22px;font-weight:800;margin:40px 0 14px;padding-bottom:8px;border-bottom:3px solid var(--gold)}
+  .meta{background:#fdf3cf;border:1px solid #f0e3a8;border-radius:12px;padding:14px 18px;margin:18px 0 8px;font-size:14.5px}
+  .meta b{color:var(--brand)}
+  .status{display:inline-block;background:#e7f4ec;color:var(--ok);border:1px solid #bfe5cf;font-weight:800;font-size:14px;padding:5px 16px;border-radius:999px;margin-top:10px}
+  .lead{font-size:15.5px;color:var(--ink2);background:#faf6f8;border-inline-start:4px solid var(--brand);border-radius:0 10px 10px 0;padding:14px 18px;margin:18px 0}
+  .note{font-size:13.5px;color:var(--ink2);background:#fbf7ee;border:1px dashed #e6d9b8;border-radius:10px;padding:12px 16px;margin:14px 0}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px}
+  th,td{border:1px solid var(--line);padding:10px 12px;text-align:right;vertical-align:top}
+  th{background:#f3eeec;font-weight:800}
+  tr:nth-child(even) td{background:#faf8f7}
+  ul{padding-inline-start:26px}
+  li{margin:6px 0}
+  .value{font-size:13.5px;color:var(--ok);font-weight:700;margin:6px 0 2px}
+  .value::before{content:"◆ القيمة: "}
+  .summ{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin:18px 0}
+  .summ .box{border:1px solid var(--line);border-radius:12px;padding:16px;text-align:center;background:#faf8f7}
+  .summ .n{font-size:30px;font-weight:800;color:var(--brand);line-height:1}
+  .summ .l{font-size:13px;color:var(--ink2);margin-top:6px}
+  .foot{text-align:center;color:var(--ink2);font-size:14px;margin-top:36px}
+  @media print{body{background:#fff}.page{box-shadow:none;max-width:none;padding:0}}
+  @media (max-width:640px){.summ{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="page">
+<div class="brandbar"></div>
+
+<h1>تقرير المرحلة السادسة — منصّة «أوفرز»<span class="sub">تقرير أعمال موجّه للعميل · الإضافات والتحسينات في هذه المرحلة فقط</span></h1>
+
+<div class="meta">
+<b>التاريخ:</b> 2026-08-20 &nbsp;·&nbsp; <b>النطاق:</b> ما استُجدّ <u>بعد</u> المرحلة الخامسة (لا يشمل ما سبق ذكره)
+<br><span class="status">✅ جميع البنود مُنفَّذة ومُتحقَّق منها وتعمل</span>
+</div>
+
+<p class="lead">هذه المرحلة ركّزت على <strong>تجربة الاكتشاف والتصفّح</strong> (الأقسام والقائمة العائمة، الموقع الجغرافي، البحث على الجوال)، إضافةً إلى <strong>أدوات التجّار</strong> (كوبون «بالصنف»، البروشور) و<strong>تحسينات التسعير والوقت</strong>. رُتّبت من الأهم للأصغر.</p>
+
+<div class="summ">
+  <div class="box"><div class="n">11</div><div class="l">تحسينات وإضافات</div></div>
+  <div class="box"><div class="n">2</div><div class="l">وضعان مدعومان<br>(فاتح + ليلي)</div></div>
+  <div class="box"><div class="n">2</div><div class="l">اتجاهان مدعومان<br>(عربي · إنجليزي)</div></div>
+</div>
+
+<h2>1. «تسوّق حسب القسم» — أقسام كأيقونات + قائمة عائمة</h2>
+<ul>
+<li>أصبح عرض الأقسام <strong>شعاراً وعنواناً تحته فقط</strong> (بلا بطاقات) — أنظف وأخفّ.</li>
+<li>عند <strong>تمرير الماوس</strong> على القسم تظهر <strong>قائمة عائمة</strong> بعمودين: الأقسام الفرعية في عمود، ومتاجر القسم المُختار في العمود المجاور — دون إزاحة الصفحة.</li>
+<li>النقر على القسم ينقل إلى صفحته، والنقر على المتجر ينقل إلى صفحة المتجر.</li>
+</ul>
+<p class="value">اكتشاف أسرع وأنيق للأقسام والمتاجر بخطوات أقل.</p>
+
+<h2>2. الموقع الجغرافي — طلب الإذن عند الدخول</h2>
+<ul>
+<li>يُطلب إذن الوصول للموقع <strong>عند دخول الموقع</strong> (مرة واحدة)، لعرض أقرب المتاجر التي لديها عروض.</li>
+<li>صفحة الخريطة تُبرز <strong>أقرب متجر لديه عروض</strong> وترتّب المتاجر حسب القرب، مع شارة «عروض».</li>
+</ul>
+<p class="value">توجيه العميل لأقرب العروض إليه فور دخوله.</p>
+
+<h2>3. البحث على الجوال</h2>
+<ul>
+<li>شريط بحث <strong>ظاهر دائماً على الجوال</strong> (متجر أو منتج) بدل إخفائه في القائمة.</li>
+</ul>
+
+<h2>4. كوبون «بالصنف» (اشترِ X واحصل على Y مجاناً)</h2>
+<ul>
+<li>نوع كوبون جديد للتاجر: تحديد <strong>عدد الأصناف للشراء</strong> و<strong>عدد الأصناف المجانية</strong>.</li>
+<li>إدارة الكوبونات أصبحت <strong>في لوحة المتجر فقط</strong> (أُزيلت من لوحة الإدارة).</li>
+</ul>
+<p class="value">مرونة أكبر في العروض الترويجية للتجّار.</p>
+
+<h2>5. بروشور المتجر</h2>
+<ul>
+<li>يرفع التاجر <strong>ملفاً تعريفياً (PDF أو صورة)</strong> من إعداداته، ويظهر زرّ <strong>«معاينة البروشور»</strong> في صفحة المتجر (بجانب الكتالوج، في منتصف الصفحة).</li>
+</ul>
+
+<h2>6. الوقت المتبقّي للعروض المموّلة</h2>
+<ul>
+<li>يظهر الوقت المتبقّي بوحدة ذكية: <strong>دقائق</strong> (أقل من ساعة) · <strong>ساعات</strong> (أقل من يوم) · <strong>أيام</strong> (أقل من ٣ أيام) · وإلا <strong>التاريخ</strong> — ويتحوّل الشريط للون العاجل قرب الانتهاء.</li>
+</ul>
+<p class="value">إحساس بالإلحاح يشجّع على اغتنام العرض قبل انتهائه.</p>
+
+<h2>7. باقات الإعلانات — سعر لكل مدة + تاريخ بداية</h2>
+<ul>
+<li>بطاقة الباقة تعرض السعر المكافئ <strong>لكل المدد</strong> (أسبوعي · شهري · ٦ أشهر · سنوي).</li>
+<li>أُضيف <strong>تاريخ بداية</strong> لباقات الاشتراك في لوحة الإدارة.</li>
+</ul>
+
+<h2>8. الخريطة — عرض أكبر</h2>
+<ul>
+<li>الخريطة أصبحت <strong>أطول وأوسع</strong> لعرض أوضح، وتتكيّف على الجوال.</li>
+</ul>
+
+<h2>9. شريط التنقّل (Navbar) — إعادة تسمية وترتيب + تبويب المنتجات</h2>
+<ul>
+<li>إعادة تسمية «خصومات أوفرز» إلى <strong>«الرئيسية»</strong>، وإعادة الترتيب إلى: <strong>الرئيسية · المنتجات · الفعاليات · ريلز · مزادات</strong>.</li>
+<li>إضافة تبويب <strong>«المنتجات»</strong> يفتح صفحة كل المنتجات.</li>
+<li>تحويل «الخرائط» إلى <strong>أيقونة</strong> (دبّوس خرائط Google) في شريط التنقّل.</li>
+</ul>
+<p class="value">تنقّل أوضح وأسرع للوصول إلى المنتجات والخرائط.</p>
+
+<h2>10. عرض الأقسام في صفّ واحد</h2>
+<ul>
+<li>ضُبطت شبكة الأقسام لتظهر كلها في <strong>صفّ واحد</strong> بمسافات مصغّرة، مع تكيّف على الشاشات الأصغر.</li>
+</ul>
+
+<h2>11. تلميع الواجهة</h2>
+<ul>
+<li>زر «رجوع» على اليمين مع مسافة سفلية.</li>
+<li><strong>أيقونة واتساب</strong> أوضح وأكبر (دائرة خضراء) في صفحة المتجر بجانب الموقع، مع رابط الموقع القابل للنقر.</li>
+</ul>
+
+<hr style="border:none;border-top:1px solid var(--line);margin:32px 0">
+
+<h2>ملخّص البنود</h2>
+<table>
+  <thead><tr><th>#</th><th>البند</th><th>الحالة</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>«تسوّق حسب القسم» — أيقونات + قائمة عائمة بعمودين</td><td>✅</td></tr>
+    <tr><td>2</td><td>طلب إذن الموقع عند الدخول + أقرب متجر لديه عروض</td><td>✅</td></tr>
+    <tr><td>3</td><td>شريط بحث ظاهر على الجوال (متجر أو منتج)</td><td>✅</td></tr>
+    <tr><td>4</td><td>كوبون «بالصنف» + نقل إدارة الكوبونات للمتجر</td><td>✅</td></tr>
+    <tr><td>5</td><td>بروشور المتجر + زر معاينته في صفحة المتجر</td><td>✅</td></tr>
+    <tr><td>6</td><td>الوقت المتبقّي للعروض (دقائق/ساعات/أيام)</td><td>✅</td></tr>
+    <tr><td>7</td><td>سعر الباقة لكل مدة + تاريخ بداية الباقة</td><td>✅</td></tr>
+    <tr><td>8</td><td>تكبير خريطة المتاجر</td><td>✅</td></tr>
+    <tr><td>9</td><td>النافبار: تسمية «الرئيسية» · ترتيب · تبويب المنتجات · أيقونة الخرائط</td><td>✅</td></tr>
+    <tr><td>10</td><td>عرض الأقسام في صفّ واحد بمسافات مصغّرة</td><td>✅</td></tr>
+    <tr><td>11</td><td>تلميع الواجهة (زر الرجوع · أيقونة واتساب · رابط الموقع)</td><td>✅</td></tr>
+  </tbody>
+</table>
+
+<div class="note"><b>ملاحظة فنية:</b> جميع التعديلات تم التحقّق منها في الوضعين (فاتح/ليلي) والاتجاهين (عربي/إنجليزي)، واجتاز المشروع فحص الأنواع (TypeScript) بلا أخطاء.</div>
+
+<div class="foot">منصّة أوفرز · تقرير المرحلة السادسة · 2026-08-20</div>
+
+</div>
+</body>
+</html>
