@@ -36,6 +36,23 @@ export default function App() {
     if (savedLang) setLang(savedLang);
     const savedUser = localStorage.getItem("mash_user");
     if (savedUser) { try { setUser(JSON.parse(savedUser)); } catch {} }
+
+    // ask for the user's location on first entry (so we can show nearby stores).
+    // Only prompt once: skip if we already have coords or already asked.
+    try {
+      const asked = localStorage.getItem("mash_geo_asked");
+      const have = localStorage.getItem("mash_geo");
+      if (!asked && !have && typeof navigator !== "undefined" && navigator.geolocation) {
+        localStorage.setItem("mash_geo_asked", "1");
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            try { localStorage.setItem("mash_geo", JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude })); } catch {}
+          },
+          () => {},
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+        );
+      }
+    } catch {}
   }, []);
 
   useEffect(() => {

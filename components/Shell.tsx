@@ -191,16 +191,20 @@ export function Header({ go, onSearch, cur }: { go: (p: string, id?: string | nu
         </div>
       </div>
 
+      {/* always-visible search on mobile (store or product) */}
+      <div className="mash-search-mobile container" style={{ display: "none", paddingBottom: 12 }}>
+        <div style={{ position: "relative", width: "100%" }}>
+          <span style={{ position: "absolute", insetInlineStart: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-3)" }}><Icon name="search" size={18} /></span>
+          <input placeholder={t.search} onChange={(e) => onSearch && onSearch(e.target.value)}
+            style={{ width: "100%", height: 42, paddingInlineStart: 42, paddingInlineEnd: 16, borderRadius: "var(--r-pill)", border: "1.5px solid var(--line)", background: "var(--surface-2)", color: "var(--text)", fontSize: 14, fontFamily: "inherit" }} />
+        </div>
+      </div>
+
       {/* mobile slide-down menu */}
       {menuOpen && (
         <div className="mash-mobile-menu" onClick={(e) => e.stopPropagation()}>
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
             <button onClick={() => setMenuOpen(false)} style={{ ...iconBtn }}><Icon name="arrow" size={20} /></button>
-          </div>
-          <div style={{ position: "relative", marginBottom: 6 }}>
-            <span style={{ position: "absolute", insetInlineStart: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-3)" }}><Icon name="search" size={18} /></span>
-            <input placeholder={t.search} onChange={(e) => onSearch && onSearch(e.target.value)}
-              style={{ width: "100%", height: 44, paddingInlineStart: 42, paddingInlineEnd: 16, borderRadius: "var(--r-pill)", border: "1.5px solid var(--line)", background: "var(--surface-2)", color: "var(--text)", fontSize: 14, fontFamily: "inherit" }} />
           </div>
           {navs.map((n) => (
             <a key={n.k} href="#" onClick={(e) => { e.preventDefault(); setMenuOpen(false); go(n.page); }}

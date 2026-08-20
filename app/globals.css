@@ -267,6 +267,8 @@ img { display: block; max-width: 100%; }
   .mash-nav-desktop { display: none !important; }
   .mash-search-desktop { display: none !important; }
   .mash-burger { display: inline-flex !important; }
+  /* show the standalone mobile search row (store or product) */
+  .mash-search-mobile { display: block !important; }
 }
 
 /* mobile slide-down menu panel */
@@ -322,6 +324,10 @@ img { display: block; max-width: 100%; }
   .mash-hero-off > span:first-child { font-size: 14px !important; }
   .mash-hero-off .num { font-size: 40px !important; }
 }
+
+/* ---- "Shop by category" icon row: all in one row, fewer on small screens ---- */
+@media (max-width: 900px) { .mash-cat-row { grid-template-columns: repeat(3, 1fr) !important; gap: 12px !important; } }
+@media (max-width: 560px) { .mash-cat-row { grid-template-columns: repeat(3, 1fr) !important; } }
 
 /* ---- STORES MAP responsive: stack + shorter map on small screens ---- */
 @media (max-width: 860px) {
