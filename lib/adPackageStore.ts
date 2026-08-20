@@ -15,6 +15,13 @@ export function periodLabelOf(p: AdPeriod, ar: boolean): string {
     ? { week: "أسبوعي", month: "شهري", "6months": "٦ أشهر", year: "سنوي" }[p]
     : { week: "Weekly", month: "Monthly", "6months": "6 months", year: "Yearly" }[p];
 }
+
+// scale a package price (set for `basePeriod`) to the equivalent price for
+// `target` period, using a per-day rate. Lets the UI show all periods' prices.
+export function priceForPeriod(price: number, basePeriod: AdPeriod, target: AdPeriod): number {
+  const perDay = price / PERIOD_DAYS[basePeriod];
+  return Math.round(perDay * PERIOD_DAYS[target]);
+}
 export interface AdPackage { id: string; ar: string; en: string; ads: number; price: number; period: AdPeriod; start?: string; autoRenew?: boolean; renewPrice?: number; active: boolean; }
 /** a vendor's subscription: which package + the chosen date range */
 export interface AdSub { pkg: string; start: string; end: string; autoRenew?: boolean; }

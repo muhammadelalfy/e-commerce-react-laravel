@@ -15,6 +15,30 @@ export function fmtDate(iso: string, ar: boolean): string {
   return d.toLocaleDateString(ar ? "ar-EG" : "en-US", { day: "numeric", month: ar ? "long" : "short", year: "numeric" });
 }
 
+/**
+ * Remaining-time label for a sponsored offer whose `end` is an ISO date.
+ * Counts down to end-of-day and picks the unit:
+ *  - < 1 hour  → minutes
+ *  - < 1 day   → hours
+ *  - < 3 days  → days
+ *  - otherwise → the end date
+ */
+export function remainingLabel(endIso: string, ar: boolean): { text: string; ending: boolean } {
+  if (!endIso) return { text: ar ? "مفتوح" : "Open", ending: false };
+  const end = new Date(endIso + "T23:59:59").getTime();
+  if (isNaN(end)) return { text: fmtDate(endIso, ar), ending: false };
+  const ms = end - Date.now();
+  if (ms <= 0) return { text: ar ? "انتهى العرض" : "Offer ended", ending: false };
+  const mins = Math.floor(ms / 60000);
+  const hours = Math.floor(ms / 3600000);
+  const days = Math.floor(ms / 86400000);
+  const num = (n: number) => (ar ? n.toLocaleString("ar-EG") : String(n));
+  if (hours < 1) return { text: (ar ? `باقٍ ${num(Math.max(1, mins))} دقيقة` : `${Math.max(1, mins)} min left`), ending: true };
+  if (days < 1) return { text: (ar ? `باقٍ ${num(hours)} ساعة` : `${hours} h left`), ending: true };
+  if (days < 3) return { text: (ar ? `باقٍ ${num(days)} يوم` : `${days} d left`), ending: true };
+  return { text: (ar ? `ينتهي ${fmtDate(endIso, ar)}` : `Ends ${fmtDate(endIso, ar)}`), ending: false };
+}
+
 /** Distinct "promoted / sponsored" offer card for the عروض مختارة لك section. */
 export function OfferCard({ o, ar, go }: { o: Offer; ar: boolean; go: Go }) {
   const v = VENDORS[o.vendor];
@@ -31,9 +55,14 @@ export function OfferCard({ o, ar, go }: { o: Offer; ar: boolean; go: Go }) {
       <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
         <div style={{ fontWeight: 800, fontSize: 14.5, lineHeight: 1.35 }}>{ar ? o.ar : o.en}</div>
         {v && <div style={{ fontSize: 12, color: "var(--text-3)", display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 20, height: 20, borderRadius: 999, background: v.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flex: "none" }}><Icon name="store" size={11} /></span>{ar ? v.ar : v.en}</div>}
-        <div style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-2)", background: "var(--gold-soft)", borderRadius: 8, padding: "6px 10px" }}>
-          <Icon name="calendar" size={13} style={{ color: "var(--gold-deep)" }} />{ar ? "ينتهي" : "Ends"} <span className="num">{fmtDate(o.end, ar)}</span>
-        </div>
+        {(() => {
+          const rem = remainingLabel(o.end, ar);
+          return (
+            <div style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: rem.ending ? 800 : 400, color: rem.ending ? "var(--sale)" : "var(--text-2)", background: rem.ending ? "var(--brand-soft)" : "var(--gold-soft)", borderRadius: 8, padding: "6px 10px" }}>
+              <Icon name={rem.ending ? "clock" : "calendar"} size={13} style={{ color: rem.ending ? "var(--sale)" : "var(--gold-deep)" }} /><span className="num">{rem.text}</span>
+            </div>
+          );
+        })()}
       </div>
     </button>
   );

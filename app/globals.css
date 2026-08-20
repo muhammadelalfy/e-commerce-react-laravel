@@ -323,6 +323,12 @@ img { display: block; max-width: 100%; }
   .mash-hero-off .num { font-size: 40px !important; }
 }
 
+/* ---- STORES MAP responsive: stack + shorter map on small screens ---- */
+@media (max-width: 860px) {
+  .mash-map-grid { grid-template-columns: 1fr !important; }
+  .mash-map-canvas { height: 420px !important; }
+}
+
 /* ---- FOOTER responsive ---- */
 @media (max-width: 860px) {
   .mash-footer-grid { grid-template-columns: 1fr 1fr !important; gap: 24px !important; }

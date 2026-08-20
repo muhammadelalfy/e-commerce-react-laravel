@@ -207,7 +207,7 @@ export function StoresMap({ go, focus }: { go: Go; focus?: string | null }) {
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--brand)", fontWeight: 700, fontSize: 13.5, flex: "none" }}>{ar ? "زيارة المتجر" : "Visit store"}<Icon name="arrow" size={16} /></span>
         </button>
       )}
-      <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 20, alignItems: "start" }}>
+      <div className="mash-map-grid" style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 20, alignItems: "start" }}>
         <div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
             {CITIES.slice(0, 4).map((c) => (
@@ -227,7 +227,7 @@ export function StoresMap({ go, focus }: { go: Go; focus?: string | null }) {
             ))}
           </div>
         </div>
-        <div style={{ position: "relative", height: 460, borderRadius: "var(--r-lg)", overflow: "hidden", border: "1px solid var(--line)", background: "linear-gradient(135deg, #dce7e0 0%, #cdddd4 100%)" }}>
+        <div className="mash-map-canvas" style={{ position: "relative", height: 640, borderRadius: "var(--r-lg)", overflow: "hidden", border: "1px solid var(--line)", background: "linear-gradient(135deg, #dce7e0 0%, #cdddd4 100%)" }}>
           <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: .5 }} preserveAspectRatio="none">
             <defs><pattern id="grid" width="44" height="44" patternUnits="userSpaceOnUse"><path d="M44 0H0V44" fill="none" stroke="#a9c2b5" strokeWidth="1" /></pattern></defs>
             <rect width="100%" height="100%" fill="url(#grid)" />

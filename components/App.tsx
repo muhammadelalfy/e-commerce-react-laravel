@@ -96,7 +96,7 @@ export default function App() {
       <TopBar go={go} favCount={favs.length} unread={unread} />
       <Header go={go} onSearch={setQuery} cur={page} />
       {page !== "home" && (
-        <div className="container" style={{ paddingTop: 14, display: "flex", justifyContent: "center" }}>
+        <div className="container" style={{ paddingTop: 14, paddingBottom: 10, display: "flex", justifyContent: t.dir === "rtl" ? "flex-start" : "flex-end" }}>
           <button onClick={() => (history.length ? back() : go("home"))}
             style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, height: 38, padding: "0 20px", borderRadius: "var(--r-pill)", border: "1.5px solid var(--line)", background: "var(--surface)", color: "var(--text-2)", fontWeight: 700, fontSize: 13.5, cursor: "pointer", fontFamily: "inherit" }}
             onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--brand)"; e.currentTarget.style.color = "var(--brand)"; }}
