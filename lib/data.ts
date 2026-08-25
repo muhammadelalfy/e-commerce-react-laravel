@@ -158,6 +158,17 @@ export const VENDORS: Record<string, Vendor> = {
     ar_about: "أشهى المأكولات والحلويات بخصومات يومية.", en_about: "Delicious food and sweets with daily discounts." },
   diyar:    { id: "diyar", ar: "ديار العقارية", en: "Diyar Realty", cat: "realestate", color: "#2f6f7e", rating: 4.7, reviews: 640, since: 2014, followers: 15600, city: { ar: "الرياض", en: "Riyadh" },
     ar_about: "شقق وفلل وأراضٍ سكنية وتجارية بعروض تمويل مرنة.", en_about: "Residential and commercial apartments, villas and land with flexible financing." },
+  // extra vendors so each category/sub-category has several competing stores
+  smarthub: { id: "smarthub", ar: "سمارت هَب", en: "Smart Hub", cat: "electronics", color: "#0ea5a4", rating: 4.6, reviews: 860, since: 2020, followers: 12300, city: { ar: "الرياض", en: "Riyadh" },
+    ar_about: "أحدث الجوّالات والحواسيب والإكسسوارات بضمان رسمي.", en_about: "Latest phones, laptops and accessories with official warranty." },
+  volt:     { id: "volt", ar: "فولت للإلكترونيات", en: "Volt Electronics", cat: "electronics", color: "#f59e0b", rating: 4.5, reviews: 540, since: 2021, followers: 7800, city: { ar: "الدمام", en: "Dammam" },
+    ar_about: "سماعات وأجهزة صوت احترافية بأسعار منافسة.", en_about: "Pro audio gear and headphones at competitive prices." },
+  roaya:    { id: "roaya", ar: "رؤية العطور", en: "Roaya Perfumes", cat: "perfumes", color: "#a855f7", rating: 4.7, reviews: 690, since: 2019, followers: 14100, city: { ar: "مكة", en: "Makkah" },
+    ar_about: "عطور شرقية وغربية وتشكيلات هدايا فاخرة.", en_about: "Oriental & western perfumes and luxury gift sets." },
+  tarateel: { id: "tarateel", ar: "تراتيل", en: "Tarateel", cat: "fashion", color: "#ec4899", rating: 4.6, reviews: 1120, since: 2017, followers: 22700, city: { ar: "جدة", en: "Jeddah" },
+    ar_about: "أزياء وعبايات عصرية بلمسة راقية.", en_about: "Modern abayas and fashion with an elegant touch." },
+  mazaq:    { id: "mazaq", ar: "مذاق", en: "Mazaq", cat: "restaurants", color: "#ef4444", rating: 4.5, reviews: 1780, since: 2016, followers: 33400, city: { ar: "الرياض", en: "Riyadh" },
+    ar_about: "مأكولات ووجبات وحلويات بعروض يومية.", en_about: "Meals, food and sweets with daily deals." },
 };
 
 export interface Product {
@@ -192,6 +203,19 @@ export const PRODUCTS: Product[] = [
   P("villa",    "diyar", "realestate", "فيلا مودرن ٤ غرف", "Modern 4-BR Villa", "حي راقٍ، تشطيب فاخر، مع مسبح", "Upscale district, luxury finish, private pool", 1250000, 1400000, 4.8, 42, 9, true, "#dce6ef", IMG + "cat-kitchen.png"),
   P("apartment","diyar", "realestate", "شقة تمليك ٣ غرف", "3-BR Apartment", "موقع مركزي قريب من الخدمات", "Central location near amenities", 640000, 720000, 4.6, 68, 12, true, "#e6eef7", IMG + "cat-kitchen.png"),
   P("land",     "diyar", "realestate", "أرض سكنية ٥٠٠م²", "Residential Land 500m²", "مخطط معتمد، على شارعين", "Approved plan, corner plot", 480000, 540000, 4.5, 30, 6, true, "#e9eef4", null),
+  // extra products so each sub-category is served by several stores
+  P("phone1",   "smarthub", "electronics", "جوال جالاكسي S", "Galaxy S Phone", "شاشة أموليد وكاميرا احترافية", "AMOLED screen, pro camera", 2499, 2999, 4.7, 210, 4, true, "#dbe7ef", IMG + "cat-electronics.png"),
+  P("laptop1",  "smarthub", "electronics", "لابتوب نحيف", "Slim Laptop", "معالج حديث وبطارية تدوم يوماً", "Modern CPU, all-day battery", 3199, 3799, 4.6, 140, 5, true, "#e3e9f0", IMG + "cat-electronics.png"),
+  P("hp1",      "smarthub", "electronics", "سماعة رأس لاسلكية", "Wireless Headset", "عزل ضوضاء نشط", "Active noise cancelling", 349, 499, 4.5, 96, 3, true, "#dde3ea", IMG + "cat-electronics.png"),
+  P("speaker1", "volt", "electronics", "مكبّر صوت محمول", "Portable Speaker", "صوت جهير قوي ومقاوم للماء", "Deep bass, water resistant", 199, 279, 4.4, 130, 6, true, "#dfe6ee", IMG + "cat-electronics.png"),
+  P("earbud2",  "volt", "electronics", "سماعات أذن رياضية", "Sport Earbuds", "ثبات أثناء الحركة", "Secure sport fit", 129, 189, 4.3, 88, 4, true, "#e0e7ef", IMG + "cat-electronics.png"),
+  P("phone2",   "volt", "electronics", "شاحن سريع ٦٥w", "65W Fast Charger", "شحن كامل خلال دقائق", "Full charge in minutes", 79, 129, 4.5, 60, 5, true, "#e2e8f0", IMG + "cat-electronics.png"),
+  P("perf1",    "roaya", "perfumes", "عطر ورد الطائف", "Taif Rose", "ورد طبيعي فاخر", "Premium natural rose", 260, 360, 4.8, 180, 4, true, "#f0e6fb", IMG + "cat-beauty.png"),
+  P("perf2",    "roaya", "perfumes", "بخور معمول", "Bakhoor Maamoul", "بخور فاخر معتّق", "Aged luxury bakhoor", 140, 220, 4.7, 150, 6, true, "#efe4fa", IMG + "cat-beauty.png"),
+  P("dress1",   "tarateel", "fashion", "فستان سهرة", "Evening Dress", "تصميم أنيق للمناسبات", "Elegant occasion design", 380, 520, 4.7, 120, 3, true, "#f7dde6", IMG + "cat-clothes.png"),
+  P("abaya2",   "tarateel", "fashion", "عباية مطرّزة", "Embroidered Abaya", "تطريز يدوي فاخر", "Fine hand embroidery", 290, 430, 4.6, 140, 5, true, "#f6dce5", IMG + "cat-clothes.png"),
+  P("shake1",   "mazaq", "restaurants", "برجر لحم أنغوس", "Angus Beef Burger", "لحم أنغوس مشوي طازج", "Fresh grilled Angus beef", 45, 69, 4.5, 260, 2, true, "#f6dcc6", IMG + "cat-food.png"),
+  P("sweet2",   "mazaq", "restaurants", "كنافة نابلسية", "Nabulsi Kunafa", "كنافة بالجبن والقطر", "Cheese kunafa with syrup", 35, 55, 4.7, 300, 1, true, "#fbe6cf", IMG + "cat-food.png"),
 ];
 
 export interface Auction { id: string; vendor: string; cat: string; ar: string; en: string; current: number; start: number; bids: number; endH: number; color: string; }

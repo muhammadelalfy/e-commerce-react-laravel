@@ -1,6 +1,5 @@
 "use client";
-import React, { useState, useEffect, useMemo, useRef } from "react";
-import { createPortal } from "react-dom";
+import React, { useState, useEffect, useMemo } from "react";
 import { useApp } from "@/lib/AppContext";
 import { Icon, Stars, Btn, Chip, money } from "../ui";
 import { ProductCard } from "../Shell";
@@ -213,111 +212,93 @@ const CAT_BANNERS = [
 function CategoryBanners({ go }: { go: Go }) {
   const { t, lang } = useApp();
   const ar = lang === "ar";
-  // NOTE: no GSAP transform on this grid — a lingering transform creates a
-  // stacking context that would trap the hover flyout behind later sections.
+  const catStore = useCatStore();
+  const offerStore = useOfferStore();
+  const [openCat, setOpenCat] = useState<string | null>(null);
+  const [openSub, setOpenSub] = useState<string | null>(null);
+  const subs = openCat ? catStore.subsOf(openCat) : [];
+  // stores that sell products in the chosen category+sub-category
+  const storesInSub = (catId: string, subId: string) =>
+    Array.from(new Set(PRODUCTS.filter((p) => p.cat === catId && p.subcat === subId).map((p) => p.vendor)))
+      .map((vid) => VENDORS[vid]).filter(Boolean);
+  // big background for a store card = the offer image the vendor added (else a cat banner)
+  const bgOf = (vid: string, catId: string) => {
+    const off = offerStore.offers.find((o) => o.vendor === vid && o.img);
+    return off?.img || VENDOR_BANNERS[catId] || CAT_BANNERS.find((c) => c.id === catId)?.img || "";
+  };
+  const pickCat = (id: string) => { setOpenCat((v) => (v === id ? null : id)); setOpenSub(null); };
+  const stores = openCat && openSub ? storesInSub(openCat, openSub) : [];
   return (
     <section style={{ marginTop: 44 }}>
       <SectionHead title={ar ? "تسوّق حسب القسم" : "Shop by category"} action={t.viewAll} onAction={() => { const el = document.getElementById("deals-anchor"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
       <div className="mash-cat-row" data-no-reveal style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10, alignItems: "start" }}>
         {CAT_BANNERS.map((c) => (
-          <CatBannerTile key={c.id} c={c} ar={ar} go={go} />
+          <CatBannerTile key={c.id} c={c} ar={ar} active={openCat === c.id} onClick={() => pickCat(c.id)} />
         ))}
       </div>
+
+      {/* sub-categories: a SEPARATE grid below the categories (so the category row
+          stays intact) with the chips centred under the clicked category's column. */}
+      {openCat && subs.length > 0 && (
+        <div className="mash-cat-subrow" data-no-reveal style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10, marginTop: 10, ["--cat-col" as any]: CAT_BANNERS.findIndex((x) => x.id === openCat) + 1 }}>
+          <div className="mash-cat-subchips" style={{ gridColumn: "var(--cat-col)", justifySelf: "center", display: "flex", flexWrap: "nowrap", justifyContent: "center", gap: 7, width: "max-content", maxWidth: "92vw" }}>
+            {subs.map((s) => {
+              const on = openSub === s.id;
+              const count = storesInSub(openCat!, s.id).length;
+              return (
+                <button key={s.id} onClick={() => setOpenSub((v) => (v === s.id ? null : s.id))}
+                  style={{ flex: "none", display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 11px", borderRadius: "var(--r-pill)", border: "1.5px solid " + (on ? "var(--brand)" : "var(--line)"), background: on ? "var(--brand)" : "var(--surface)", color: on ? "#fff" : "var(--text)", fontWeight: 700, fontSize: 12, whiteSpace: "nowrap", cursor: "pointer" }}>
+                  {ar ? s.ar : s.en}
+                  <span className="num" style={{ fontSize: 10.5, fontWeight: 800, background: on ? "rgba(255,255,255,.25)" : "var(--surface-2)", color: on ? "#fff" : "var(--text-3)", borderRadius: 999, padding: "0 6px" }}>{count}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* store cards under the chosen sub-category — big offer-image background */}
+      {openCat && openSub && (
+        <div data-no-reveal style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginTop: 18 }} className="mash-store-cards">
+          {stores.length === 0 && <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "36px 0", color: "var(--text-3)" }}>{ar ? "لا توجد متاجر في هذا القسم" : "No stores in this category"}</div>}
+          {stores.map((v) => (
+            <button key={v.id} onClick={() => { go("vendor", v.id); window.scrollTo({ top: 0 }); }}
+              style={{ position: "relative", height: 190, borderRadius: "var(--r-lg)", overflow: "hidden", border: "1px solid var(--line)", boxShadow: "var(--shadow-sm)", cursor: "pointer", textAlign: "start", padding: 0, color: "#fff", display: "block" }}
+              onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "var(--shadow-md)"; e.currentTarget.style.transform = "translateY(-3px)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "var(--shadow-sm)"; e.currentTarget.style.transform = "none"; }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={bgOf(v.id, openCat)} alt="" loading="lazy" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+              <span style={{ position: "absolute", inset: 0, background: `linear-gradient(0deg, rgba(10,14,20,.86) 0%, rgba(10,14,20,.35) 55%, ${v.color}44 100%)` }} />
+              <span style={{ position: "absolute", insetInlineStart: 14, insetInlineEnd: 14, bottom: 14, display: "flex", flexDirection: "column", gap: 6 }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ width: 30, height: 30, borderRadius: 8, background: v.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flex: "none" }}><Icon name="store" size={16} /></span>
+                  <span style={{ fontWeight: 800, fontSize: 16, fontFamily: "var(--font-display)" }}>{ar ? v.ar : v.en}</span>
+                </span>
+                <span style={{ fontSize: 12.5, color: "rgba(255,255,255,.85)", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{ar ? v.ar_about : v.en_about}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
 
-// one "Shop by category" tile. Clicking it expands an in-place accordion:
-// sub-categories → (nested) the stores under each sub-category → store profile.
-function CatBannerTile({ c, ar, go }: { c: { id: string; img: string; ar: string; en: string; bg: string }; ar: boolean; go: Go }) {
-  const catStore = useCatStore();
-  const subs = catStore.subsOf(c.id);
-  const [open, setOpen] = useState(false);      // flyout shown on hover
-  const [openSub, setOpenSub] = useState<string | null>(null); // sub whose stores are shown
-  const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const storesInSub = (subId: string) =>
-    Array.from(new Set(PRODUCTS.filter((p) => p.cat === c.id && p.subcat === subId).map((p) => p.vendor)))
-      .map((vid) => VENDORS[vid]).filter(Boolean);
-  // open/close with a small grace delay so moving between tile and portal never
-  // hits a dead frame that closes the menu.
-  const openNow = () => {
-    if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; }
-    if (wrapRef.current) {
-      const r = wrapRef.current.getBoundingClientRect();
-      // clamp the panel centre so the ~440px-wide two-column panel never spills
-      // off either edge of the viewport (fixes edge/first tiles).
-      const halfPanel = 224; const margin = 12;
-      const center = Math.min(Math.max(r.left + r.width / 2, halfPanel + margin), window.innerWidth - halfPanel - margin);
-      setRect({ top: r.bottom, left: center, width: r.width });
-    }
-    setOpen(true);
-  };
-  const closeSoon = () => { closeTimer.current = setTimeout(() => { setOpen(false); setOpenSub(null); }, 160); };
-  const activeSub = openSub ?? subs[0]?.id;
+// one "Shop by category" tile — just the logo + title, highlights when active.
+function CatBannerTile({ c, ar, active, onClick }: { c: { id: string; img: string; ar: string; en: string; bg: string }; ar: boolean; active: boolean; onClick: () => void }) {
   return (
-    <div ref={wrapRef} style={{ position: "relative" }} onMouseEnter={openNow} onMouseLeave={closeSoon}>
-      {/* just the category logo + title under it — no card chrome */}
-      <button onClick={() => go("category", c.id)} style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, background: "transparent", border: "none", padding: "6px 4px", cursor: "pointer" }}>
-        <span style={{ width: 82, height: 82, borderRadius: 999, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: c.bg, border: open ? "2px solid var(--brand)" : "2px solid var(--line)", transition: "border-color .2s, transform .2s", transform: open ? "scale(1.05)" : "none" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={c.img} alt="" loading="lazy" style={{ width: "78%", height: "78%", objectFit: "contain" }} />
-        </span>
-        <span style={{ display: "flex", alignItems: "center", gap: 4, fontWeight: 700, fontSize: 13, lineHeight: 1.3, textAlign: "center", color: open ? "var(--brand)" : "var(--text)", fontFamily: "var(--font-display)" }}>
-          {ar ? c.ar : c.en}
-          <Icon name="chevron" size={14} style={{ flex: "none", transition: "transform .2s", transform: open ? "rotate(180deg)" : "none" }} />
-        </span>
-      </button>
-
-      {/* flyout is PORTALED to <body> with fixed positioning so it escapes every
-          ancestor stacking context / clip and always sits on top, at any tile. */}
-      {open && subs.length > 0 && rect && createPortal(
-        <div dir={ar ? "rtl" : "ltr"}
-          onMouseEnter={openNow} onMouseLeave={closeSoon}
-          style={{ position: "fixed", top: rect.top + 6, left: rect.left, transform: "translateX(-50%)", zIndex: 9999 }}>
-          {/* a transparent bridge covering the gap between tile and panel */}
-          <div style={{ position: "absolute", top: -10, left: 0, right: 0, height: 12 }} />
-          <div style={{ display: "flex", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-lg)", overflow: "hidden" }}>
-            {/* column 1: sub-categories */}
-            <div style={{ padding: 8, display: "flex", flexDirection: "column", gap: 6, width: 210, flex: "none", borderInlineEnd: "1px solid var(--line)" }}>
-              {subs.map((s) => {
-                const stores = storesInSub(s.id);
-                const active = activeSub === s.id;
-                return (
-                  <div key={s.id} onMouseEnter={() => setOpenSub(s.id)}
-                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "9px 11px", borderRadius: 10, background: active ? "var(--brand-soft)" : "transparent", color: active ? "var(--brand)" : "var(--text)", fontWeight: 700, fontSize: 13, cursor: "default" }}>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><Icon name="grid" size={14} />{ar ? s.ar : s.en}</span>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--text-3)", fontSize: 12 }}>
-                      <span className="num">{stores.length}</span>
-                      <Icon name="chevron" size={13} style={{ transform: ar ? "rotate(90deg)" : "rotate(-90deg)" }} />
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-            {/* column 2: stores of the hovered (or first) sub-category */}
-            <div style={{ padding: 8, width: 210, flex: "none", display: "flex", flexDirection: "column", gap: 4 }}>
-              {(() => {
-                const stores = activeSub ? storesInSub(activeSub) : [];
-                if (stores.length === 0) return <div style={{ padding: "10px 10px", color: "var(--text-3)", fontSize: 12 }}>{ar ? "لا توجد متاجر" : "No stores"}</div>;
-                return stores.map((v) => (
-                  <button key={v.id} onClick={() => { go("vendor", v.id); window.scrollTo({ top: 0 }); }}
-                    style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, padding: "7px 10px", borderRadius: 8, border: "1px solid var(--line-soft)", background: "var(--surface)", color: "var(--text)", fontWeight: 600, fontSize: 12.5, cursor: "pointer", textAlign: "start" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--brand)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--line-soft)")}>
-                    <span style={{ width: 24, height: 24, borderRadius: 7, background: v.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flex: "none" }}><Icon name="store" size={13} /></span>
-                    <span style={{ flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ar ? v.ar : v.en}</span>
-                    <Icon name="arrow" size={14} style={{ color: "var(--brand)", flex: "none" }} />
-                  </button>
-                ));
-              })()}
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-    </div>
+    <button onClick={onClick} style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, background: "transparent", border: "none", padding: "6px 4px", cursor: "pointer" }}
+      onMouseEnter={(e) => { const im = e.currentTarget.querySelector("img"); if (im) (im as HTMLElement).style.transform = "scale(1.06)"; }}
+      onMouseLeave={(e) => { const im = e.currentTarget.querySelector("img"); if (im) (im as HTMLElement).style.transform = active ? "scale(1.05)" : "scale(1)"; }}>
+      <span style={{ width: 82, height: 82, borderRadius: 999, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: c.bg, border: active ? "2px solid var(--brand)" : "2px solid var(--line)", transition: "border-color .2s, transform .2s", transform: active ? "scale(1.05)" : "none" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={c.img} alt="" loading="lazy" style={{ width: "78%", height: "78%", objectFit: "contain", transition: "transform .35s ease" }} />
+      </span>
+      <span style={{ display: "flex", alignItems: "center", gap: 4, fontWeight: 700, fontSize: 13, lineHeight: 1.3, textAlign: "center", color: active ? "var(--brand)" : "var(--text)", fontFamily: "var(--font-display)" }}>
+        {ar ? c.ar : c.en}
+        <Icon name="chevron" size={14} style={{ flex: "none", transition: "transform .2s", transform: active ? "rotate(180deg)" : "none" }} />
+      </span>
+    </button>
   );
 }
 const VENDOR_BANNERS: Record<string, string> = {

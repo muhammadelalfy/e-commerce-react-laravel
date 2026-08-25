@@ -328,6 +328,8 @@ img { display: block; max-width: 100%; }
 /* ---- "Shop by category" icon row: all in one row, fewer on small screens ---- */
 @media (max-width: 900px) { .mash-cat-row { grid-template-columns: repeat(3, 1fr) !important; gap: 12px !important; } }
 @media (max-width: 560px) { .mash-cat-row { grid-template-columns: repeat(3, 1fr) !important; } }
+/* on ≤3-col screens the per-column anchoring can't apply — just span & centre */
+@media (max-width: 900px) { .mash-cat-subchips { grid-column: 1 / -1 !important; } }
 
 /* ---- STORES MAP responsive: stack + shorter map on small screens ---- */
 @media (max-width: 860px) {
