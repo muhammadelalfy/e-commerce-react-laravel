@@ -4,6 +4,8 @@ import { useApp } from "@/lib/AppContext";
 import { Icon, Btn } from "./ui";
 import { useGeoStore } from "@/lib/geoStore";
 import { GULF_COUNTRIES, type Country } from "@/lib/countries";
+import { Flag } from "./Flag";
+import { cityToArabic } from "@/lib/cityNames";
 
 // re-export so existing imports of GULF_COUNTRIES/Country from this module keep working
 export { GULF_COUNTRIES };
@@ -166,7 +168,7 @@ export function CountryModal() {
               {ar ? "الدولة" : "Country"}
             </span>
             <div style={{ position: "relative" }}>
-              <span style={{ position: "absolute", insetInlineStart: 12, top: "50%", transform: "translateY(-50%)", fontSize: 20, pointerEvents: "none" }}>{sel.flag}</span>
+              <span style={{ position: "absolute", insetInlineStart: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", display: "flex" }}><Flag id={sel.id} size={20} /></span>
               <select
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
@@ -217,9 +219,10 @@ export function CountryModal() {
                     : cities.length === 0 ? (ar ? "لا توجد مدن" : "No cities")
                     : (ar ? "اختر مدينتك" : "Select your city")}
                 </option>
-                {cities.map((ct) => (
-                  <option key={ct} value={ct}>{ct}</option>
-                ))}
+                {cities.map((ct) => {
+                  const label = ar ? cityToArabic(ct) : ct;
+                  return <option key={ct} value={label}>{label}</option>;
+                })}
               </select>
               <span style={{ position: "absolute", insetInlineEnd: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-3)", pointerEvents: "none" }}>
                 <Icon name="chevron" size={18} />
@@ -250,7 +253,7 @@ export function CountryModal() {
                     fontWeight: 700, fontSize: 12.5, cursor: "pointer",
                   }}
                 >
-                  <span style={{ fontSize: 15 }}>{c.flag}</span>
+                  <Flag id={c.id} size={15} />
                   {ar ? c.ar.replace("المملكة العربية ", "").replace("العربية المتحدة", "").replace("سلطنة ", "") : c.en}
                 </button>
               );

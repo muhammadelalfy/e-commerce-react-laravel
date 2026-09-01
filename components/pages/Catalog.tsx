@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useApp } from "@/lib/AppContext";
 import { Icon, Stars, Btn } from "../ui";
 import { ProductCard } from "../Shell";
-import { CATS, VENDORS, PRODUCTS, SUBCATS } from "@/lib/data";
+import { CATS, VENDORS, PRODUCTS, SUBCATS, branchesOf } from "@/lib/data";
 import { useCatStore } from "@/lib/catStore";
 import { useVendorProfileStore } from "@/lib/vendorProfileStore";
 
@@ -290,6 +290,12 @@ export function Vendor({ id, go }: { id: string; go: Go }) {
   const [subF, setSubF] = useState("all");
   const [sortV, setSortV] = useState("featured");
   const [activeOnly, setActiveOnly] = useState(false);
+  const [showLocs, setShowLocs] = useState(false);
+  // the visitor's chosen city (from the country/city picker)
+  const [userCity, setUserCity] = useState<string | null>(null);
+  React.useEffect(() => { try { setUserCity(localStorage.getItem("mash_city")); } catch {} }, []);
+  const allBranches = branchesOf(v.id);
+  const cityBranches = userCity ? allBranches.filter((b) => b.cityAr === userCity || b.cityEn === userCity) : [];
   // sub-categories actually present in this store's products
   const storeSubs = SUBCATS.filter((s) => all.some((p) => p.subcat === s.id));
   let items = all.filter((p) =>
@@ -314,8 +320,7 @@ export function Vendor({ id, go }: { id: string; go: Go }) {
           <div style={{ width: 96, height: 96, borderRadius: 20, background: "var(--surface)", border: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "center", color: v.color, boxShadow: "var(--shadow-md)" }}><Icon name="store" size={48} /></div>
           <div style={{ paddingBottom: 8, flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: "#fff" }}>{lang === "ar" ? v.ar : v.en}</h1>
-              <span style={{ background: "rgba(255,255,255,.2)", color: "#fff", fontSize: 11.5, fontWeight: 700, padding: "3px 9px", borderRadius: 999, display: "flex", alignItems: "center", gap: 5 }}><Icon name="check" size={13} />{t.multiTenant}</span>
+              <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: "var(--text)" }}>{lang === "ar" ? v.ar : v.en}</h1>
             </div>
           </div>
           {/* visit-store button stays in the header cluster */}
@@ -323,16 +328,49 @@ export function Vendor({ id, go }: { id: string; go: Go }) {
             <Btn variant="primary">{t.visit}</Btn>
           </div>
         </div>
-        {/* catalog + brochure — centered on the page, side by side */}
-        <div style={{ display: "flex", justifyContent: "center", gap: 14, margin: "26px 0 4px", flexWrap: "wrap" }}>
-          <Btn variant="outline" onClick={() => go("catalog", v.id)}><Icon name="book" size={16} />{lang === "ar" ? "الكتالوج" : "Catalog"}</Btn>
+        {/* catalog + brochure + store locations — one row; scrolls sideways on mobile */}
+        <div className="mash-scroll-x" style={{ display: "flex", flexWrap: "nowrap", justifyContent: "safe center", gap: 12, margin: "26px 0 4px", overflowX: "auto", paddingBottom: 4 }}>
+          <Btn variant="outline" style={{ flex: "none" }} onClick={() => go("catalog", v.id)}><Icon name="book" size={16} />{lang === "ar" ? "الكتالوج" : "Catalog"}</Btn>
           <Btn variant="outline" disabled={!brochure}
             title={brochure ? undefined : (lang === "ar" ? "لم يرفع المتجر بروشوراً بعد" : "This store hasn't uploaded a brochure yet")}
-            style={brochure ? undefined : { opacity: .5, cursor: "not-allowed" }}
+            style={brochure ? { flex: "none" } : { flex: "none", opacity: .5, cursor: "not-allowed" }}
             onClick={() => { if (brochure && typeof window !== "undefined") window.open(brochure.data, "_blank", "noopener,noreferrer"); }}>
             <Icon name="filePdf" size={16} />{lang === "ar" ? "معاينة البروشور" : "View brochure"}
           </Btn>
+          <Btn variant={showLocs ? "primary" : "outline"} style={{ flex: "none" }} onClick={() => setShowLocs((s) => !s)}>
+            <Icon name="pin" size={16} />{lang === "ar" ? "مواقع المتجر" : "Store locations"}
+          </Btn>
         </div>
+
+        {/* store locations in the visitor's city */}
+        {showLocs && (
+          <div style={{ maxWidth: 620, margin: "10px auto 0", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-sm)", padding: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <Icon name="pin" size={16} style={{ color: "var(--brand)" }} />
+              <b style={{ fontSize: 14.5 }}>{lang === "ar" ? "فروعنا في" : "Our branches in"} {userCity || (ar ? "مدينتك" : "your city")}</b>
+              <span className="num" style={{ marginInlineStart: "auto", fontSize: 12, fontWeight: 800, color: "var(--text-3)", background: "var(--surface-2)", borderRadius: 999, padding: "2px 9px" }}>{cityBranches.length}</span>
+            </div>
+            {!userCity && <div style={{ fontSize: 13, color: "var(--text-3)", padding: "8px 0" }}>{ar ? "اختر مدينتك أولاً لعرض الفروع القريبة." : "Choose your city first to see nearby branches."}</div>}
+            {userCity && cityBranches.length === 0 && (
+              <div style={{ fontSize: 13, color: "var(--text-3)", padding: "8px 0" }}>
+                {ar ? `لا توجد فروع لهذا المتجر في ${userCity}.` : `No branches for this store in ${userCity}.`}
+                {allBranches.length > 0 && <> {ar ? `متاح في: ${allBranches.map((b) => b.cityAr).filter((c, i, a) => a.indexOf(c) === i).join("، ")}.` : ""}</>}
+              </div>
+            )}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {cityBranches.map((b) => (
+                <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 10, border: "1px solid var(--line-soft)", background: "var(--surface-2)" }}>
+                  <span style={{ width: 36, height: 36, borderRadius: 9, background: v.color, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Icon name="store" size={17} /></span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 13.5 }}>{ar ? b.ar : b.en}</div>
+                    <div style={{ fontSize: 12, color: "var(--text-3)", display: "flex", gap: 5, alignItems: "center" }}><Icon name="pin" size={12} />{ar ? b.addressAr : b.addressEn} · <span className="num" dir="ltr">{b.phone}</span></div>
+                  </div>
+                  <a href="#" onClick={(e) => { e.preventDefault(); go("map"); }} title={ar ? "على الخريطة" : "On map"} style={{ display: "inline-flex", alignItems: "center", color: "var(--brand)", flex: "none" }}><Icon name="arrow" size={16} /></a>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         <div style={{ display: "flex", gap: 28, margin: "20px 2px 0", color: "var(--text-2)", fontSize: 13.5, flexWrap: "wrap", alignItems: "center" }}>
           <span style={{ display: "flex", gap: 7, alignItems: "center" }}><Stars value={v.rating} /> <b className="num" style={{ color: "var(--text)" }}>{v.rating}</b> ({v.reviews})</span>
           <span><span className="num">{(v.followers / 1000).toFixed(1)}k</span> {t.followers}</span>

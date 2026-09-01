@@ -370,7 +370,9 @@ export function useMarquee<T extends HTMLElement = HTMLDivElement>(
     const id = requestAnimationFrame(() => {
       const half = el.scrollWidth / 2;
       const dur = half / speed;
-      tween = gsap.to(el, {
+      // fromTo with an explicit x:0 start guarantees a clean, continuous loop in
+      // BOTH ltr and rtl pages (a plain gsap.to can inherit a shifted start in rtl).
+      tween = gsap.fromTo(el, { x: 0, force3D: true }, {
         x: -half,
         duration: dur,
         ease: "none",

@@ -155,6 +155,9 @@ img { display: block; max-width: 100%; }
 .mash-scroll-x { -webkit-overflow-scrolling: touch; scrollbar-width: thin; scroll-snap-type: x proximity; }
 .mash-scroll-x::-webkit-scrollbar { height: 5px; }
 .mash-scroll-x::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
+/* hidden-scrollbar variant (still scrollable by touch/drag) */
+.mash-noscroll { scrollbar-width: none; -ms-overflow-style: none; }
+.mash-noscroll::-webkit-scrollbar { display: none; height: 0; }
 
 .hl { position: relative; display: inline-block; z-index: 0; }
 .hl::after { content: ""; position: absolute; inset-inline: -6px; bottom: 3px; height: 12px; background: var(--gold); border-radius: 3px; z-index: -1; opacity: .9; }
@@ -171,6 +174,15 @@ img { display: block; max-width: 100%; }
 
 /* Hover pause hook for the GSAP-driven offers ticker */
 .mash-ticker:hover .mash-marquee-track { animation-play-state: paused; }
+
+/* compact "hot offers" ticker on phones */
+@media (max-width: 560px) {
+  .mash-ticker { margin-top: 12px !important; font-size: 12px; }
+  .mash-ticker > div:first-child { padding: 0 12px !important; font-size: 12px !important; }
+  .mash-ticker > div:first-child svg { width: 14px; height: 14px; }
+  .mash-ticker button { padding: 8px 12px !important; }
+  .mash-ticker button > span { font-size: 12px !important; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   [class^="mash-anim"], .mash-anim { animation: none !important; }
@@ -235,7 +247,8 @@ img { display: block; max-width: 100%; }
   [style*="repeat(3, 1fr)"],
   [style*="repeat(2, 1fr)"] { grid-template-columns: repeat(2, 1fr) !important; }
   /* store cards (category → stores) are detail-rich → 1 column on phones */
-  .mash-store-grid { grid-template-columns: 1fr !important; }
+  .mash-store-grid,
+  .mash-store-cards { grid-template-columns: 1fr !important; }
   /* category circles → 3 across */
   [style*="repeat(8, 1fr)"] { grid-template-columns: repeat(3, 1fr) !important; }
 
@@ -272,15 +285,50 @@ img { display: block; max-width: 100%; }
 }
 
 /* mobile slide-down menu panel */
+/* small dropdown popover: drops right under the burger button (no gap),
+   anchored to its start edge, sized to its content. */
 .mash-mobile-menu {
-  position: fixed; inset-inline: 0; top: 0; z-index: 80;
-  background: var(--surface); border-bottom: 1px solid var(--line);
-  box-shadow: var(--shadow-lg); padding: 16px;
-  display: flex; flex-direction: column; gap: 6px;
-  max-height: 100vh; overflow-y: auto;
-  animation: mash-slidedown .22s ease;
+  position: absolute; top: calc(100% + 8px); inset-inline-start: 0; z-index: 80;
+  min-width: 190px; max-width: calc(100vw - 24px);
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 16px; box-shadow: var(--shadow-lg); padding: 8px;
+  display: flex; flex-direction: column; gap: 2px;
+  transform-origin: top var(--mm-origin, left);
+  animation: mash-pop .18s cubic-bezier(.2,.9,.3,1.2) both;
 }
-@keyframes mash-slidedown { from { transform: translateY(-8px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+[dir="rtl"] .mash-mobile-menu { --mm-origin: right; }
+.mash-mm-item {
+  padding: 11px 14px; font-size: 15px; font-weight: 700; color: var(--text);
+  border-radius: 11px; white-space: nowrap;
+  opacity: 0; animation: mash-mm-in .26s ease forwards;
+  transition: background-color .15s ease, color .15s ease;
+}
+.mash-mm-item:hover, .mash-mm-item:active { background: var(--surface-2); color: var(--brand); }
+@keyframes mash-pop {
+  from { transform: scale(.9) translateY(-6px); opacity: 0 }
+  to   { transform: scale(1) translateY(0); opacity: 1 }
+}
+@keyframes mash-mm-in {
+  from { opacity: 0; transform: translateY(-4px) }
+  to   { opacity: 1; transform: translateY(0) }
+}
+
+/* Notifications dropdown — on narrow screens it must never run off the edge.
+   Detach from the bell and pin it near the top bar, compact and centred. */
+@media (max-width: 560px) {
+  .mash-notif-pop {
+    position: fixed !important;
+    top: 50px !important;                  /* sits right under the top bar / bell */
+    inset-inline: 0 !important;            /* span, then narrow via width + auto margins */
+    width: min(340px, calc(100vw - 24px)) !important;  /* smaller panel, never overflows */
+    margin-inline: auto !important;        /* centre it horizontally */
+    font-size: 13px;
+  }
+  /* tighter header + rows so the whole modal is more compact */
+  .mash-notif-pop > div:first-child { padding: 11px 14px !important; }
+  .mash-notif-pop > div:nth-child(2) { max-height: 52vh !important; }
+  .mash-notif-pop > div:nth-child(2) button { padding: 10px 14px !important; }
+}
 
 /* ---- HERO SLIDER responsive ----
    Centered layout: store logo badge + name + big offer %, all in the middle. */
@@ -338,18 +386,28 @@ img { display: block; max-width: 100%; }
 }
 
 /* ---- FOOTER responsive ---- */
+/* remove the default <details> disclosure marker across browsers */
+.mash-footer-sum::-webkit-details-marker { display: none; }
+/* Desktop: groups are always expanded, chevron hidden, header not clickable */
+.mash-footer-col > summary { pointer-events: none; }
+.mash-footer-chev { display: none; }
 @media (max-width: 860px) {
   .mash-footer-grid { grid-template-columns: 1fr 1fr !important; gap: 24px !important; }
   .mash-footer-brand { grid-column: 1 / -1 !important; }
 }
 @media (max-width: 640px) {
-  /* single full-width column on mobile; columns STRETCH to the full width so they
-     don't shrink-wrap and stick to the edge — text stays in reading direction. */
-  .mash-footer-grid { grid-template-columns: 1fr !important; text-align: start; justify-items: stretch; gap: 26px !important; }
-  .mash-footer-grid > div { align-items: stretch; width: 100%; }
-  .mash-footer-brand { display: flex; flex-direction: column; align-items: flex-start; }
+  /* single full-width column; each group collapses into an accordion so the
+     footer stays short — only the group headers show until tapped. */
+  .mash-footer-grid { grid-template-columns: 1fr !important; text-align: start; justify-items: stretch; gap: 0 !important; padding-block: 28px 20px !important; }
+  .mash-footer-grid > * { align-items: stretch; width: 100%; }
+  .mash-footer-brand { display: flex; flex-direction: column; align-items: flex-start; padding-bottom: 22px; }
   .mash-footer-brand p { margin-inline: 0 !important; }
-  .mash-footer-grid ul { align-items: flex-start; }
+  .mash-footer-grid ul { align-items: flex-start; padding-block: 4px 16px !important; }
+  /* re-enable accordion behaviour on mobile */
+  .mash-footer-col { border-top: 1px solid var(--line); }
+  .mash-footer-col > summary { pointer-events: auto; margin-bottom: 0 !important; padding-block: 14px; }
+  .mash-footer-chev { display: inline-block; transition: transform .2s ease; flex: none; color: var(--text-3); }
+  .mash-footer-col[open] .mash-footer-chev { transform: rotate(180deg); }
   .mash-footer-bottom { flex-direction: column !important; align-items: flex-start !important; text-align: start; justify-content: flex-start !important; }
   .mash-footer-bottom > span { justify-content: flex-start; }
 }

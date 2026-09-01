@@ -3,17 +3,14 @@ import React, { useState, useEffect } from "react";
 import { useApp } from "@/lib/AppContext";
 import { Icon, Stars, Thumb, money } from "./ui";
 import { NOTIFS, VENDORS, type Product } from "@/lib/data";
-import { useGeoStore } from "@/lib/geoStore";
 import { useCouponStore } from "@/lib/couponStore";
+import { Flag } from "./Flag";
 
-/** Google-Maps-style marker (multi-color teardrop pin) used for the "Maps" link. */
+/** The official Google Maps marker, imported as an image asset (public/google-maps.svg). */
 function GoogleMapPin({ size = 16 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" style={{ flex: "none" }}>
-      <path d="M12 2C7.6 2 4 5.5 4 9.8c0 5.6 6.6 11.2 7.2 11.7.5.4 1.2.4 1.6 0 .6-.5 7.2-6.1 7.2-11.7C20 5.5 16.4 2 12 2z" fill="#EA4335"/>
-      <path d="M12 2v7.5a2.7 2.7 0 000-5.4V2z" fill="#C5221F" opacity=".35"/>
-      <circle cx="12" cy="9.7" r="2.8" fill="#fff"/>
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src="/google-maps.svg" alt="" aria-label="Maps" width={Math.round(size * 0.7)} height={size} style={{ display: "block", flex: "none" }} />
   );
 }
 
@@ -21,7 +18,6 @@ function GoogleMapPin({ size = 16 }: { size?: number }) {
 export function LocationChip() {
   const { lang } = useApp();
   const ar = lang === "ar";
-  const geo = useGeoStore();
   const [mounted, setMounted] = useState(false);
   const [sel, setSel] = useState<{ country: string; city: string } | null>(null);
   // read the saved selection only on the client (avoids SSR hydration mismatch)
@@ -37,17 +33,15 @@ export function LocationChip() {
     return () => window.removeEventListener("mash:country-changed", read);
   }, []);
   const open = () => window.dispatchEvent(new CustomEvent("mash:open-country"));
-  const btnStyle: React.CSSProperties = { display: "flex", alignItems: "center", gap: 6, height: 38, padding: "0 12px", borderRadius: 999, border: "1.5px solid var(--line)", background: "var(--surface-2)", color: "var(--text-2)", fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" };
+  const btnStyle: React.CSSProperties = { display: "flex", alignItems: "center", gap: 6, height: 38, padding: "0 4px", border: "none", background: "transparent", color: "var(--text-2)", fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" };
   // Render an identical (empty) button on the server and first client paint to
   // avoid a hydration mismatch; fill in flag+city once mounted & a selection exists.
   if (!mounted || !sel) {
     return <button suppressHydrationWarning aria-hidden style={{ ...btnStyle, visibility: "hidden" }} />;
   }
-  const c = geo.countries.find((x) => x.id === sel.country);
-  const flag = c?.flag ?? "🏳️";
   return (
     <button onClick={open} suppressHydrationWarning title={ar ? "تغيير الدولة والمدينة" : "Change country & city"} style={btnStyle}>
-      <span style={{ fontSize: 16 }}>{flag}</span>
+      <Flag id={sel.country} size={15} />
       <span className="mash-topbar-city">{sel.city}</span>
       <Icon name="chevron" size={14} style={{ color: "var(--text-3)" }} />
     </button>
@@ -111,7 +105,7 @@ function NotifDropdown({ go, onClose, lang }: { go: (p: string, id?: string | nu
   const tint: Record<string, string> = { offer: "var(--brand-soft)", auction: "#fef3c7", order: "#d5e5fe", approval: "var(--active-bg)", event: "#fde8d6", system: "var(--surface-2)" };
   const unread = items.filter((n) => !n.read).length;
   return (
-    <div style={{ position: "absolute", insetInlineEnd: 0, top: "calc(100% + 10px)", width: 360, maxWidth: "90vw", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-lg)", zIndex: 60, overflow: "hidden" }}>
+    <div className="mash-notif-pop" style={{ position: "absolute", insetInlineEnd: 0, top: "calc(100% + 10px)", width: 360, maxWidth: "calc(100vw - 24px)", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-lg)", zIndex: 60, overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: "1px solid var(--line)" }}>
         <div style={{ fontWeight: 800, fontSize: 15 }}>{ar ? "الإشعارات" : "Notifications"}</div>
         {unread > 0 && <span style={{ background: "var(--brand-soft)", color: "var(--brand)", fontSize: 11.5, fontWeight: 700, padding: "3px 9px", borderRadius: 999 }} className="num">{unread} {ar ? "جديد" : "new"}</span>}
@@ -137,8 +131,40 @@ function NotifDropdown({ go, onClose, lang }: { go: (p: string, id?: string | nu
 
 const iconBtn: React.CSSProperties = { width: 40, height: 40, borderRadius: 10, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--text-2)", display: "flex", alignItems: "center", justifyContent: "center" };
 
+/** Animated search placeholder: fixed prefix + a rotating word that types then
+ *  deletes (typewriter effect). e.g. "ابحث عن منتج…" → "ابحث عن كاش باك…" → … */
+function useTypewriterPlaceholder(prefix: string, words: string[]) {
+  const [text, setText] = useState(words[0] ?? "");
+  useEffect(() => {
+    let wi = 0, ci = words[0]?.length ?? 0, deleting = false, timer: ReturnType<typeof setTimeout>;
+    const tick = () => {
+      const word = words[wi];
+      if (!deleting) {
+        ci++;
+        setText(word.slice(0, ci));
+        if (ci >= word.length) { deleting = true; timer = setTimeout(tick, 1400); return; }
+        timer = setTimeout(tick, 110);
+      } else {
+        ci--;
+        setText(word.slice(0, ci));
+        if (ci <= 0) { deleting = false; wi = (wi + 1) % words.length; timer = setTimeout(tick, 220); return; }
+        timer = setTimeout(tick, 55);
+      }
+    };
+    timer = setTimeout(tick, 1400); // hold the first word before deleting
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefix, words.join("|")]);
+  return `${prefix} ${text}…`;
+}
+
 export function Header({ go, onSearch, cur }: { go: (p: string, id?: string | null) => void; onSearch?: (v: string) => void; cur: string; }) {
   const { t, theme } = useApp();
+  const isAr = t.dir === "rtl";
+  const searchPh = useTypewriterPlaceholder(
+    isAr ? "ابحث عن" : "Search for",
+    isAr ? ["منتج", "كاش باك", "كوبون خصم", "متجر"] : ["a product", "cashback", "a coupon", "a store"],
+  );
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => {
@@ -155,19 +181,29 @@ export function Header({ go, onSearch, cur }: { go: (p: string, id?: string | nu
   }, [menuOpen]);
   const navs = [
     { k: "discounts", page: "home", lbl: { ar: "الرئيسية", en: "Home" } },
-    { k: "products", page: "shop", lbl: { ar: "المنتجات", en: "Products" } },
     { k: "events", page: "events", lbl: { ar: "الفعاليات", en: "Events" } },
-    { k: "reels", page: "reels", lbl: { ar: "ريلز", en: "Reels" } },
     { k: "auctions", page: "auctions" },
   ] as const;
   const navBg = theme === "dark" ? "rgba(22,28,38,0.82)" : "rgba(255,255,255,0.85)";
   return (
     <header style={{ background: scrolled ? navBg : "var(--header)", backdropFilter: scrolled ? "saturate(180%) blur(12px)" : "none", WebkitBackdropFilter: scrolled ? "saturate(180%) blur(12px)" : "none", borderBottom: "1px solid var(--line)", boxShadow: scrolled ? "0 6px 20px rgba(16,24,40,0.10)" : "none", position: "sticky", top: 0, zIndex: 30, transition: "box-shadow .25s ease, background-color .25s ease, border-color .25s ease" }}>
       <div className="container" style={{ height: scrolled ? 72 : 84, display: "flex", alignItems: "center", gap: 22, transition: "height .25s ease" }}>
-        {/* burger (mobile only, via CSS) */}
-        <button className="mash-burger" onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o); }} title="menu" style={{ ...iconBtn, display: "none" }}>
-          <Icon name={menuOpen ? "arrow" : "menu"} size={20} />
-        </button>
+        {/* burger + its dropdown (mobile only, via CSS); wrapper anchors the menu right under the button */}
+        <div className="mash-burger-wrap" style={{ position: "relative" }}>
+          <button className="mash-burger" onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o); }} title="menu" style={{ ...iconBtn, display: "none" }}>
+            <Icon name={menuOpen ? "arrow" : "menu"} size={20} />
+          </button>
+          {menuOpen && (
+            <div className="mash-mobile-menu" onClick={(e) => e.stopPropagation()}>
+              {navs.map((n, i) => (
+                <a key={n.k} href="#" onClick={(e) => { e.preventDefault(); setMenuOpen(false); go(n.page); }}
+                  className="mash-mm-item" style={{ animationDelay: `${0.03 + i * 0.04}s` }}>
+                  {"lbl" in n && n.lbl ? n.lbl[t.dir === "rtl" ? "ar" : "en"] : t.nav[n.k as keyof typeof t.nav]}
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
         <a href="#" onClick={(e) => { e.preventDefault(); go("home"); }}><Logo /></a>
         <nav className="mash-nav-desktop" style={{ display: "flex", gap: 2 }}>
           {navs.map((n, i) => (
@@ -179,13 +215,13 @@ export function Header({ go, onSearch, cur }: { go: (p: string, id?: string | nu
         </nav>
         <div className="mash-search-desktop" style={{ flex: 1, position: "relative", maxWidth: 320 }}>
           <span style={{ position: "absolute", insetInlineStart: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-3)" }}><Icon name="search" size={18} /></span>
-          <input placeholder={t.search} onChange={(e) => onSearch && onSearch(e.target.value)}
+          <input placeholder={searchPh} onChange={(e) => onSearch && onSearch(e.target.value)}
             style={{ width: "100%", height: 42, paddingInlineStart: 42, paddingInlineEnd: 16, borderRadius: "var(--r-pill)", border: "1.5px solid var(--line)", background: "var(--surface-2)", color: "var(--text)", fontSize: 14, fontFamily: "inherit" }} />
         </div>
         {/* action icons (theme/notifications/favourites/account) moved to the TopBar; keep the location chip + maps icon here */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginInlineStart: "auto" }}>
-          <button onClick={() => go("map", "nearest")} title={t.dir === "rtl" ? "أقرب متجر لديه عروض" : "Nearest store with offers"} style={{ ...iconBtn, width: 42, height: 42 }}>
-            <GoogleMapPin size={20} />
+          <button onClick={() => go("map", "nearest")} title={t.dir === "rtl" ? "أقرب متجر لديه عروض" : "Nearest store with offers"} style={{ width: 42, height: 42, border: "none", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <GoogleMapPin size={22} />
           </button>
           <LocationChip />
         </div>
@@ -195,25 +231,11 @@ export function Header({ go, onSearch, cur }: { go: (p: string, id?: string | nu
       <div className="mash-search-mobile container" style={{ display: "none", paddingBottom: 12 }}>
         <div style={{ position: "relative", width: "100%" }}>
           <span style={{ position: "absolute", insetInlineStart: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-3)" }}><Icon name="search" size={18} /></span>
-          <input placeholder={t.search} onChange={(e) => onSearch && onSearch(e.target.value)}
+          <input placeholder={searchPh} onChange={(e) => onSearch && onSearch(e.target.value)}
             style={{ width: "100%", height: 42, paddingInlineStart: 42, paddingInlineEnd: 16, borderRadius: "var(--r-pill)", border: "1.5px solid var(--line)", background: "var(--surface-2)", color: "var(--text)", fontSize: 14, fontFamily: "inherit" }} />
         </div>
       </div>
 
-      {/* mobile slide-down menu */}
-      {menuOpen && (
-        <div className="mash-mobile-menu" onClick={(e) => e.stopPropagation()}>
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button onClick={() => setMenuOpen(false)} style={{ ...iconBtn }}><Icon name="arrow" size={20} /></button>
-          </div>
-          {navs.map((n) => (
-            <a key={n.k} href="#" onClick={(e) => { e.preventDefault(); setMenuOpen(false); go(n.page); }}
-              style={{ padding: "12px 10px", fontSize: 15.5, fontWeight: 700, color: "var(--text)", borderRadius: 10, borderBottom: "1px solid var(--line-soft)" }}>
-              {"lbl" in n && n.lbl ? n.lbl[t.dir === "rtl" ? "ar" : "en"] : t.nav[n.k as keyof typeof t.nav]}
-            </a>
-          ))}
-        </div>
-      )}
     </header>
   );
 }
@@ -233,6 +255,17 @@ export function Footer() {
   };
   const cols = data[t.dir === "rtl" ? "ar" : "en"];
   const nav = (target: Target) => Array.isArray(target) ? go(target[0], target[1]) : go(target);
+  // Groups start expanded on desktop; on mobile they collapse into accordions so
+  // the footer stays short. Default open=true for SSR/desktop; collapse after mount
+  // only when the viewport is narrow.
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 640px)");
+    const apply = () => setCollapsed(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
   return (
     <footer dir={t.dir} style={{ background: "var(--header)", borderTop: "1px solid var(--line)", marginTop: 64 }}>
       <div className="container mash-footer-grid" style={{ paddingBlock: "48px 28px", display: "grid", gridTemplateColumns: "1.6fr repeat(4, 1fr)", gap: 40, alignItems: "start" }}>
@@ -241,12 +274,15 @@ export function Footer() {
           <p style={{ color: "var(--text-2)", fontSize: 13.5, marginTop: 14, maxWidth: 260 }}>{t.tagline}. {t.multiTenant}.</p>
         </div>
         {cols.map(([h, links]) => (
-          <div key={h}>
-            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 14 }}>{h}</div>
+          <details key={h} className="mash-footer-col" open={!collapsed}>
+            <summary className="mash-footer-sum" style={{ fontWeight: 700, fontSize: 14, marginBottom: 14, listStyle: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+              <span>{h}</span>
+              <svg className="mash-footer-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9" /></svg>
+            </summary>
             <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 9 }}>
               {links.map(([l, target]) => <li key={l}><a href="#" onClick={(e) => { e.preventDefault(); nav(target); }} style={{ color: "var(--text-2)", fontSize: 13.5 }} onMouseEnter={(e) => (e.currentTarget.style.color = "var(--brand)")} onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-2)")}>{l}</a></li>)}
             </ul>
-          </div>
+          </details>
         ))}
       </div>
       <div className="container mash-footer-bottom" style={{ paddingBlock: "18px", borderTop: "1px solid var(--line)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, color: "var(--text-3)", fontSize: 12.5, flexWrap: "wrap" }}>

@@ -47,6 +47,8 @@ export const PATHS: Record<string, string> = {
   play: "M8 5v14l11-7z",
   calendar: "M7 3v3M17 3v3M4 8h16M5 5h14a1 1 0 011 1v13a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z",
   ticket: "M3 8a2 2 0 012-2h14a2 2 0 012 2 2 2 0 000 4 2 2 0 010 4 2 2 0 01-2 2H5a2 2 0 01-2-2 2 2 0 000-4 2 2 0 010-4zM13 6v12",
+  copy: "M9 9h10a1 1 0 011 1v10a1 1 0 01-1 1H9a1 1 0 01-1-1V10a1 1 0 011-1zM5 15H4a1 1 0 01-1-1V4a1 1 0 011-1h10a1 1 0 011 1v1",
+  gift: "M20 12v8a1 1 0 01-1 1H5a1 1 0 01-1-1v-8M2 8h20v4H2zM12 21V8M12 8S10.5 4 8 4a2 2 0 000 4h4zM12 8s1.5-4 4-4a2 2 0 010 4h-4z",
   users: "M9 11a4 4 0 100-8 4 4 0 000 8zM2 21a7 7 0 0114 0M17 11a4 4 0 000-8M22 21a7 7 0 00-5-6.7",
   reel: "M3 6h18v12H3zM3 10h18M8 6l-2 4M13 6l-2 4M18 6l-2 4",
   pin: "M12 21s-6-5.3-6-10a6 6 0 1112 0c0 4.7-6 10-6 10zM12 13a2.5 2.5 0 100-5 2.5 2.5 0 000 5z",
@@ -131,12 +133,13 @@ export function Thumb({ p, ratio = "1 / 1", radius = "var(--r-md)" }: { p: { cat
 }
 
 /* ---- Pill / chip ---- */
-export function Chip({ children, active, ...rest }: React.ButtonHTMLAttributes<HTMLButtonElement> & { active?: boolean }) {
+export function Chip({ children, active, small, style, ...rest }: React.ButtonHTMLAttributes<HTMLButtonElement> & { active?: boolean; small?: boolean }) {
   return (
-    <button {...rest} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px",
-      borderRadius: "var(--r-pill)", border: "1.5px solid var(--line)", fontSize: 13, fontWeight: 600,
+    <button {...rest} style={{ flex: "none", display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap",
+      padding: small ? "5px 11px" : "8px 14px",
+      borderRadius: "var(--r-pill)", border: "1.5px solid var(--line)", fontSize: small ? 12 : 13, fontWeight: small ? 700 : 600,
       background: active ? "var(--brand)" : "var(--surface)", color: active ? "#fff" : "var(--text-2)",
-      borderColor: active ? "var(--brand)" : "var(--line)" }}>
+      borderColor: active ? "var(--brand)" : "var(--line)", cursor: "pointer", ...style }}>
       {children}
     </button>
   );
