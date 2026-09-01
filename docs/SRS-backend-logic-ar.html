@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SRS منطق الخلفية · أوفرز</title>
+<style>
+  :root{--brand:#c8305e;--gold:#f5c518;--ink:#1e3d47;--ink2:#5f6b72;--line:#ece5e2;--bg:#f5f2f0;--surface:#fff;--ok:#2e9d63;--code:#0d1b2a}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Tajawal","Cairo","Segoe UI",system-ui,sans-serif;line-height:1.85;font-size:15.5px}
+  .page{max-width:980px;margin:0 auto;padding:44px 32px;background:var(--surface);box-shadow:0 1px 40px rgba(30,61,71,.07);min-height:100vh}
+  .brandbar{height:8px;border-radius:999px;background:linear-gradient(90deg,var(--gold) 0 33%,var(--brand) 33% 66%,var(--ink) 66% 100%);margin-bottom:24px}
+  h1{font-size:28px;font-weight:800;margin:0 0 4px}
+  h1 .sub{display:block;font-size:16px;color:var(--brand);font-weight:700;margin-top:8px}
+  h2{font-size:20px;font-weight:800;margin:36px 0 12px;padding-bottom:8px;border-bottom:3px solid var(--gold)}
+  h3{font-size:16px;font-weight:800;margin:20px 0 8px;color:var(--brand)}
+  .meta{background:#fdf3cf;border:1px solid #f0e3a8;border-radius:12px;padding:13px 16px;margin:16px 0;font-size:14px}
+  .lead{font-size:15px;color:var(--ink2);background:#faf6f8;border-inline-start:4px solid var(--brand);border-radius:0 10px 10px 0;padding:13px 16px;margin:16px 0}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:right;vertical-align:top}
+  th{background:#f3eeec;font-weight:800}
+  tr:nth-child(even) td{background:#faf8f7}
+  code{background:#f3eeec;border-radius:5px;padding:1px 6px;font-family:"Consolas",monospace;font-size:13px;direction:ltr;display:inline-block}
+  pre{background:var(--code);color:#e6edf3;border-radius:10px;padding:14px 16px;overflow-x:auto;direction:ltr;text-align:left;font-size:13px;line-height:1.6}
+  pre .k{color:#79c0ff}.pre .s{color:#a5d6ff}
+  ul,ol{padding-inline-start:24px}
+  li{margin:5px 0}
+  .rule{background:#eef7f1;border:1px solid #cde8d7;border-radius:8px;padding:10px 14px;margin:8px 0;font-size:13.5px}
+  .rule::before{content:"◆ قاعدة: ";color:var(--ok);font-weight:800}
+  .ep{display:inline-block;font-family:monospace;font-size:12.5px;font-weight:700;padding:2px 8px;border-radius:6px;color:#fff;direction:ltr;margin-inline-end:6px}
+  .get{background:#2e9d63}.post{background:#2f6f7e}.put{background:#d9a800}.del{background:#c8305e}.patch{background:#7c3aed}
+  .foot{text-align:center;color:var(--ink2);font-size:13px;margin-top:32px}
+  @media print{body{background:#fff}.page{box-shadow:none;max-width:none;padding:0}}
+</style>
+</head>
+<body>
+<div class="page">
+<div class="brandbar"></div>
+
+<h1>وثيقة متطلبات النظام — منطق الخلفية (Backend Logic SRS)<span class="sub">منصّة «أوفرز» · توثيق كل منطق أعمال لبناء الـ Backend بنجاح</span></h1>
+
+<div class="meta"><b>الغرض:</b> توثيق <b>كل منطق الأعمال المُنفّذ في الواجهة الأمامية</b> (الكيانات، القواعد، والـ Endpoints المقترحة) بحيث يُبنى الـ Backend مطابقاً له تماماً. كل قسم = وحدة (module) قائمة حالياً كـ «store» في الواجهة، وستصبح جدول/خدمة في الخلفية.</div>
+
+<p class="lead"><b>مبادئ عامة:</b> كل الكيانات تحمل <code>id</code> فريداً و<code>created_at</code>/<code>updated_at</code>. الحقول ثنائية اللغة تُخزّن كحقلين (<code>ar</code>/<code>en</code>). المصادقة عبر JWT؛ الأدوار: <code>USER</code>، <code>VENDOR</code>، <code>ADMIN</code>. المسار الأساسي <code>/api/v1</code>. الردود JSON. الحذف يُفضّل أن يكون منطقياً (soft-delete) للكيانات المهمّة.</p>
+
+<h2>1. المصادقة والمستخدمون (Auth &amp; Users)</h2>
+<h3>الكيان: User</h3>
+<table><thead><tr><th>الحقل</th><th>النوع</th><th>الوصف</th></tr></thead><tbody>
+<tr><td>id</td><td>uuid</td><td>المعرّف</td></tr>
+<tr><td>name</td><td>string</td><td>الاسم</td></tr>
+<tr><td>email</td><td>string (unique)</td><td>البريد</td></tr>
+<tr><td>phone</td><td>string</td><td>الجوال</td></tr>
+<tr><td>role</td><td>enum</td><td>USER · VENDOR · ADMIN · REELS_ONLY</td></tr>
+<tr><td>city / country</td><td>string</td><td>مدينة/دولة المستخدم (لتصفية العروض والمواقع)</td></tr>
+</tbody></table>
+<div class="rule">التسجيل كتاجر يفتح تدفّق «طلب متجر» (StoreApplication) بحالة PENDING بانتظار موافقة الإدارة.</div>
+<p><span class="ep post">POST</span><code>/auth/register</code> · <span class="ep post">POST</span><code>/auth/login</code> · <span class="ep get">GET</span><code>/auth/me</code> · <span class="ep patch">PATCH</span><code>/users/{id}</code></p>
+
+<h2>2. الدول والمدن (Geo)</h2>
+<h3>الكيانات: Country, City</h3>
+<table><thead><tr><th>الحقل</th><th>النوع</th><th>الوصف</th></tr></thead><tbody>
+<tr><td>Country.id</td><td>string</td><td>معرّف الدولة (مثل sa)</td></tr>
+<tr><td>Country.ar/en, flag, code</td><td>string</td><td>الاسم، العلم، مفتاح الهاتف</td></tr>
+<tr><td>City.id</td><td>string</td><td>معرّف المدينة</td></tr>
+<tr><td>City.ar/en</td><td>string</td><td>اسم المدينة</td></tr>
+<tr><td>City.country</td><td>fk → Country</td><td>الدولة التابعة</td></tr>
+<tr><td>City.stores</td><td>int</td><td>عدد المتاجر في المدينة</td></tr>
+</tbody></table>
+<div class="rule">اختيار الدولة إجباري قبل اختيار المدينة. المدن تُفلتَر حسب <code>city.country</code>. يمكن جلب المدن من مصدر خارجي (CountriesNow API) عند إضافة دولة.</div>
+<div class="rule"><b>أسماء المدن بالعربية</b>: المدن القادمة من المصدر الخارجي (إنجليزية) تُترجَم للعربية — خريطة مُعدّة مسبقاً للمدن الكبرى، ثم <b>ترجمة صوتية (transliteration)</b> احتياطية للباقي بحيث لا يظهر أي اسم إنجليزي في واجهة عربية. يُحفَظ اسم المدينة المعروض بالعربية في <code>userCity</code> ليطابق فروع المتاجر (<code>cityAr</code>).</div>
+<div class="rule"><b>الأعلام</b> تُعرَض كصور SVG (أصول ثابتة) بدل رموز الإيموجي — لضمان ظهورها على كل الأنظمة (ويندوز لا يعرض إيموجي الأعلام).</div>
+<p><span class="ep get">GET</span><code>/countries</code> · <span class="ep get">GET</span><code>/countries/{id}/cities</code> · <span class="ep post">POST</span><code>/admin/countries</code> · <span class="ep post">POST</span><code>/admin/cities</code> · <span class="ep del">DELETE</span><code>/admin/cities/{id}</code></p>
+
+<h2>3. الأقسام والأقسام الفرعية (Categories)</h2>
+<h3>الكيانات: Category, SubCategory</h3>
+<table><thead><tr><th>الحقل</th><th>النوع</th><th>الوصف</th></tr></thead><tbody>
+<tr><td>Category.id, ar, en, icon</td><td>string</td><td>القسم واسمه وأيقونته</td></tr>
+<tr><td>SubCategory.id, ar, en</td><td>string</td><td>القسم الفرعي</td></tr>
+<tr><td>SubCategory.cat</td><td>fk → Category</td><td>القسم الأب</td></tr>
+</tbody></table>
+<div class="rule"><code>subsOf(catId)</code> = كل الأقسام الفرعية حيث <code>subcat.cat = catId</code>. المتاجر تحت قسم فرعي = المتاجر التي لها منتجات بذلك <code>subcat</code>.</div>
+<p><span class="ep get">GET</span><code>/categories</code> · <span class="ep get">GET</span><code>/categories/{id}/subcategories</code> · <span class="ep get">GET</span><code>/categories/{catId}/subcategories/{subId}/stores</code> · إدارة: <span class="ep post">POST</span>/<span class="ep del">DELETE</span> <code>/admin/(sub)categories</code></p>
+
+<h2>4. المتاجر (Vendors) وطلبات الانضمام</h2>
+<h3>الكيان: Vendor</h3>
+<table><thead><tr><th>الحقل</th><th>النوع</th><th>الوصف</th></tr></thead><tbody>
+<tr><td>id, ar, en</td><td>string</td><td>المعرّف واسم المتجر</td></tr>
+<tr><td>cat</td><td>fk → Category</td><td>قسم المتجر</td></tr>
+<tr><td>color</td><td>string</td><td>لون هوية المتجر</td></tr>
+<tr><td>rating, reviews, followers, since</td><td>number</td><td>التقييم والمتابعون وسنة التأسيس</td></tr>
+<tr><td>city {ar,en}</td><td>object</td><td>مدينة المتجر</td></tr>
+<tr><td>ar_about, en_about</td><td>text</td><td>نبذة عن المتجر</td></tr>
+<tr><td>logo, cover, brochure</td><td>file url</td><td>الشعار والغلاف والبروشور (يرفعها التاجر)</td></tr>
+</tbody></table>
+<h3>الكيان: StoreApplication</h3>
+<div class="rule">حالة الطلب: <code>PENDING → APPROVED | REJECTED</code>. عند الموافقة يُنشأ Vendor. الإدارة ترى عدّاد الطلبات المعلّقة.</div>
+<p><span class="ep get">GET</span><code>/vendors/{id}</code> · <span class="ep post">POST</span><code>/vendors/apply</code> · <span class="ep get">GET</span><code>/admin/store-applications</code> · <span class="ep patch">PATCH</span><code>/admin/store-applications/{id}</code> (status) · <span class="ep put">PUT</span><code>/vendors/{id}/branding</code> (logo/cover/brochure)</p>
+
+<h2>5. المنتجات (Products)</h2>
+<table><thead><tr><th>الحقل</th><th>النوع</th><th>الوصف</th></tr></thead><tbody>
+<tr><td>id, vendor, cat, subcat</td><td>fk</td><td>الروابط</td></tr>
+<tr><td>ar, en, ar_d, en_d</td><td>string/text</td><td>الاسم والوصف</td></tr>
+<tr><td>price, old</td><td>number</td><td>السعر الحالي والقديم</td></tr>
+<tr><td>discount</td><td>number (محسوب)</td><td><code>round((1 - price/old) × 100)</code></td></tr>
+<tr><td>rating, reviews, days, active, img</td><td>mixed</td><td>التقييم، أيام تبقّت للعرض، الحالة، الصورة</td></tr>
+</tbody></table>
+<div class="rule">«المتجر لديه عروض» = وجود منتج له <code>active = true</code> و<code>discount &gt; 0</code>. يُستخدم في «أقرب متجر لديه عروض».</div>
+<p><span class="ep get">GET</span><code>/products?vendor=&amp;cat=&amp;subcat=&amp;active=&amp;q=&amp;sort=</code> · <span class="ep post">POST</span>/<span class="ep put">PUT</span>/<span class="ep del">DELETE</span> <code>/vendors/{id}/products</code></p>
+
+<h2>5.1 تبويبات الاكتشاف في الصفحة الرئيسية (Home Discovery Tabs)</h2>
+<div class="rule">شريط تبويبات أفقي فوق السلايدر يعمل <b>كمعالج (wizard)</b>: يظهر محتوى التبويب المختار <b>فقط</b> (وليس روابط داخل نفس الصفحة). عند اختيار أي تبويب غير «الأقسام» يُخفى السلايدر وشريط العروض الساخنة.</div>
+<table><thead><tr><th>التبويب</th><th>المحتوى / المنطق</th></tr></thead><tbody>
+<tr><td>الأقسام</td><td>الافتراضي — يعرض السلايدر + «تسوّق حسب القسم» (شرائح فلترة الأقسام + متاجر القسم).</td></tr>
+<tr><td>المنتجات</td><td>مجموعة منتجات على الصفحة، و«عرض الكل» يفتح صفحة المتجر الكاملة.</td></tr>
+<tr><td>العروض</td><td>كل العروض النشطة (<code>active &amp;&amp; discount &gt; 0</code>) مع فلاتر بداخله: شرائح الأقسام + ترتيب (مختار/<b>الأحدث</b>/سعر/تقييم/أكبر خصم). «الأحدث» = ترتيب تنازلي حسب <code>days</code>.</td></tr>
+<tr><td>٥٠٪ وأكثر</td><td>العروض ذات <code>discount ≥ 50</code> فقط.</td></tr>
+<tr><td>أكواد الخصم</td><td>لوحة كوبونات مخصّصة (النشطة فقط، قابلة للنسخ) — انظر §6.</td></tr>
+<tr><td>متاجر مميزة</td><td>بطاقات المتاجر.</td></tr>
+<tr><td>ريلز</td><td>يوجّه لصفحة الريلز.</td></tr>
+</tbody></table>
+<div class="rule">كل تبويب «عروض» له فلتر منتجات خاص فيُظهر محتوىً مختلفاً. الترتيب/الفلترة تُطبَّق على الخادم عبر معاملات <code>?sort=&amp;cat=&amp;active=</code> وتُعاد النتائج مقسّمة صفحاتياً.</div>
+<p><span class="ep get">GET</span><code>/products?active=true&amp;discount_gt=0&amp;sort=latest|discount|price|rating</code> · <span class="ep get">GET</span><code>/products?discount_gte=50</code></p>
+
+<h2>6. الكوبونات (Coupons)</h2>
+<table><thead><tr><th>الحقل</th><th>النوع</th><th>الوصف</th></tr></thead><tbody>
+<tr><td>id, code, vendor</td><td>mixed</td><td>الرمز والمتجر</td></tr>
+<tr><td>type</td><td>enum</td><td><code>percent</code> · <code>fixed</code> · <code>item</code></td></tr>
+<tr><td>pct</td><td>number</td><td>النسبة أو المبلغ (0 لنوع item)</td></tr>
+<tr><td>buyQty, giftQty</td><td>number?</td><td>لنوع «بالصنف»: اشترِ X واحصل على Y</td></tr>
+<tr><td>used, limit, active, until</td><td>mixed</td><td>الاستخدام، الحدّ، الحالة، تاريخ الانتهاء</td></tr>
+</tbody></table>
+<div class="rule">إدارة الكوبونات <b>للتاجر فقط</b> عبر لوحة المتجر (أُزيلت من لوحة الإدارة). لكل كوبون <b>CRUD كامل</b>: إنشاء (percent/fixed/item) · تعديل (يفتح النموذج معبّأً) · حذف (بتأكيد) · تفعيل/إيقاف (toggle). يملك التاجر كوبوناته فقط.</div>
+<div class="rule"><b>مصدر واحد مشترك</b> (couponStore): كل عملية تاجر تنعكس فوراً على الموقع. تبويب «أكواد الخصم» في الصفحة الرئيسية يقرأ من نفس المصدر ويعرض <b>الكوبونات النشطة فقط</b> (<code>active = true</code>) — الكوبون المُوقَف أو المحذوف يختفي من الموقع مباشرةً. لا تُعرض منتجات في هذا التبويب، بل بطاقات كوبون فقط.</div>
+<div class="rule"><b>واجهة الكوبون</b>: بطاقة تعرض المتجر · القيمة (٪ / ﷼ / X+Y هدية) · تاريخ الانتهاء · الوصف · شريط الكود. الضغط على الكود <b>ينسخه للحافظة</b> (Clipboard) ويُظهر تأكيد «تم النسخ». عند إضافة كوبون جديد يُرسَل إشعار للإدارة (AdminNotice).</div>
+<div class="rule">حساب الخصم: percent → <code>price × (1 - pct/100)</code> · fixed → <code>price - pct</code> · item → أرخص Y صنف مجاناً عند شراء X.</div>
+<p><span class="ep get">GET</span><code>/coupons?active=true</code> (للموقع) · <span class="ep get">GET</span><code>/vendors/{id}/coupons</code> · <span class="ep post">POST</span>/<span class="ep put">PUT</span>/<span class="ep del">DELETE</span> <code>/vendors/{id}/coupons</code> · <span class="ep patch">PATCH</span><code>/vendors/{id}/coupons/{cid}/toggle</code> · <span class="ep post">POST</span><code>/coupons/validate</code> (code + cart)</p>
+
+<h2>7. باقات الإعلانات والاشتراكات (Ad Packages)</h2>
+<h3>الكيان: AdPackage</h3>
+<table><thead><tr><th>الحقل</th><th>النوع</th><th>الوصف</th></tr></thead><tbody>
+<tr><td>id, ar, en, ads, price</td><td>mixed</td><td>الاسم، عدد الإعلانات المسموح، السعر</td></tr>
+<tr><td>period</td><td>enum</td><td><code>week(7)</code> · <code>month(30)</code> · <code>6months(180)</code> · <code>year(365)</code> (بالأيام)</td></tr>
+<tr><td>start, autoRenew, renewPrice, active</td><td>mixed</td><td>البداية، التجديد التلقائي وسعره، الحالة</td></tr>
+</tbody></table>
+<h3>الكيان: AdSub (اشتراك متجر في باقة)</h3>
+<div class="rule">تاريخ الانتهاء يُحسب: <code>end = start + PERIOD_DAYS[period]</code>. الاشتراك «منتهٍ» إذا <code>end &lt; today</code>.</div>
+<div class="rule">سعر أي مدة من سعر أساسي: <code>priceForPeriod = round((price / PERIOD_DAYS[base]) × PERIOD_DAYS[target])</code> — تُعرض كل المدد على البطاقة.</div>
+<div class="rule">التمديد (extend): يُعاد ضبط <code>start = today</code> و<code>end = today + period</code>. التجديد التلقائي قابل للتبديل لكل اشتراك.</div>
+<p><span class="ep get">GET</span><code>/ad-packages</code> · <span class="ep post">POST</span><code>/vendors/{id}/subscribe</code> (packageId, start) · <span class="ep post">POST</span><code>/vendors/{id}/subscription/extend</code> · <span class="ep del">DELETE</span><code>/vendors/{id}/subscription</code> · <span class="ep patch">PATCH</span><code>/vendors/{id}/subscription/auto-renew</code> · إدارة: <span class="ep get">GET</span><code>/admin/subscriptions</code></p>
+
+<h2>8. العروض المموّلة (Sponsored Offers)</h2>
+<table><thead><tr><th>الحقل</th><th>النوع</th><th>الوصف</th></tr></thead><tbody>
+<tr><td>id, vendor, cat, subcat, img</td><td>mixed</td><td>الروابط وصورة العرض</td></tr>
+<tr><td>ar, en, discount</td><td>mixed</td><td>العنوان ونسبة الخصم</td></tr>
+<tr><td>start, end, active</td><td>mixed</td><td>الفترة والحالة</td></tr>
+</tbody></table>
+<div class="rule">عدد العروض النشطة للتاجر ≤ <code>ads</code> في باقته المشترك بها (atLimit). لا يمكن إضافة عرض إن اكتمل العدد أو انتهى الاشتراك.</div>
+<div class="rule"><b>الوقت المتبقّي</b> (حتى نهاية يوم <code>end</code>): أقل من ساعة → دقائق · أقل من يوم → ساعات · أقل من ٣ أيام → أيام · غير ذلك → التاريخ. صورة العرض تُستخدم كخلفية بطاقة المتجر في «تسوّق حسب القسم».</div>
+<p><span class="ep get">GET</span><code>/offers?vendor=&amp;active=</code> · <span class="ep post">POST</span>/<span class="ep put">PUT</span>/<span class="ep del">DELETE</span> <code>/vendors/{id}/offers</code></p>
+
+<h2>9. مواقع المتجر (Store Branches)</h2>
+<table><thead><tr><th>الحقل</th><th>النوع</th><th>الوصف</th></tr></thead><tbody>
+<tr><td>id, vendor</td><td>fk</td><td>المتجر</td></tr>
+<tr><td>ar, en</td><td>string</td><td>اسم الفرع</td></tr>
+<tr><td>cityAr, cityEn</td><td>string</td><td>مدينة الفرع (تطابق أسماء المدن)</td></tr>
+<tr><td>addressAr, addressEn, phone</td><td>string</td><td>العنوان والهاتف</td></tr>
+<tr><td>lat, lng (أو x,y)</td><td>number</td><td>الإحداثيات على الخريطة</td></tr>
+</tbody></table>
+<div class="rule"><b>صفحة المتجر</b> تعرض فروع المتجر <b>في مدينة الزائر فقط</b>: <code>branches.filter(b =&gt; b.city == userCity)</code>. إن لم توجد فروع في مدينته تُعرض قائمة المدن المتاحة.</div>
+<p><span class="ep get">GET</span><code>/vendors/{id}/branches?city={userCity}</code> · <span class="ep post">POST</span>/<span class="ep del">DELETE</span> <code>/vendors/{id}/branches</code></p>
+
+<h2>10. الموقع الجغرافي وأقرب متجر (Geolocation)</h2>
+<div class="rule">يُطلب إذن الموقع من المتصفّح <b>عند دخول الموقع مرة واحدة</b>. تُخزَّن الإحداثيات. خريطة المتاجر تُبرز <b>أقرب متجر لديه عروض</b> مرتّبةً حسب المسافة.</div>
+<div class="rule">حساب المسافة على الخادم = Haversine بين إحداثيات المستخدم وفروع المتاجر؛ الترتيب تصاعدي، مع أولوية للمتاجر التي «لديها عروض».</div>
+<p><span class="ep get">GET</span><code>/stores/nearest?lat=&amp;lng=&amp;hasOffers=true</code></p>
+
+<h2>11. المندوبون والأدوار (Reps &amp; Roles)</h2>
+<table><thead><tr><th>الحقل</th><th>النوع</th><th>الوصف</th></tr></thead><tbody>
+<tr><td>Rep.id, name, phone, city, region</td><td>mixed</td><td>بيانات المندوب</td></tr>
+<tr><td>Role/Permission</td><td>enum/matrix</td><td>مصفوفة صلاحيات لكل دور (CRUD لكل وحدة)</td></tr>
+</tbody></table>
+<p><span class="ep get">GET</span><code>/admin/reps</code> · <span class="ep post">POST</span>/<span class="ep del">DELETE</span> <code>/admin/reps</code> · <span class="ep get">GET</span>/<span class="ep put">PUT</span> <code>/admin/roles</code></p>
+
+<h2>12. كيانات أخرى (المزادات · الريلز · الفعاليات · الطلبات · الإشعارات)</h2>
+<ul>
+<li><b>Auctions</b>: <code>id, product, currentBid, minIncrement, endsAt, bids[]</code> — المزايدة تزيد بمقدار الحدّ الأدنى؛ ينتهي عند <code>endsAt</code>.</li>
+<li><b>Reels</b>: <code>id, vendor, video, likes, views</code> — قد يكون للمستخدم دور «ريلز فقط».</li>
+<li><b>Events</b>: <code>id, ar, en, city, date, live, img</code> — تُفلتَر حسب المدينة.</li>
+<li><b>Orders</b>: <code>id, user, items[], total, status</code>.</li>
+<li><b>Notifications</b>: <code>id, type, ar, en, read</code> — الأنواع: offer · auction · order · approval · event · system.</li>
+</ul>
+<p><span class="ep get">GET</span>/<span class="ep post">POST</span> <code>/auctions · /reels · /events · /orders · /notifications</code></p>
+
+<h2>13. ملاحظات تنفيذية للـ Backend</h2>
+<ul>
+<li>كل «store» في الواجهة (couponStore · offerStore · adPackageStore · …) = خدمة/جدول في الخلفية بنفس العمليات (add/update/remove/toggle/list).</li>
+<li>الحقول المحسوبة (discount, end date, priceForPeriod, remaining time, hasOffers) تُحسب على الخادم وتُرسل جاهزة، وتُعاد صياغتها للعرض في الواجهة.</li>
+<li>رفع الملفات (شعار/غلاف/بروشور/صور) عبر تخزين كائنات (S3-compatible) وإرجاع URL؛ التحقّق من النوع والحجم.</li>
+<li>التصفية حسب المدينة (العروض/الفروع/الفعاليات) تعتمد على <code>userCity</code> المُرسل مع الطلب أو من ملف المستخدم.</li>
+<li>الصلاحيات: كل endpoint إداري يتطلّب دور ADMIN؛ endpoints المتجر تتطلّب ملكية المتجر (vendor owns resource).</li>
+</ul>
+
+<div class="foot">منصّة أوفرز · SRS منطق الخلفية · 2026-08-27</div>
+</div>
+</body>
+</html>

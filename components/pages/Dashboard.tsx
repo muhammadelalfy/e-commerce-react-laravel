@@ -479,8 +479,12 @@ function CouponsPanel({ lang, vendorId }: { lang: string; vendorId: string }) {
   const ar = lang === "ar";
   const store = useCouponStore();
   const [modal, setModal] = useState(false);
+  const [editing, setEditing] = useState<Coupon | null>(null); // coupon being edited
   // show only THIS vendor's coupons in the vendor dashboard
   const rows = store.coupons.filter((c) => c.vendor === vendorId);
+  const del = (c: Coupon) => {
+    if (window.confirm(ar ? `حذف الكوبون "${c.code}"؟` : `Delete coupon "${c.code}"?`)) store.removeCoupon(c.id);
+  };
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -507,30 +511,37 @@ function CouponsPanel({ lang, vendorId }: { lang: string; vendorId: string }) {
               <div style={{ fontSize: 11, color: "var(--text-3)" }}>{ar ? "استُخدم" : "redeemed"}</div>
               <div style={{ height: 6, borderRadius: 999, background: "var(--surface-2)", marginTop: 6 }}><div style={{ width: Math.round(c.used / c.limit * 100) + "%", height: "100%", borderRadius: 999, background: "var(--brand)" }} /></div>
             </div>
-            <Toggle on={c.active} onClick={() => store.toggleCoupon(c.id)} />
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flex: "none" }}>
+              <button onClick={() => setEditing(c)} title={ar ? "تعديل" : "Edit"} style={couponIconBtn}><Icon name="edit" size={16} /></button>
+              <button onClick={() => del(c)} title={ar ? "حذف" : "Delete"} style={{ ...couponIconBtn, color: "var(--sale)" }}><Icon name="trash" size={16} /></button>
+              <Toggle on={c.active} onClick={() => store.toggleCoupon(c.id)} />
+            </div>
           </div>
         ))}
         {rows.length === 0 && <div style={{ padding: 40, textAlign: "center", color: "var(--text-3)", background: "var(--surface)", border: "1px dashed var(--line)", borderRadius: "var(--r-lg)" }}>{ar ? "لا توجد كوبونات بعد — أضف كوبونك الأول." : "No coupons yet — add your first one."}</div>}
       </div>
-      {modal && <NewCouponModal lang={lang} vendorId={vendorId} onClose={() => setModal(false)} onAdd={(c) => { store.addVendorCoupon(c); setModal(false); }} />}
+      {modal && <NewCouponModal lang={lang} vendorId={vendorId} onClose={() => setModal(false)} onAdd={(c) => { store.addVendorCoupon(c); setModal(false); }} onSave={store.updateCoupon} />}
+      {editing && <NewCouponModal lang={lang} vendorId={vendorId} edit={editing} onClose={() => setEditing(null)} onAdd={(c) => { store.addVendorCoupon(c); setEditing(null); }} onSave={(id, patch) => { store.updateCoupon(id, patch); setEditing(null); }} />}
     </div>
   );
 }
+const couponIconBtn: React.CSSProperties = { width: 34, height: 34, borderRadius: 9, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--text-2)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" };
 
-function NewCouponModal({ lang, vendorId, onClose, onAdd }: { lang: string; vendorId: string; onClose: () => void; onAdd: (c: Coupon) => void }) {
+function NewCouponModal({ lang, vendorId, edit, onClose, onAdd, onSave }: { lang: string; vendorId: string; edit?: Coupon; onClose: () => void; onAdd: (c: Coupon) => void; onSave?: (id: string, patch: Partial<Coupon>) => void }) {
   const ar = lang === "ar";
   const v = VENDORS[vendorId];
   const vName = v ? (ar ? v.ar : v.en) : vendorId;
-  const [code, setCode] = useState("");
-  const [type, setType] = useState<CouponType>("percent");
-  const [pct, setPct] = useState(10);       // percent % or fixed amount ﷼
-  const [buyQty, setBuyQty] = useState(2);  // "by item": buy this many
-  const [giftQty, setGiftQty] = useState(1); // "by item": get this many free
-  const [limit, setLimit] = useState(100);
+  const [code, setCode] = useState(edit?.code ?? "");
+  const [type, setType] = useState<CouponType>(edit?.type ?? "percent");
+  const [pct, setPct] = useState(edit && edit.type !== "item" ? edit.pct : 10); // percent % or fixed amount ﷼
+  const [buyQty, setBuyQty] = useState(edit?.buyQty ?? 2);  // "by item": buy this many
+  const [giftQty, setGiftQty] = useState(edit?.giftQty ?? 1); // "by item": get this many free
+  const [limit, setLimit] = useState(edit?.limit ?? 100);
   const [until, setUntil] = useState("");
   const submit = () => {
     const c = (code || "CODE" + Math.floor(Math.random() * 900 + 100)).toUpperCase().replace(/\s+/g, "");
-    let untilAr = "غير محدّد", untilEn = "Open";
+    // keep the existing expiry label when editing without picking a new date
+    let untilAr = edit?.until.ar ?? "غير محدّد", untilEn = edit?.until.en ?? "Open";
     if (until) {
       const d = new Date(until + "T00:00:00");
       untilAr = d.toLocaleDateString("ar-EG", { day: "numeric", month: "long", year: "numeric" });
@@ -541,8 +552,7 @@ function NewCouponModal({ lang, vendorId, onClose, onAdd }: { lang: string; vend
     if (type === "percent") { arT = `خصم ${pct}٪ — ${vName}`; enT = `${pct}% off — ${vName}`; }
     else if (type === "fixed") { arT = `خصم ${pct} ﷼ — ${vName}`; enT = `${pct} SAR off — ${vName}`; }
     else { arT = `اشترِ ${buyQty} واحصل على ${giftQty} مجاناً — ${vName}`; enT = `Buy ${buyQty} get ${giftQty} free — ${vName}`; }
-    onAdd({
-      id: "c" + Date.now(),
+    const fields = {
       code: c,
       vendor: vendorId,
       ar: arT,
@@ -551,11 +561,11 @@ function NewCouponModal({ lang, vendorId, onClose, onAdd }: { lang: string; vend
       pct: type === "item" ? 0 : pct,
       buyQty: type === "item" ? buyQty : undefined,
       giftQty: type === "item" ? giftQty : undefined,
-      used: 0,
       limit,
-      active: true,
       until: { ar: untilAr, en: untilEn },
-    });
+    };
+    if (edit && onSave) { onSave(edit.id, fields); }
+    else { onAdd({ id: "c" + Date.now(), used: 0, active: true, ...fields }); }
   };
   const field: React.CSSProperties = { width: "100%", padding: "10px 12px", borderRadius: 10, border: "1.5px solid var(--line)", background: "var(--surface)", color: "var(--text)", fontSize: 14 };
   const label: React.CSSProperties = { fontSize: 12.5, fontWeight: 700, color: "var(--text-2)", marginBottom: 6, display: "block" };
@@ -564,7 +574,7 @@ function NewCouponModal({ lang, vendorId, onClose, onAdd }: { lang: string; vend
     <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(10,12,16,.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
       <div onClick={(e) => e.stopPropagation()} dir={ar ? "rtl" : "ltr"} style={{ width: "100%", maxWidth: 440, background: "var(--surface)", borderRadius: "var(--r-xl)", border: "1px solid var(--line)", boxShadow: "var(--shadow-lg)", padding: 24 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{ar ? "كوبون خصم جديد" : "New discount coupon"}</h3>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{edit ? (ar ? "تعديل الكوبون" : "Edit coupon") : (ar ? "كوبون خصم جديد" : "New discount coupon")}</h3>
           <button onClick={onClose} style={{ background: "transparent", border: "none", color: "var(--text-3)", cursor: "pointer" }}><Icon name="x" size={20} /></button>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -592,7 +602,7 @@ function NewCouponModal({ lang, vendorId, onClose, onAdd }: { lang: string; vend
           <div><label style={label}>{ar ? "صالح حتى" : "Valid until"}</label><input type="date" min={new Date().toISOString().slice(0, 10)} value={until} onChange={(e) => setUntil(e.target.value)} style={field} /></div>
         </div>
         <div style={{ display: "flex", gap: 10, marginTop: 22 }}>
-          <Btn onClick={submit} style={{ flex: 1 }}>{ar ? "إضافة الكوبون" : "Add coupon"}</Btn>
+          <Btn onClick={submit} style={{ flex: 1 }}>{edit ? (ar ? "حفظ التعديلات" : "Save changes") : (ar ? "إضافة الكوبون" : "Add coupon")}</Btn>
           <Btn variant="outline" onClick={onClose}>{ar ? "إلغاء" : "Cancel"}</Btn>
         </div>
       </div>

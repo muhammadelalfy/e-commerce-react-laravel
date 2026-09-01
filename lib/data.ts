@@ -277,6 +277,50 @@ export const CITIES: City[] = [
   { id: "abha", ar: "أبها", en: "Abha", stores: 21, x: 40, y: 80 },
 ];
 
+// Branches/locations per vendor across cities — used on the store profile to
+// show the store's locations in the visitor's city. cityAr matches CITIES.ar.
+export interface StoreBranch { id: string; ar: string; en: string; cityAr: string; cityEn: string; addressAr: string; addressEn: string; phone: string; }
+export const STORE_LOCATIONS: Record<string, StoreBranch[]> = {
+  techzone: [
+    { id: "tz-r1", ar: "تك زون — الفرع الرئيسي", en: "Tech Zone — Main branch", cityAr: "الرياض", cityEn: "Riyadh", addressAr: "شارع الملك فهد، العليا", addressEn: "King Fahd Rd, Olaya", phone: "011 234 5678" },
+    { id: "tz-r2", ar: "تك زون — النخيل مول", en: "Tech Zone — Nakheel Mall", cityAr: "الرياض", cityEn: "Riyadh", addressAr: "طريق الملك عبدالله", addressEn: "King Abdullah Rd", phone: "011 765 4321" },
+    { id: "tz-j1", ar: "تك زون — جدة", en: "Tech Zone — Jeddah", cityAr: "جدة", cityEn: "Jeddah", addressAr: "شارع التحلية", addressEn: "Tahlia St", phone: "012 345 6789" },
+    { id: "tz-d1", ar: "تك زون — الدمام", en: "Tech Zone — Dammam", cityAr: "الدمام", cityEn: "Dammam", addressAr: "الكورنيش", addressEn: "Corniche", phone: "013 456 7890" },
+  ],
+  aloud: [
+    { id: "al-j1", ar: "العربية للعود — الفرع الرئيسي", en: "Al-Arabia Oud — Main", cityAr: "جدة", cityEn: "Jeddah", addressAr: "شارع الأندلس", addressEn: "Andalus St", phone: "012 111 2233" },
+    { id: "al-m1", ar: "العربية للعود — مكة", en: "Al-Arabia Oud — Makkah", cityAr: "مكة", cityEn: "Makkah", addressAr: "العزيزية", addressEn: "Aziziyah", phone: "012 222 3344" },
+    { id: "al-r1", ar: "العربية للعود — الرياض", en: "Al-Arabia Oud — Riyadh", cityAr: "الرياض", cityEn: "Riyadh", addressAr: "الرياض بارك", addressEn: "Riyadh Park", phone: "011 333 4455" },
+  ],
+  anaqa: [
+    { id: "an-r1", ar: "أناقة — الرياض", en: "Anaqa — Riyadh", cityAr: "الرياض", cityEn: "Riyadh", addressAr: "بوليفارد", addressEn: "Boulevard", phone: "011 444 5566" },
+    { id: "an-j1", ar: "أناقة — جدة", en: "Anaqa — Jeddah", cityAr: "جدة", cityEn: "Jeddah", addressAr: "الرد سي مول", addressEn: "Red Sea Mall", phone: "012 555 6677" },
+  ],
+  nakhba: [
+    { id: "nk-d1", ar: "النخبة — الدمام", en: "Al-Nakhba — Dammam", cityAr: "الدمام", cityEn: "Dammam", addressAr: "شارع الأمير محمد", addressEn: "Prince Mohammed St", phone: "013 666 7788" },
+    { id: "nk-r1", ar: "النخبة — الرياض", en: "Al-Nakhba — Riyadh", cityAr: "الرياض", cityEn: "Riyadh", addressAr: "حي الملقا", addressEn: "Al-Malqa", phone: "011 777 8899" },
+  ],
+  diyar: [
+    { id: "dy-r1", ar: "ديار العقارية — الرياض", en: "Diyar Realty — Riyadh", cityAr: "الرياض", cityEn: "Riyadh", addressAr: "طريق الملك سلمان", addressEn: "King Salman Rd", phone: "011 888 9900" },
+  ],
+  smarthub: [
+    { id: "sh-r1", ar: "سمارت هَب — الرياض", en: "Smart Hub — Riyadh", cityAr: "الرياض", cityEn: "Riyadh", addressAr: "غرناطة مول", addressEn: "Granada Mall", phone: "011 999 0011" },
+  ],
+  volt: [
+    { id: "vo-d1", ar: "فولت — الدمام", en: "Volt — Dammam", cityAr: "الدمام", cityEn: "Dammam", addressAr: "الظهران مول", addressEn: "Dhahran Mall", phone: "013 121 2323" },
+  ],
+  roaya: [
+    { id: "ro-m1", ar: "رؤية العطور — مكة", en: "Roaya — Makkah", cityAr: "مكة", cityEn: "Makkah", addressAr: "أجياد", addressEn: "Ajyad", phone: "012 343 4545" },
+  ],
+  tarateel: [
+    { id: "ta-j1", ar: "تراتيل — جدة", en: "Tarateel — Jeddah", cityAr: "جدة", cityEn: "Jeddah", addressAr: "المالكي", addressEn: "Al-Malki", phone: "012 565 6767" },
+  ],
+  mazaq: [
+    { id: "mz-r1", ar: "مذاق — الرياض", en: "Mazaq — Riyadh", cityAr: "الرياض", cityEn: "Riyadh", addressAr: "حي الياسمين", addressEn: "Al-Yasmin", phone: "011 787 8989" },
+  ],
+};
+export function branchesOf(vendorId: string): StoreBranch[] { return STORE_LOCATIONS[vendorId] || []; }
+
 export interface Plan { id: string; ar: string; en: string; price: number; active: boolean; desc?: string; start?: string; }
 export const PLANS: Plan[] = [
   { id: "basic", ar: "أساسي", en: "Basic", price: 0, active: false, desc: "<ul><li>متجر واحد</li><li>حتى ٥ منتجات</li><li>دعم عبر البريد</li></ul>" },
