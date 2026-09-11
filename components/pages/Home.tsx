@@ -346,11 +346,11 @@ function CategoryBanners({ go }: { go: Go }) {
           const disc = bestDiscount(v.id);
           return (
             <button key={v.id} onClick={() => { go("vendor", v.id); window.scrollTo({ top: 0 }); }}
-              style={{ display: "flex", alignItems: "center", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-sm)", padding: "12px 16px", cursor: "pointer", textAlign: "start", color: "var(--text)" }}
+              style={{ display: "grid", gridTemplateColumns: disc > 0 ? "auto 1fr auto" : "1fr auto", alignItems: "center", gap: 14, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-sm)", padding: "12px 16px", cursor: "pointer", textAlign: "start", color: "var(--text)" }}
               onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "var(--shadow-md)"; e.currentTarget.style.borderColor = "var(--brand)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "var(--shadow-sm)"; e.currentTarget.style.borderColor = "var(--line)"; }}>
-              {/* left zone: logo + name/rating — flex:1 so the offer badge below stays centred */}
-              <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 14 }}>
+              {/* start: logo + name/rating — sized to its content */}
+              <div style={{ minWidth: 0, display: "flex", alignItems: "center", gap: 14 }}>
                 <span style={{ width: 46, height: 46, borderRadius: 12, overflow: "hidden", flex: "none", background: v.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
                   {bgOf(v.id, openCat)
                     // eslint-disable-next-line @next/next/no-img-element
@@ -358,24 +358,23 @@ function CategoryBanners({ go }: { go: Go }) {
                     : <Icon name="store" size={22} />}
                 </span>
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 800, fontSize: 15, fontFamily: "var(--font-display)" }}>{ar ? v.ar : v.en}</div>
-                  <div style={{ fontSize: 12, color: "var(--text-3)", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{ fontWeight: 800, fontSize: 15, fontFamily: "var(--font-display)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ar ? v.ar : v.en}</div>
+                  <div style={{ fontSize: 12, color: "var(--text-3)", marginTop: 4, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                     <Stars value={v.rating} size={11} />
-                    {disc > 0 && <span style={{ background: "var(--gold-soft)", color: "var(--gold-deep)", fontWeight: 800, fontSize: 10.5, padding: "1px 7px", borderRadius: 999 }}>{ar ? "عروض" : "Offers"}</span>}
+                    {disc > 0 && <span style={{ background: "var(--gold-soft)", color: "var(--gold-deep)", fontWeight: 800, fontSize: 10.5, padding: "1px 7px", borderRadius: 999, whiteSpace: "nowrap" }}>{ar ? "عروض" : "Offers"}</span>}
                   </div>
                 </div>
               </div>
-              {/* middle: big offer % badge — truly centred in the row (equal flex on both sides) */}
+              {/* middle: big offer % badge — its grid track is the only flexible one, so it
+                  sits centred in the leftover space between the store block and the arrow. */}
               {disc > 0 && (
-                <span style={{ flex: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minWidth: 56, padding: "4px 10px", margin: "0 14px", borderRadius: 12, background: "var(--brand-soft)", color: "var(--brand)" }}>
+                <span style={{ justifySelf: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minWidth: 56, padding: "4px 10px", borderRadius: 12, background: "var(--brand-soft)", color: "var(--brand)" }}>
                   <span className="num" style={{ fontWeight: 800, fontSize: 18, lineHeight: 1 }}>٪{disc}</span>
                   <span style={{ fontSize: 9.5, fontWeight: 700, marginTop: 2 }}>{ar ? "خصم" : "OFF"}</span>
                 </span>
               )}
-              {/* right zone: matches the left zone's flex so the badge lands at the midpoint */}
-              <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
-                <Icon name="arrow" size={16} style={{ color: "var(--text-3)" }} />
-              </div>
+              {/* end: arrow, sized to its content */}
+              <Icon name="arrow" size={16} style={{ color: "var(--text-3)" }} />
             </button>
           );
         })}

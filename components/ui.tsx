@@ -240,9 +240,10 @@ export function CityMultiSelect({ value, onChange, ar }: { value: string[]; onCh
             {ar ? "كل المدن" : "All cities"}
           </label>
           {CITIES.map((c) => {
-            // individual cities only show checked once a specific selection exists
-            // ("all cities" is represented solely by the row above, not by ticking every city)
-            const checked = !allSelected && value.includes(c.id);
+            // when "all cities" is active every city shows checked too (visually
+            // matches "all"); clicking one still starts a fresh single-city pick
+            // (see toggleCity) rather than deselecting just that one city.
+            const checked = allSelected || value.includes(c.id);
             return (
               <label key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, cursor: "pointer", fontSize: 13.5, color: "var(--text)" }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-2)")}
