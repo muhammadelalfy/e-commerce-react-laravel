@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { createStore } from "./createStore";
 
 /**
  * Shared, persisted store for VENDOR-sponsored offers (advertisements).
@@ -30,40 +30,18 @@ const SEED: Offer[] = [
   { id: "of2", vendor: "aloud", ar: "عرض العود الفاخر", en: "Premium oud offer", cat: "perfumes", subcat: "oud", img: IMG + "cat-beauty.png", discount: 30, start: "2026-07-20", end: "2026-08-20", active: true },
 ];
 
-let offers: Offer[] = SEED;
-let hydrated = false;
-
-const listeners = new Set<() => void>();
-const persist = () => { if (typeof window !== "undefined") { try { localStorage.setItem(LS_KEY, JSON.stringify(offers)); } catch { /* quota */ } } };
-const emit = () => { persist(); listeners.forEach((l) => l()); };
-
-function hydrateOnce() {
-  if (hydrated || typeof window === "undefined") return;
-  hydrated = true;
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (raw) { const saved = JSON.parse(raw); if (Array.isArray(saved)) offers = saved; listeners.forEach((l) => l()); }
-  } catch { /* ignore */ }
-}
+const store = createStore<Offer[]>({ key: LS_KEY, initial: SEED });
 
 export function addOffer(o: Omit<Offer, "id">) {
-  offers = [{ ...o, id: "of" + Date.now() }, ...offers];
-  emit();
+  store.set([{ ...o, id: "of" + Date.now() }, ...store.get()]);
 }
 export function updateOffer(id: string, patch: Partial<Offer>) {
-  offers = offers.map((o) => (o.id === id ? { ...o, ...patch } : o));
-  emit();
+  store.set(store.get().map((o) => (o.id === id ? { ...o, ...patch } : o)));
 }
-export function removeOffer(id: string) { offers = offers.filter((o) => o.id !== id); emit(); }
-export function offersOf(vendorId: string) { return offers.filter((o) => o.vendor === vendorId); }
+export function removeOffer(id: string) { store.set(store.get().filter((o) => o.id !== id)); }
+export function offersOf(vendorId: string) { return store.get().filter((o) => o.vendor === vendorId); }
 
 export function useOfferStore() {
-  const [, force] = useState(0);
-  useEffect(() => {
-    const l = () => force((n) => n + 1);
-    listeners.add(l);
-    hydrateOnce();
-    return () => { listeners.delete(l); };
-  }, []);
+  const offers = store.useStore();
   return { offers, addOffer, updateOffer, removeOffer, offersOf };
 }

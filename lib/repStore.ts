@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { createStore } from "./createStore";
 
 /**
  * Shared, persisted store for delegators / representatives (المندوبون).
@@ -16,32 +16,14 @@ const SEED: Rep[] = [
   { id: "rep-fahd", ar: "فهد الدوسري", en: "Fahd Al-Dosari", phone: "0533456789", city: "الدمام" },
 ];
 
-let reps: Rep[] = SEED;
-let hydrated = false;
+const store = createStore<Rep[]>({ key: LS_KEY, initial: SEED });
+// original behaviour: an empty saved list does NOT clear the seed reps
+store.hydrateOnce((saved) => (Array.isArray(saved) && saved.length ? (saved as Rep[]) : undefined));
 
-const listeners = new Set<() => void>();
-const persist = () => { if (typeof window !== "undefined") { try { localStorage.setItem(LS_KEY, JSON.stringify(reps)); } catch { /* quota */ } } };
-const emit = () => { persist(); listeners.forEach((l) => l()); };
-
-function hydrateOnce() {
-  if (hydrated || typeof window === "undefined") return;
-  hydrated = true;
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (raw) { const saved = JSON.parse(raw); if (Array.isArray(saved) && saved.length) reps = saved; listeners.forEach((l) => l()); }
-  } catch { /* ignore */ }
-}
-
-export function addRep(r: Rep) { reps = [...reps, r]; emit(); }
-export function removeRep(id: string) { reps = reps.filter((r) => r.id !== id); emit(); }
+export function addRep(r: Rep) { store.set([...store.get(), r]); }
+export function removeRep(id: string) { store.set(store.get().filter((r) => r.id !== id)); }
 
 export function useRepStore() {
-  const [, force] = useState(0);
-  useEffect(() => {
-    const l = () => force((n) => n + 1);
-    listeners.add(l);
-    hydrateOnce();
-    return () => { listeners.delete(l); };
-  }, []);
+  const reps = store.useStore();
   return { reps, addRep, removeRep };
 }

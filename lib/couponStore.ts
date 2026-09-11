@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { createStore } from "./createStore";
 import { COUPONS, type Coupon } from "./data";
 
 /**
@@ -17,44 +17,35 @@ export interface AdminNotice {
   read: boolean;
 }
 
-let coupons: Coupon[] = COUPONS.map((c) => ({ ...c }));
-let notices: AdminNotice[] = [];
-const listeners = new Set<() => void>();
-const emit = () => listeners.forEach((l) => l());
+interface CouponState { coupons: Coupon[]; notices: AdminNotice[]; }
+// no `key` → in-memory only, same as the original (not persisted to localStorage)
+const store = createStore<CouponState>({ initial: { coupons: COUPONS.map((c) => ({ ...c })), notices: [] } });
 
 export function addVendorCoupon(c: Coupon) {
-  coupons = [c, ...coupons];
-  notices = [
-    { id: "cn" + Date.now(), vendor: c.vendor, code: c.code, pct: c.pct, time: Date.now(), read: false },
-    ...notices,
-  ];
-  emit();
+  const s = store.get();
+  const notice: AdminNotice = { id: "cn" + Date.now(), vendor: c.vendor, code: c.code, pct: c.pct, time: Date.now(), read: false };
+  store.set({ coupons: [c, ...s.coupons], notices: [notice, ...s.notices] });
 }
 /** admin-created coupon (no vendor notification) */
-export function addCoupon(c: Coupon) { coupons = [c, ...coupons]; emit(); }
+export function addCoupon(c: Coupon) { const s = store.get(); store.set({ ...s, coupons: [c, ...s.coupons] }); }
 export function updateCoupon(id: string, patch: Partial<Coupon>) {
-  coupons = coupons.map((c) => (c.id === id ? { ...c, ...patch } : c));
-  emit();
+  const s = store.get();
+  store.set({ ...s, coupons: s.coupons.map((c) => (c.id === id ? { ...c, ...patch } : c)) });
 }
-export function removeCoupon(id: string) { coupons = coupons.filter((c) => c.id !== id); emit(); }
+export function removeCoupon(id: string) { const s = store.get(); store.set({ ...s, coupons: s.coupons.filter((c) => c.id !== id) }); }
 export function toggleCoupon(id: string) {
-  coupons = coupons.map((c) => (c.id === id ? { ...c, active: !c.active } : c));
-  emit();
+  const s = store.get();
+  store.set({ ...s, coupons: s.coupons.map((c) => (c.id === id ? { ...c, active: !c.active } : c)) });
 }
 export function markNoticesRead() {
-  notices = notices.map((n) => ({ ...n, read: true }));
-  emit();
+  const s = store.get();
+  store.set({ ...s, notices: s.notices.map((n) => ({ ...n, read: true })) });
 }
-export function getCoupons() { return coupons; }
-export function getNotices() { return notices; }
+export function getCoupons() { return store.get().coupons; }
+export function getNotices() { return store.get().notices; }
 
 /** subscribe to the shared coupon store from any component */
 export function useCouponStore() {
-  const [, force] = useState(0);
-  useEffect(() => {
-    const l = () => force((n) => n + 1);
-    listeners.add(l);
-    return () => { listeners.delete(l); };
-  }, []);
+  const { coupons, notices } = store.useStore();
   return { coupons, notices, addVendorCoupon, addCoupon, updateCoupon, removeCoupon, toggleCoupon, markNoticesRead };
 }

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { createStore } from "./createStore";
 import { CITIES } from "./data";
 import { GULF_COUNTRIES } from "./countries";
 
@@ -19,58 +19,41 @@ const SEED_CITIES: GeoCity[] = CITIES.map((c) => ({ id: c.id, ar: c.ar, en: c.en
 
 const LS_KEY = "mash_geo";
 
+interface GeoState { countries: GeoCountry[]; cities: GeoCity[]; }
+
 // NOTE: start from SEED on BOTH server and client so the first client render
 // matches the server HTML (no hydration mismatch). We hydrate from localStorage
 // once, inside a client effect (hydrateOnce), after mount.
-let countries: GeoCountry[] = SEED_COUNTRIES;
-let cities: GeoCity[] = SEED_CITIES;
-let hydrated = false;
+const store = createStore<GeoState>({ key: LS_KEY, initial: { countries: SEED_COUNTRIES, cities: SEED_CITIES } });
+store.hydrateOnce((saved, current) => {
+  const s = saved as Partial<GeoState> | null;
+  if (!s) return undefined;
+  return {
+    countries: Array.isArray(s.countries) && s.countries.length ? s.countries : current.countries,
+    cities: Array.isArray(s.cities) ? s.cities : current.cities,
+  };
+});
 
-const listeners = new Set<() => void>();
-const persist = () => { if (typeof window !== "undefined") { try { localStorage.setItem(LS_KEY, JSON.stringify({ countries, cities })); } catch { /* quota */ } } };
-const emit = () => { persist(); listeners.forEach((l) => l()); };
-
-/** hydrate from localStorage exactly once, on the client, after mount */
-function hydrateOnce() {
-  if (hydrated || typeof window === "undefined") return;
-  hydrated = true;
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (raw) {
-      const saved = JSON.parse(raw);
-      if (Array.isArray(saved?.countries) && saved.countries.length) countries = saved.countries;
-      if (Array.isArray(saved?.cities)) cities = saved.cities;
-      listeners.forEach((l) => l());
-    }
-  } catch { /* ignore corrupt storage */ }
-}
-
-export function addCountry(c: GeoCountry) { countries = [c, ...countries]; emit(); }
+export function addCountry(c: GeoCountry) { const s = store.get(); store.set({ ...s, countries: [c, ...s.countries] }); }
 /** add a country together with a list of city names (from the external API) */
 export function addCountryWithCities(c: GeoCountry, cityNames: string[]) {
-  countries = [c, ...countries];
+  const s = store.get();
   const newCities: GeoCity[] = cityNames.map((n, i) => ({ id: c.id + "-" + i, ar: n, en: n, stores: 0, country: c.id }));
-  cities = [...newCities, ...cities];
-  emit();
+  store.set({ countries: [c, ...s.countries], cities: [...newCities, ...s.cities] });
 }
 export function removeCountry(id: string) {
-  countries = countries.filter((c) => c.id !== id);
-  // orphaned cities go with their country
-  cities = cities.filter((c) => c.country !== id);
-  emit();
+  const s = store.get();
+  store.set({
+    countries: s.countries.filter((c) => c.id !== id),
+    cities: s.cities.filter((c) => c.country !== id), // orphaned cities go with their country
+  });
 }
-export function addCity(c: GeoCity) { cities = [c, ...cities]; emit(); }
-export function removeCity(id: string) { cities = cities.filter((c) => c.id !== id); emit(); }
-export function citiesOf(countryId: string) { return cities.filter((c) => c.country === countryId); }
+export function addCity(c: GeoCity) { const s = store.get(); store.set({ ...s, cities: [c, ...s.cities] }); }
+export function removeCity(id: string) { const s = store.get(); store.set({ ...s, cities: s.cities.filter((c) => c.id !== id) }); }
+export function citiesOf(countryId: string) { return store.get().cities.filter((c) => c.country === countryId); }
 
 /** subscribe to the shared geo store */
 export function useGeoStore() {
-  const [, force] = useState(0);
-  useEffect(() => {
-    const l = () => force((n) => n + 1);
-    listeners.add(l);
-    hydrateOnce();
-    return () => { listeners.delete(l); };
-  }, []);
+  const { countries, cities } = store.useStore();
   return { countries, cities, addCountry, addCountryWithCities, removeCountry, addCity, removeCity, citiesOf };
 }

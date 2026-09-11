@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { createStore } from "./createStore";
 
 /**
  * Per-vendor profile extras that the store owner sets from their dashboard
@@ -10,34 +10,18 @@ import { useEffect, useState } from "react";
 export interface Brochure { name: string; type: string; data: string; } // data = data: URL
 
 const KEY = "mash_vendor_profiles";
-let brochures: Record<string, Brochure> = {};
-let hydrated = false;
-const listeners = new Set<() => void>();
-const emit = () => { persist(); listeners.forEach((l) => l()); };
+const store = createStore<Record<string, Brochure>>({ key: KEY, initial: {} });
 
-function persist() {
-  if (typeof window === "undefined") return;
-  try { localStorage.setItem(KEY, JSON.stringify(brochures)); } catch {}
+export function setBrochure(vendorId: string, b: Brochure) { store.set({ ...store.get(), [vendorId]: b }); }
+export function removeBrochure(vendorId: string) {
+  const n = { ...store.get() };
+  delete n[vendorId];
+  store.set(n);
 }
-function hydrateOnce() {
-  if (hydrated || typeof window === "undefined") return;
-  hydrated = true;
-  try { const s = localStorage.getItem(KEY); if (s) brochures = JSON.parse(s); } catch {}
-}
-
-export function setBrochure(vendorId: string, b: Brochure) { brochures = { ...brochures, [vendorId]: b }; emit(); }
-export function removeBrochure(vendorId: string) { const n = { ...brochures }; delete n[vendorId]; brochures = n; emit(); }
-export function brochureOf(vendorId: string): Brochure | undefined { return brochures[vendorId]; }
+export function brochureOf(vendorId: string): Brochure | undefined { return store.get()[vendorId]; }
 
 /** subscribe to the shared vendor-profile store from any component */
 export function useVendorProfileStore() {
-  const [, force] = useState(0);
-  useEffect(() => {
-    hydrateOnce();
-    force((n) => n + 1); // re-render with hydrated data on mount
-    const l = () => force((n) => n + 1);
-    listeners.add(l);
-    return () => { listeners.delete(l); };
-  }, []);
+  const brochures = store.useStore();
   return { brochures, setBrochure, removeBrochure, brochureOf };
 }

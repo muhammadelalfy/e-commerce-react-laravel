@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { createStore } from "./createStore";
 
 /**
  * Advertisement packages (admin-managed) + vendor subscriptions.
@@ -26,8 +26,9 @@ export interface AdPackage { id: string; ar: string; en: string; ads: number; pr
 /** a vendor's subscription: which package + the chosen date range */
 export interface AdSub { pkg: string; start: string; end: string; autoRenew?: boolean; }
 
-const LS_PKG = "mash_ad_packages";
-const LS_SUB = "mash_ad_subs"; // { [vendorId]: AdSub }
+// packages + subscriptions are always read/written together, so they share one
+// persisted key (was two separate keys — an internal detail, not a public API).
+const LS_KEY = "mash_ad_packages_and_subs";
 
 const SEED: AdPackage[] = [
   { id: "adp-week", ar: "باقة أسبوعية", en: "Weekly", ads: 3, price: 99, period: "week", active: true },
@@ -43,84 +44,81 @@ export function addDays(iso: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-let packages: AdPackage[] = SEED;
+interface AdState { packages: AdPackage[]; subs: Record<string, AdSub>; }
+
 // demo subscriptions so the admin "subscribed stores" table isn't empty:
 // techzone = active monthly, aloud = expired weekly (shows the Extend button)
 const _today = new Date().toISOString().slice(0, 10);
-let subs: Record<string, AdSub> = {
+const SEED_SUBS: Record<string, AdSub> = {
   techzone: { pkg: "adp-month", start: addDays(_today, -5), end: addDays(_today, 25) },
   aloud: { pkg: "adp-week", start: addDays(_today, -14), end: addDays(_today, -7) },
 };
-let hydrated = false;
 
-const listeners = new Set<() => void>();
-const persist = () => {
-  if (typeof window === "undefined") return;
-  try { localStorage.setItem(LS_PKG, JSON.stringify(packages)); localStorage.setItem(LS_SUB, JSON.stringify(subs)); } catch { /* quota */ }
-};
-const emit = () => { persist(); listeners.forEach((l) => l()); };
+const store = createStore<AdState>({ key: LS_KEY, initial: { packages: SEED, subs: SEED_SUBS } });
+store.hydrateOnce((saved, current) => {
+  const s = saved as Partial<AdState> | null;
+  if (!s) return undefined;
+  return {
+    packages: Array.isArray(s.packages) && s.packages.length ? s.packages : current.packages,
+    subs: s.subs && typeof s.subs === "object" ? s.subs : current.subs,
+  };
+});
 
-function hydrateOnce() {
-  if (hydrated || typeof window === "undefined") return;
-  hydrated = true;
-  try {
-    const p = localStorage.getItem(LS_PKG); if (p) { const s = JSON.parse(p); if (Array.isArray(s) && s.length) packages = s; }
-    const s = localStorage.getItem(LS_SUB); if (s) { const o = JSON.parse(s); if (o && typeof o === "object") subs = o; }
-    listeners.forEach((l) => l());
-  } catch { /* ignore */ }
+export function addPackage(p: AdPackage) { const s = store.get(); store.set({ ...s, packages: [...s.packages, p] }); }
+export function updatePackage(id: string, patch: Partial<AdPackage>) {
+  const s = store.get();
+  store.set({ ...s, packages: s.packages.map((p) => (p.id === id ? { ...p, ...patch } : p)) });
 }
-
-export function addPackage(p: AdPackage) { packages = [...packages, p]; emit(); }
-export function updatePackage(id: string, patch: Partial<AdPackage>) { packages = packages.map((p) => (p.id === id ? { ...p, ...patch } : p)); emit(); }
-export function removePackage(id: string) { packages = packages.filter((p) => p.id !== id); emit(); }
+export function removePackage(id: string) { const s = store.get(); store.set({ ...s, packages: s.packages.filter((p) => p.id !== id) }); }
 
 /** subscribe from a chosen start date; the end date = start + package period */
 export function subscribe(vendorId: string, packageId: string, start: string) {
-  const p = packages.find((x) => x.id === packageId);
-  const s = start || new Date().toISOString().slice(0, 10);
-  const end = p ? addDays(s, PERIOD_DAYS[p.period]) : addDays(s, 30);
-  subs = { ...subs, [vendorId]: { pkg: packageId, start: s, end } };
-  emit();
+  const s = store.get();
+  const p = s.packages.find((x) => x.id === packageId);
+  const st = start || new Date().toISOString().slice(0, 10);
+  const end = p ? addDays(st, PERIOD_DAYS[p.period]) : addDays(st, 30);
+  store.set({ ...s, subs: { ...s.subs, [vendorId]: { pkg: packageId, start: st, end } } });
 }
-export function unsubscribe(vendorId: string) { const n = { ...subs }; delete n[vendorId]; subs = n; emit(); }
+export function unsubscribe(vendorId: string) {
+  const s = store.get();
+  const n = { ...s.subs };
+  delete n[vendorId];
+  store.set({ ...s, subs: n });
+}
 /** extend a vendor's subscription by its package period from today (renewal) */
 export function extend(vendorId: string) {
-  const sub = subs[vendorId]; if (!sub) return;
-  const p = packages.find((x) => x.id === sub.pkg);
+  const s = store.get();
+  const sub = s.subs[vendorId]; if (!sub) return;
+  const p = s.packages.find((x) => x.id === sub.pkg);
   const start = new Date().toISOString().slice(0, 10);
   const end = addDays(start, p ? PERIOD_DAYS[p.period] : 30);
-  subs = { ...subs, [vendorId]: { ...sub, start, end } };
-  emit();
+  store.set({ ...s, subs: { ...s.subs, [vendorId]: { ...sub, start, end } } });
 }
 /** toggle auto-renewal on a specific subscription */
 export function toggleSubAutoRenew(vendorId: string) {
-  const sub = subs[vendorId]; if (!sub) return;
-  subs = { ...subs, [vendorId]: { ...sub, autoRenew: !sub.autoRenew } };
-  emit();
+  const s = store.get();
+  const sub = s.subs[vendorId]; if (!sub) return;
+  store.set({ ...s, subs: { ...s.subs, [vendorId]: { ...sub, autoRenew: !sub.autoRenew } } });
 }
 /** all vendor subscriptions with their package + expiry & auto-renew flags */
 export function allSubs(): { vendor: string; pkg: AdPackage | null; start: string; end: string; expired: boolean; autoRenew: boolean }[] {
+  const s = store.get();
   const today = new Date().toISOString().slice(0, 10);
-  return Object.entries(subs).map(([vendor, s]) => ({
-    vendor, pkg: packages.find((p) => p.id === s.pkg) ?? null,
-    start: s.start, end: s.end, expired: !!s.end && s.end < today, autoRenew: !!s.autoRenew,
+  return Object.entries(s.subs).map(([vendor, sub]) => ({
+    vendor, pkg: s.packages.find((p) => p.id === sub.pkg) ?? null,
+    start: sub.start, end: sub.end, expired: !!sub.end && sub.end < today, autoRenew: !!sub.autoRenew,
   }));
 }
 /** current subscription = the package + the chosen date range (or null) */
 export function subOf(vendorId: string): (AdPackage & { start: string; end: string }) | null {
-  const sub = subs[vendorId];
+  const s = store.get();
+  const sub = s.subs[vendorId];
   if (!sub) return null;
-  const p = packages.find((x) => x.id === sub.pkg);
+  const p = s.packages.find((x) => x.id === sub.pkg);
   return p ? { ...p, start: sub.start, end: sub.end } : null;
 }
 
 export function useAdPackageStore() {
-  const [, force] = useState(0);
-  useEffect(() => {
-    const l = () => force((n) => n + 1);
-    listeners.add(l);
-    hydrateOnce();
-    return () => { listeners.delete(l); };
-  }, []);
+  const { packages, subs } = store.useStore();
   return { packages, subs, addPackage, updatePackage, removePackage, subscribe, unsubscribe, extend, toggleSubAutoRenew, subOf, allSubs };
 }

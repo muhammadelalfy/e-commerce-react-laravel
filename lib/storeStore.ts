@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { createStore } from "./createStore";
 
 /**
  * Shared, persisted store for NEW vendor/store registrations awaiting admin
@@ -27,39 +27,17 @@ const SEED: StoreApplication[] = [
   { id: "app2", ar: "بيت العطور", en: "House of Perfumes", cat: "perfumes", city: "جدة", owner: "سارة القحطاني", cr: "4030112233", status: "PENDING", time: Date.now() - 7200e3 },
 ];
 
-let apps: StoreApplication[] = SEED;
-let hydrated = false;
-
-const listeners = new Set<() => void>();
-const persist = () => { if (typeof window !== "undefined") { try { localStorage.setItem(LS_KEY, JSON.stringify(apps)); } catch { /* quota */ } } };
-const emit = () => { persist(); listeners.forEach((l) => l()); };
-
-function hydrateOnce() {
-  if (hydrated || typeof window === "undefined") return;
-  hydrated = true;
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (raw) { const saved = JSON.parse(raw); if (Array.isArray(saved)) apps = saved; listeners.forEach((l) => l()); }
-  } catch { /* ignore */ }
-}
+const store = createStore<StoreApplication[]>({ key: LS_KEY, initial: SEED });
 
 /** a trader submits a new store registration (lands as PENDING) */
 export function submitStore(a: Omit<StoreApplication, "id" | "status" | "time">) {
-  apps = [{ ...a, id: "app" + Date.now(), status: "PENDING", time: Date.now() }, ...apps];
-  emit();
+  store.set([{ ...a, id: "app" + Date.now(), status: "PENDING", time: Date.now() }, ...store.get()]);
 }
 export function setStoreStatus(id: string, status: StoreStatus) {
-  apps = apps.map((a) => (a.id === id ? { ...a, status } : a));
-  emit();
+  store.set(store.get().map((a) => (a.id === id ? { ...a, status } : a)));
 }
 
 export function useStoreStore() {
-  const [, force] = useState(0);
-  useEffect(() => {
-    const l = () => force((n) => n + 1);
-    listeners.add(l);
-    hydrateOnce();
-    return () => { listeners.delete(l); };
-  }, []);
+  const apps = store.useStore();
   return { apps, submitStore, setStoreStatus };
 }

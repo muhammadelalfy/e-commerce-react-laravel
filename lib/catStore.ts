@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { createStore } from "./createStore";
 import { CATS, SUBCATS, type Cat, type SubCat } from "./data";
 
 /**
@@ -12,46 +12,31 @@ const LS_KEY = "mash_cats";
 const SEED_CATS: Cat[] = CATS.map((c) => ({ ...c }));
 const SEED_SUBS: SubCat[] = SUBCATS.map((s) => ({ ...s }));
 
-let cats: Cat[] = SEED_CATS;
-let subs: SubCat[] = SEED_SUBS;
-let hydrated = false;
+interface CatState { cats: Cat[]; subs: SubCat[]; }
+const store = createStore<CatState>({ key: LS_KEY, initial: { cats: SEED_CATS, subs: SEED_SUBS } });
+store.hydrateOnce((saved, current) => {
+  const s = saved as Partial<CatState> | null;
+  if (!s) return undefined;
+  return {
+    cats: Array.isArray(s.cats) && s.cats.length ? s.cats : current.cats,
+    subs: Array.isArray(s.subs) ? s.subs : current.subs,
+  };
+});
 
-const listeners = new Set<() => void>();
-const persist = () => { if (typeof window !== "undefined") { try { localStorage.setItem(LS_KEY, JSON.stringify({ cats, subs })); } catch { /* quota */ } } };
-const emit = () => { persist(); listeners.forEach((l) => l()); };
-
-function hydrateOnce() {
-  if (hydrated || typeof window === "undefined") return;
-  hydrated = true;
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (raw) {
-      const saved = JSON.parse(raw);
-      if (Array.isArray(saved?.cats) && saved.cats.length) cats = saved.cats;
-      if (Array.isArray(saved?.subs)) subs = saved.subs;
-      listeners.forEach((l) => l());
-    }
-  } catch { /* ignore corrupt storage */ }
-}
-
-export function addCategory(c: Cat) { cats = [...cats, c]; emit(); }
+export function addCategory(c: Cat) { const s = store.get(); store.set({ ...s, cats: [...s.cats, c] }); }
 export function removeCategory(id: string) {
-  cats = cats.filter((c) => c.id !== id);
-  subs = subs.filter((s) => s.cat !== id); // remove orphaned sub-categories
-  emit();
+  const s = store.get();
+  store.set({
+    cats: s.cats.filter((c) => c.id !== id),
+    subs: s.subs.filter((sc) => sc.cat !== id), // remove orphaned sub-categories
+  });
 }
-export function addSubCategory(s: SubCat) { subs = [...subs, s]; emit(); }
-export function removeSubCategory(id: string) { subs = subs.filter((s) => s.id !== id); emit(); }
-export function subsOf(catId: string) { return subs.filter((s) => s.cat === catId); }
+export function addSubCategory(sc: SubCat) { const s = store.get(); store.set({ ...s, subs: [...s.subs, sc] }); }
+export function removeSubCategory(id: string) { const s = store.get(); store.set({ ...s, subs: s.subs.filter((sc) => sc.id !== id) }); }
+export function subsOf(catId: string) { return store.get().subs.filter((s) => s.cat === catId); }
 
 /** subscribe to the shared category store */
 export function useCatStore() {
-  const [, force] = useState(0);
-  useEffect(() => {
-    const l = () => force((n) => n + 1);
-    listeners.add(l);
-    hydrateOnce();
-    return () => { listeners.delete(l); };
-  }, []);
+  const { cats, subs } = store.useStore();
   return { cats, subs, addCategory, removeCategory, addSubCategory, removeSubCategory, subsOf };
 }
