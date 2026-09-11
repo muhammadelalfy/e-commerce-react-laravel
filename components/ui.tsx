@@ -1,6 +1,6 @@
 "use client";
-import React, { useRef, useEffect } from "react";
-import { CATS, money } from "@/lib/data";
+import React, { useRef, useEffect, useState } from "react";
+import { CATS, CITIES, money } from "@/lib/data";
 
 export { money };
 
@@ -186,6 +186,74 @@ export function RichText({ value, onChange, dir = "rtl", minHeight = 140, placeh
         className="mash-richtext"
         style={{ minHeight, padding: "12px 14px", fontSize: 14, lineHeight: 1.7, color: "var(--text)", outline: "none" }}
       />
+    </div>
+  );
+}
+
+/**
+ * Multi-select "المدينة" field with a checkbox list + an "all cities" option.
+ * Shared by every store-registration form (vendor sign-up, add-store) so a
+ * merchant can pick specific cities or leave it as "all cities" (empty list).
+ */
+export function CityMultiSelect({ value, onChange, ar }: { value: string[]; onChange: (v: string[]) => void; ar: boolean }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const allIds = CITIES.map((c) => c.id);
+  const allSelected = value.length === 0 || value.length === allIds.length;
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    window.addEventListener("mousedown", close);
+    return () => window.removeEventListener("mousedown", close);
+  }, [open]);
+
+  const toggleAll = () => onChange([]); // empty selection = "all cities"
+  const toggleCity = (id: string) => {
+    // if "all cities" was active, a city click starts a fresh specific selection
+    // with just that one city (not "every city except this one").
+    if (allSelected) { onChange([id]); return; }
+    const next = value.includes(id) ? value.filter((c) => c !== id) : [...value, id];
+    // selecting every city collapses back to the compact "all" state
+    onChange(next.length === allIds.length ? [] : next);
+  };
+
+  const label = allSelected
+    ? (ar ? "كل المدن" : "All cities")
+    : value.length === 1
+    ? (ar ? CITIES.find((c) => c.id === value[0])?.ar : CITIES.find((c) => c.id === value[0])?.en) || value[0]
+    : (ar ? `${value.length} مدن مختارة` : `${value.length} cities selected`);
+
+  const base: React.CSSProperties = { height: 44, padding: "0 14px", borderRadius: 10, border: "1.5px solid var(--line)", background: "var(--surface-2)", color: "var(--text)", fontSize: 14, fontFamily: "inherit", width: "100%" };
+
+  return (
+    <div ref={ref} style={{ position: "relative", display: "flex", flexDirection: "column", gap: 6 }}>
+      <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-2)" }}>{ar ? "المدينة" : "City"}</span>
+      <button type="button" onClick={() => setOpen((o) => !o)} style={{ ...base, display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", textAlign: "start" }}>
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
+        <Icon name="chevron" size={16} style={{ color: "var(--text-3)", flex: "none", transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }} />
+      </button>
+      {open && (
+        <div style={{ position: "absolute", top: "calc(100% + 6px)", insetInlineStart: 0, insetInlineEnd: 0, zIndex: 40, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 12, boxShadow: "var(--shadow-lg)", padding: 6, maxHeight: 260, overflowY: "auto" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13.5, color: "var(--brand)", borderBottom: "1px solid var(--line-soft)", marginBottom: 4 }}>
+            <input type="checkbox" checked={allSelected} onChange={toggleAll} style={{ accentColor: "var(--brand)" }} />
+            {ar ? "كل المدن" : "All cities"}
+          </label>
+          {CITIES.map((c) => {
+            // individual cities only show checked once a specific selection exists
+            // ("all cities" is represented solely by the row above, not by ticking every city)
+            const checked = !allSelected && value.includes(c.id);
+            return (
+              <label key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, cursor: "pointer", fontSize: 13.5, color: "var(--text)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-2)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                <input type="checkbox" checked={checked} onChange={() => toggleCity(c.id)} style={{ accentColor: "var(--brand)" }} />
+                {ar ? c.ar : c.en}
+              </label>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

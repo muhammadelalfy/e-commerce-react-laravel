@@ -247,8 +247,10 @@ img { display: block; max-width: 100%; }
   [style*="repeat(3, 1fr)"],
   [style*="repeat(2, 1fr)"] { grid-template-columns: repeat(2, 1fr) !important; }
   /* store cards (category → stores) are detail-rich → 1 column on phones */
-  .mash-store-grid,
-  .mash-store-cards { grid-template-columns: 1fr !important; }
+  .mash-store-grid { grid-template-columns: 1fr !important; }
+  /* .mash-store-cards is a full-width row list (flex column) — no grid override needed */
+  /* coupon cards are compact enough on phones to sit two per row */
+  .mash-coupon-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
   /* category circles → 3 across */
   [style*="repeat(8, 1fr)"] { grid-template-columns: repeat(3, 1fr) !important; }
 
@@ -328,6 +330,22 @@ img { display: block; max-width: 100%; }
   .mash-notif-pop > div:first-child { padding: 11px 14px !important; }
   .mash-notif-pop > div:nth-child(2) { max-height: 52vh !important; }
   .mash-notif-pop > div:nth-child(2) button { padding: 10px 14px !important; }
+
+  /* Coupon cards (أكواد الخصم) — shrink well below the desktop min-height so the
+     list on mobile stays compact instead of one tall card per screen. */
+  .mash-coupon-card { min-height: 0 !important; }
+  .mash-coupon-body { padding: 10px 12px 8px !important; gap: 5px !important; }
+  .mash-coupon-icon { width: 26px !important; height: 26px !important; border-radius: 7px !important; }
+  .mash-coupon-icon svg { width: 14px !important; height: 14px !important; }
+  .mash-coupon-vendor { font-size: 12.5px !important; }
+  .mash-coupon-until { font-size: 10px !important; }
+  .mash-coupon-value { font-size: 14px !important; }
+  .mash-coupon-desc {
+    font-size: 11.5px !important; line-height: 1.3 !important;
+    display: -webkit-box !important; -webkit-line-clamp: 1 !important; -webkit-box-orient: vertical !important; overflow: hidden !important;
+  }
+  .mash-coupon-strip { padding: 7px 12px !important; }
+  .mash-coupon-strip .num { font-size: 12.5px !important; }
 }
 
 /* ---- HERO SLIDER responsive ----

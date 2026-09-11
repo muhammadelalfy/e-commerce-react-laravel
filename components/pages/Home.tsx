@@ -40,20 +40,20 @@ function CouponCard({ c, ar, go }: { c: Coupon; ar: boolean; go: Go }) {
   const gift = c.type === "item";
   const value = c.type === "percent" ? `${c.pct}%` : c.type === "fixed" ? (ar ? `${c.pct} ﷼` : `${c.pct} SAR`) : (ar ? `${c.buyQty}+${c.giftQty} هدية` : `${c.buyQty}+${c.giftQty} gift`);
   return (
-    <div style={{ border: "1.5px dashed var(--brand)", borderRadius: "var(--r-lg)", background: "var(--brand-soft)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-      <div style={{ padding: "16px 16px 12px", display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
+    <div className="mash-coupon-card" style={{ minHeight: 168, border: "1.5px dashed var(--brand)", borderRadius: "var(--r-lg)", background: "var(--brand-soft)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      <div className="mash-coupon-body" style={{ padding: "16px 16px 12px", display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ width: 34, height: 34, borderRadius: 9, background: "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--brand)", flex: "none" }}><Icon name={gift ? "gift" : "ticket"} size={18} /></span>
+          <span className="mash-coupon-icon" style={{ width: 34, height: 34, borderRadius: 9, background: "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--brand)", flex: "none" }}><Icon name={gift ? "gift" : "ticket"} size={18} /></span>
           <div style={{ minWidth: 0 }}>
-            <button onClick={() => vendor && go("vendor", c.vendor)} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontWeight: 700, fontSize: 13.5, color: "var(--text)", textAlign: "start", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{vendor ? (ar ? vendor.ar : vendor.en) : ""}</button>
-            <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{ar ? `ينتهي ${c.until.ar}` : `Ends ${c.until.en}`}</div>
+            <button onClick={() => vendor && go("vendor", c.vendor)} className="mash-coupon-vendor" style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontWeight: 700, fontSize: 13.5, color: "var(--text)", textAlign: "start", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{vendor ? (ar ? vendor.ar : vendor.en) : ""}</button>
+            <div className="mash-coupon-until" style={{ fontSize: 11.5, color: "var(--text-3)" }}>{ar ? `ينتهي ${c.until.ar}` : `Ends ${c.until.en}`}</div>
           </div>
-          <span style={{ marginInlineStart: "auto", fontWeight: 800, fontSize: 18, color: "var(--brand)", fontFamily: "var(--font-display)", flex: "none" }} className="num">{value}</span>
+          <span className="mash-coupon-value num" style={{ marginInlineStart: "auto", fontWeight: 800, fontSize: 18, color: "var(--brand)", fontFamily: "var(--font-display)", flex: "none" }}>{value}</span>
         </div>
-        <div style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.45 }}>{ar ? c.ar : c.en}</div>
+        <div className="mash-coupon-desc" style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.45 }}>{ar ? c.ar : c.en}</div>
       </div>
       {/* copyable code strip */}
-      <button onClick={copy} title={ar ? "انسخ الكود" : "Copy code"}
+      <button onClick={copy} title={ar ? "انسخ الكود" : "Copy code"} className="mash-coupon-strip"
         style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "11px 16px", border: "none", borderTop: "1.5px dashed var(--brand)", background: copied ? "var(--brand)" : "var(--surface)", color: copied ? "#fff" : "var(--text)", cursor: "pointer", fontFamily: "inherit" }}>
         <span className="num" style={{ fontWeight: 800, fontSize: 15, letterSpacing: 1 }}>{c.code}</span>
         <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 700, color: copied ? "#fff" : "var(--brand)" }}>
@@ -320,6 +320,9 @@ function CategoryBanners({ go }: { go: Go }) {
     const off = offerStore.offers.find((o) => o.vendor === vid && o.img);
     return off?.img || VENDOR_BANNERS[catId] || VENDOR_BANNERS[VENDORS[vid]?.cat] || CAT_BANNERS[0].img;
   };
+  // best active discount a store currently has (for the "٪٥٠" middle badge)
+  const bestDiscount = (vid: string) =>
+    PRODUCTS.filter((p) => p.vendor === vid && p.active && p.discount > 0).reduce((max, p) => Math.max(max, p.discount), 0);
   const stores = storesInCat(openCat);
   return (
     <section id="cats-anchor" style={{ marginTop: 44 }}>
@@ -336,27 +339,46 @@ function CategoryBanners({ go }: { go: Go }) {
       {/* store count */}
       <div style={{ margin: "16px 2px 12px", fontWeight: 800, fontSize: 16 }}><span className="num">{stores.length}</span> {ar ? "متجر" : "stores"}</div>
 
-      {/* store list — clean rows: logo + name + description (one per row) */}
-      <div data-no-reveal style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14 }} className="mash-store-cards">
-        {stores.length === 0 && <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "36px 0", color: "var(--text-3)" }}>{ar ? "لا توجد متاجر في هذا القسم" : "No stores in this category"}</div>}
-        {stores.map((v) => (
-          <button key={v.id} onClick={() => { go("vendor", v.id); window.scrollTo({ top: 0 }); }}
-            style={{ display: "flex", alignItems: "center", gap: 14, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-sm)", padding: 16, cursor: "pointer", textAlign: "start", color: "var(--text)" }}
-            onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "var(--shadow-md)"; e.currentTarget.style.borderColor = "var(--brand)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "var(--shadow-sm)"; e.currentTarget.style.borderColor = "var(--line)"; }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 800, fontSize: 16, fontFamily: "var(--font-display)" }}>{ar ? v.ar : v.en}</div>
-              <div style={{ fontSize: 12.5, color: "var(--text-3)", marginTop: 4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.4 }}>{ar ? v.ar_about : v.en_about}</div>
-            </div>
-            {/* store logo tile: offer image if any, else brand-colour glyph */}
-            <span style={{ width: 62, height: 62, borderRadius: 14, overflow: "hidden", flex: "none", background: v.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", border: "1px solid var(--line)" }}>
-              {bgOf(v.id, openCat)
-                // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={bgOf(v.id, openCat)} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                : <Icon name="store" size={26} />}
-            </span>
-          </button>
-        ))}
+      {/* store list — one row per store: logo · name/rating/badge · big offer % · arrow */}
+      <div data-no-reveal style={{ display: "flex", flexDirection: "column", gap: 10 }} className="mash-store-cards">
+        {stores.length === 0 && <div style={{ textAlign: "center", padding: "36px 0", color: "var(--text-3)" }}>{ar ? "لا توجد متاجر في هذا القسم" : "No stores in this category"}</div>}
+        {stores.map((v) => {
+          const disc = bestDiscount(v.id);
+          return (
+            <button key={v.id} onClick={() => { go("vendor", v.id); window.scrollTo({ top: 0 }); }}
+              style={{ display: "flex", alignItems: "center", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-sm)", padding: "12px 16px", cursor: "pointer", textAlign: "start", color: "var(--text)" }}
+              onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "var(--shadow-md)"; e.currentTarget.style.borderColor = "var(--brand)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "var(--shadow-sm)"; e.currentTarget.style.borderColor = "var(--line)"; }}>
+              {/* left zone: logo + name/rating — flex:1 so the offer badge below stays centred */}
+              <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 14 }}>
+                <span style={{ width: 46, height: 46, borderRadius: 12, overflow: "hidden", flex: "none", background: v.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
+                  {bgOf(v.id, openCat)
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={bgOf(v.id, openCat)} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    : <Icon name="store" size={22} />}
+                </span>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 800, fontSize: 15, fontFamily: "var(--font-display)" }}>{ar ? v.ar : v.en}</div>
+                  <div style={{ fontSize: 12, color: "var(--text-3)", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
+                    <Stars value={v.rating} size={11} />
+                    {disc > 0 && <span style={{ background: "var(--gold-soft)", color: "var(--gold-deep)", fontWeight: 800, fontSize: 10.5, padding: "1px 7px", borderRadius: 999 }}>{ar ? "عروض" : "Offers"}</span>}
+                  </div>
+                </div>
+              </div>
+              {/* middle: big offer % badge — truly centred in the row (equal flex on both sides) */}
+              {disc > 0 && (
+                <span style={{ flex: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minWidth: 56, padding: "4px 10px", margin: "0 14px", borderRadius: 12, background: "var(--brand-soft)", color: "var(--brand)" }}>
+                  <span className="num" style={{ fontWeight: 800, fontSize: 18, lineHeight: 1 }}>٪{disc}</span>
+                  <span style={{ fontSize: 9.5, fontWeight: 700, marginTop: 2 }}>{ar ? "خصم" : "OFF"}</span>
+                </span>
+              )}
+              {/* right zone: matches the left zone's flex so the badge lands at the midpoint */}
+              <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
+                <Icon name="arrow" size={16} style={{ color: "var(--text-3)" }} />
+              </div>
+            </button>
+          );
+        })}
       </div>
     </section>
   );
@@ -446,7 +468,7 @@ export function Home({ go, query }: { go: Go; query: string }) {
           // read from the shared coupon store so vendor CRUD reflects on the site
           const active = couponStore.coupons.filter((c) => c.active);
           return active.length ? (
-            <div className="mash-store-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 18 }}>
+            <div className="mash-store-grid mash-coupon-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 18 }}>
               {active.map((c) => <CouponCard key={c.id} c={c} ar={ar} go={go} />)}
             </div>
           ) : (

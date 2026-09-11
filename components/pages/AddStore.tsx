@@ -1,32 +1,24 @@
 "use client";
-import React, { useState } from "react";
+import React from "react";
 import { useApp } from "@/lib/AppContext";
 import { Icon, Btn } from "../ui";
-import { CATS } from "@/lib/data";
-import { submitStore } from "@/lib/storeStore";
 
 type Go = (page: string, id?: string | null) => void;
 
-function SField({ label, as, children, cn, ...rest }: { label: string; as?: "select"; children?: React.ReactNode; cn?: string } & React.InputHTMLAttributes<HTMLInputElement> & React.SelectHTMLAttributes<HTMLSelectElement>) {
-  const base: React.CSSProperties = { height: 44, padding: "0 14px", borderRadius: 10, border: "1.5px solid var(--line)", background: "var(--surface-2)", color: "var(--text)", fontSize: 14, fontFamily: "inherit", width: "100%" };
-  return (
-    <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-2)" }}>{label}</span>
-      {as === "select"
-        ? <select style={base} {...(rest as React.SelectHTMLAttributes<HTMLSelectElement>)}>{children}</select>
-        : <input className={cn} style={base} {...(rest as React.InputHTMLAttributes<HTMLInputElement>)} />}
-    </label>
-  );
-}
-
-export function AddStore({ go }: { go: Go }) {
+/**
+ * "أضف متجرك" — a marketing landing page for prospective vendors.
+ *
+ * The actual sign-up form lives in a single place now: the "بوابة التجّار"
+ * register form (Auth.tsx, aud="vendor", mode="register"). That form already
+ * collects every field this page used to duplicate (store name, category,
+ * city, owner, phone, email, password, commercial registration), so this
+ * page no longer embeds its own form — it just explains the offer and links
+ * into that one form. When Auth finishes a registration it navigates here
+ * with id="pending" to show the confirmation screen below.
+ */
+export function AddStore({ go, id }: { go: Go; id?: string | null }) {
   const { lang } = useApp();
   const ar = lang === "ar";
-  const [step, setStep] = useState(0);
-  const cats = CATS;
-  const [form, setForm] = useState({ store: "", type: "electronics", city: ar ? "الرياض" : "Riyadh", owner: "", mobile: "", email: "", pass: "", cr: "" });
-  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm((f) => ({ ...f, [k]: e.target.value }));
-  const [crFile, setCrFile] = useState<string>("");
 
   const steps = ar
     ? [["أنشئ حسابك", "سجّل متجرك واحصل على اسم مستخدم وكلمة مرور خاصة بك.", "user"],
@@ -40,7 +32,8 @@ export function AddStore({ go }: { go: Go }) {
     ? [["+٥٠ ألف زائر شهرياً", "eye"], ["عدّاد زوار لكل متجر", "grid"], ["خصومات ومزادات", "gavel"], ["لوحة تحكم كاملة", "box"]]
     : [["50k+ monthly visitors", "eye"], ["Per-store visitor counter", "grid"], ["Discounts & auctions", "gavel"], ["Full dashboard", "box"]];
 
-  if (step === 1) {
+  // reached right after a completed registration (Auth → go("addstore", "pending"))
+  if (id === "pending") {
     return (
       <div className="container" style={{ paddingTop: 60, paddingBottom: 60, textAlign: "center", maxWidth: 560 }}>
         <div style={{ width: 84, height: 84, borderRadius: 999, background: "var(--brand-soft)", color: "var(--brand)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}><Icon name="check" size={44} stroke={2.4} /></div>
@@ -67,6 +60,11 @@ export function AddStore({ go }: { go: Go }) {
                 <span key={b} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, fontWeight: 600 }}><Icon name={ic} size={17} />{b}</span>
               ))}
             </div>
+            <div style={{ marginTop: 26 }}>
+              <Btn size="lg" onClick={() => go("auth", "vendor-register")} style={{ background: "#fff", color: "var(--brand-strong)" }}>
+                <Icon name="store" size={17} />{ar ? "سجّل متجرك الآن" : "Register your store now"}
+              </Btn>
+            </div>
           </div>
           <div style={{ display: "flex", justifyContent: "center" }}>
             <div style={{ width: 180, height: 180, borderRadius: 28, background: "rgba(255,255,255,.14)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="store" size={96} stroke={1.2} /></div>
@@ -74,7 +72,7 @@ export function AddStore({ go }: { go: Go }) {
         </div>
       </div>
 
-      <div className="container" style={{ paddingTop: 40, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40, alignItems: "start" }}>
+      <div className="container" style={{ paddingTop: 40, paddingBottom: 48, display: "grid", gridTemplateColumns: "1fr", gap: 40, maxWidth: 720, margin: "0 auto" }}>
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 22 }}>{ar ? "كيف تبدأ؟" : "How it works"}</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -92,53 +90,13 @@ export function AddStore({ go }: { go: Go }) {
             <Icon name="shield" size={18} style={{ color: "var(--brand)", flex: "none" }} />
             {ar ? "كل متجر يخضع للموافقة من إدارة أوفرز قبل النشر." : "Every store is subject to Offers approval before publishing."}
           </div>
-          <div style={{ marginTop: 18, fontSize: 13.5, color: "var(--text-2)" }}>
+          <div style={{ marginTop: 18, fontSize: 13.5, color: "var(--text-2)", textAlign: "center" }}>
             {ar ? "تريد مقارنة الباقات؟ " : "Want to compare plans? "}
             <a href="#" onClick={(e) => { e.preventDefault(); go("info", "pricing"); }} style={{ color: "var(--brand)", fontWeight: 700 }}>{ar ? "عرض الأسعار" : "View pricing"}</a>
           </div>
-        </div>
-
-        <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-xl)", padding: 26, boxShadow: "var(--shadow-md)", position: "sticky", top: 90 }}>
-          <h2 style={{ margin: "0 0 4px", fontSize: 20, fontWeight: 800 }}>{ar ? "سجّل متجرك" : "Register your store"}</h2>
-          <p style={{ margin: "0 0 18px", fontSize: 13, color: "var(--text-3)" }}>{ar ? "املأ البيانات لإنشاء حساب المتجر." : "Fill in the details to create your store account."} {ar ? "لديك متجر؟ " : "Have a store? "}<a href="#" onClick={(e) => { e.preventDefault(); go("auth", "vendor"); }} style={{ color: "var(--brand)", fontWeight: 700 }}>{ar ? "تسجيل الدخول" : "Sign in"}</a></p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <SField label={ar ? "اسم المتجر" : "Store name"} value={form.store} onChange={set("store")} placeholder={ar ? "مثال: تك زون" : "e.g. Tech Zone"} />
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-              <SField label={ar ? "نوع النشاط" : "Activity type"} as="select" value={form.type} onChange={set("type")}>
-                {cats.map((c) => <option key={c.id} value={c.id}>{ar ? c.ar : c.en}</option>)}
-              </SField>
-              <SField label={ar ? "المدينة" : "City"} value={form.city} onChange={set("city")} />
-            </div>
-            <SField label={ar ? "اسم المالك" : "Owner name"} value={form.owner} onChange={set("owner")} placeholder={ar ? "الاسم الكامل" : "Full name"} />
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-              <SField label={ar ? "الجوال" : "Mobile"} value={form.mobile} onChange={set("mobile")} placeholder="05x xxx xxxx" cn="num" />
-              <SField label={ar ? "البريد" : "Email"} value={form.email} onChange={set("email")} placeholder="you@store.sa" cn="num" />
-            </div>
-            <SField label={ar ? "كلمة المرور" : "Password"} type="password" value={form.pass} onChange={set("pass")} placeholder="••••••••" cn="num" />
-
-            {/* Commercial registration (السجل التجاري) — number + chamber-of-commerce document */}
-            <SField label={ar ? "رقم السجل التجاري" : "Commercial registration no."} value={form.cr} onChange={set("cr")} placeholder={ar ? "١٠xxxxxxxx" : "10xxxxxxxx"} cn="num" />
-            <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-2)" }}>{ar ? "ملف مصادقة السجل من الغرفة التجارية" : "Chamber-of-commerce authentication file"}</span>
-              <label style={{ display: "flex", alignItems: "center", gap: 10, border: "1.5px dashed " + (crFile ? "var(--brand)" : "var(--line)"), borderRadius: 10, padding: "14px 16px", cursor: "pointer", background: crFile ? "var(--brand-soft)" : "var(--surface-2)", color: crFile ? "var(--brand)" : "var(--text-3)", fontSize: 13 }}>
-                <Icon name={crFile ? "check" : "filePdf"} size={20} style={{ flex: "none" }} />
-                <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {crFile ? crFile : (ar ? "ارفع ملف السجل التجاري (PDF أو صورة)" : "Upload the commercial-registration file (PDF or image)")}
-                </span>
-                <input type="file" accept=".pdf,image/*" onChange={(e) => setCrFile(e.target.files?.[0]?.name || "")} style={{ display: "none" }} />
-              </label>
-              <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>{ar ? "يخضع للتحقق من إدارة أوفرز قبل التفعيل." : "Verified by Offers before activation."}</span>
-            </label>
-
-            <label style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 12.5, color: "var(--text-2)", cursor: "pointer" }}>
-              <input type="checkbox" defaultChecked style={{ marginTop: 2, accentColor: "var(--brand)" }} />
-              <span>{ar ? "أوافق على " : "I agree to the "}<a href="#" onClick={(e) => { e.preventDefault(); go("info", "terms"); }} style={{ color: "var(--brand)", fontWeight: 700 }}>{ar ? "الشروط والأحكام" : "Terms & Conditions"}</a></span>
-            </label>
-            <Btn size="lg" full onClick={() => {
-              // submit a pending store application for admin approval
-              submitStore({ ar: form.store || (ar ? "متجر جديد" : "New store"), en: form.store || "New store", cat: form.type, city: form.city, owner: form.owner || (ar ? "غير محدّد" : "Unknown"), cr: form.cr || undefined });
-              setStep(1);
-            }}><Icon name="store" size={17} />{ar ? "إنشاء المتجر" : "Create store"}</Btn>
+          <div style={{ marginTop: 24, textAlign: "center" }}>
+            <Btn size="lg" onClick={() => go("auth", "vendor-register")}><Icon name="store" size={17} />{ar ? "سجّل متجرك" : "Register your store"}</Btn>
+            <p style={{ margin: "10px 0 0", fontSize: 13, color: "var(--text-3)" }}>{ar ? "لديك متجر؟ " : "Have a store? "}<a href="#" onClick={(e) => { e.preventDefault(); go("auth", "vendor"); }} style={{ color: "var(--brand)", fontWeight: 700 }}>{ar ? "تسجيل الدخول" : "Sign in"}</a></p>
           </div>
         </div>
       </div>

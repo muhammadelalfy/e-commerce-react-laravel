@@ -6,6 +6,7 @@ import { ProductCard } from "../Shell";
 import { CATS, VENDORS, PRODUCTS, SUBCATS, branchesOf } from "@/lib/data";
 import { useCatStore } from "@/lib/catStore";
 import { useVendorProfileStore } from "@/lib/vendorProfileStore";
+import { useCouponStore } from "@/lib/couponStore";
 
 type Go = (page: string, id?: string | null) => void;
 
@@ -285,12 +286,27 @@ export function Vendor({ id, go }: { id: string; go: Go }) {
   const profiles = useVendorProfileStore();
   const brochure = profiles.brochureOf(v.id);
   const all = PRODUCTS.filter((p) => p.vendor === v.id);
+  // this store's active coupons (shared store so vendor-panel CRUD reflects here)
+  const couponStore = useCouponStore();
+  const storeCoupons = couponStore.coupons.filter((c) => c.vendor === v.id && c.active);
   // store-page search + filters
   const [q, setQ] = useState("");
   const [subF, setSubF] = useState("all");
   const [sortV, setSortV] = useState("featured");
   const [activeOnly, setActiveOnly] = useState(false);
   const [showLocs, setShowLocs] = useState(false);
+  const [showCoupons, setShowCoupons] = useState(false);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const copyCode = (code: string) => {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = code; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove();
+    } catch { /* ignore */ }
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) navigator.clipboard.writeText(code).catch(() => {});
+    setCopiedCode(code);
+    window.setTimeout(() => setCopiedCode((c) => (c === code ? null : c)), 1600);
+  };
   // the visitor's chosen city (from the country/city picker)
   const [userCity, setUserCity] = useState<string | null>(null);
   React.useEffect(() => { try { setUserCity(localStorage.getItem("mash_city")); } catch {} }, []);
@@ -337,10 +353,48 @@ export function Vendor({ id, go }: { id: string; go: Go }) {
             onClick={() => { if (brochure && typeof window !== "undefined") window.open(brochure.data, "_blank", "noopener,noreferrer"); }}>
             <Icon name="filePdf" size={16} />{lang === "ar" ? "معاينة البروشور" : "View brochure"}
           </Btn>
+          <Btn variant={showCoupons ? "primary" : "outline"} disabled={storeCoupons.length === 0}
+            title={storeCoupons.length ? undefined : (lang === "ar" ? "لا توجد أكواد خصم متاحة حالياً" : "No coupons available right now")}
+            style={storeCoupons.length ? { flex: "none" } : { flex: "none", opacity: .5, cursor: "not-allowed" }}
+            onClick={() => setShowCoupons((s) => !s)}>
+            <Icon name="ticket" size={16} />{lang === "ar" ? "أكواد الخصم" : "Coupons"}
+            {storeCoupons.length > 0 && <span className="num" style={{ marginInlineStart: 4, fontSize: 11, fontWeight: 800, background: showCoupons ? "rgba(255,255,255,.25)" : "var(--brand-soft)", color: showCoupons ? "#fff" : "var(--brand)", borderRadius: 999, padding: "1px 7px" }}>{storeCoupons.length}</span>}
+          </Btn>
           <Btn variant={showLocs ? "primary" : "outline"} style={{ flex: "none" }} onClick={() => setShowLocs((s) => !s)}>
             <Icon name="pin" size={16} />{lang === "ar" ? "مواقع المتجر" : "Store locations"}
           </Btn>
         </div>
+
+        {/* this store's active coupons — click a code to copy it */}
+        {showCoupons && (
+          <div style={{ maxWidth: 620, margin: "10px auto 0", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-sm)", padding: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <Icon name="ticket" size={16} style={{ color: "var(--brand)" }} />
+              <b style={{ fontSize: 14.5 }}>{ar ? "أكواد الخصم" : "Coupons"}</b>
+              <span className="num" style={{ marginInlineStart: "auto", fontSize: 12, fontWeight: 800, color: "var(--text-3)", background: "var(--surface-2)", borderRadius: 999, padding: "2px 9px" }}>{storeCoupons.length}</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {storeCoupons.map((c) => {
+                const value = c.type === "percent" ? `${c.pct}%` : c.type === "fixed" ? (ar ? `${c.pct} ﷼` : `${c.pct} SAR`) : (ar ? `${c.buyQty}+${c.giftQty} هدية` : `${c.buyQty}+${c.giftQty} gift`);
+                const copied = copiedCode === c.code;
+                return (
+                  <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 10, border: "1.5px dashed var(--brand)", background: "var(--brand-soft)" }}>
+                    <span style={{ width: 36, height: 36, borderRadius: 9, background: "var(--surface)", color: "var(--brand)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Icon name={c.type === "item" ? "gift" : "ticket"} size={17} /></span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 13.5 }}>{ar ? c.ar : c.en}</div>
+                      <div style={{ fontSize: 12, color: "var(--text-3)" }}>{ar ? `ينتهي ${c.until.ar}` : `Ends ${c.until.en}`}</div>
+                    </div>
+                    <span className="num" style={{ fontWeight: 800, fontSize: 16, color: "var(--brand)", flex: "none" }}>{value}</span>
+                    <button onClick={() => copyCode(c.code)} title={ar ? "انسخ الكود" : "Copy code"} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8, border: "none", background: copied ? "var(--brand)" : "var(--surface)", color: copied ? "#fff" : "var(--text)", cursor: "pointer", fontFamily: "inherit", flex: "none" }}>
+                      <span className="num" style={{ fontWeight: 800, fontSize: 13, letterSpacing: .5 }}>{c.code}</span>
+                      <Icon name={copied ? "check" : "copy"} size={14} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* store locations in the visitor's city */}
         {showLocs && (

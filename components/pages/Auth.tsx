@@ -1,9 +1,8 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useApp } from "@/lib/AppContext";
-import { Icon, Btn } from "../ui";
+import { Icon, Btn, CityMultiSelect } from "../ui";
 import { Logo } from "../Shell";
-import { fetchCities } from "../CountryModal";
 import { PLANS } from "@/lib/data";
 import { useCatStore } from "@/lib/catStore";
 import { useGeoStore } from "@/lib/geoStore";
@@ -58,44 +57,30 @@ export function Auth({ param, go }: { param: string | null; go: Go }) {
   const repStore = useRepStore();
 
   // full store-registration form state (matches the mobile design)
+  // cities: [] means "all cities" (see CityMultiSelect)
   const [f, setF] = useState({
     fname: "", lname: "", plan: PLANS[0]?.id ?? "basic", store: "", slogan: "",
     phone: "", whatsapp: "", address: "", rep: "", country: geo.countries[0]?.id ?? "sa",
-    city: "", website: "", cat: catStore.cats[0]?.id ?? "", subcat: "",
+    cities: [] as string[], website: "", cat: catStore.cats[0]?.id ?? "", subcat: "",
   });
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF((s) => ({ ...s, [k]: e.target.value }));
   const subs = catStore.subsOf(f.cat);
-
-  // cities depend on the selected country — fetched live from the CountriesNow
-  // API (same source as the country-picker modal). Falls back to stored cities.
-  const [cityList, setCityList] = useState<string[]>([]);
-  const [loadingCities, setLoadingCities] = useState(false);
-  useEffect(() => {
-    if (!(mode === "register" && aud === "vendor")) return;
-    const c = geo.countries.find((x) => x.id === f.country);
-    if (!c) { setCityList([]); return; }
-    const ctrl = new AbortController();
-    setLoadingCities(true);
-    fetchCities(c.en, ctrl.signal)
-      .then((list) => setCityList(list))
-      .catch((e) => { if (e?.name !== "AbortError") {
-        // fall back to any cities stored for this country
-        setCityList(geo.cities.filter((x) => x.country === f.country).map((x) => (ar ? x.ar : x.en)));
-      } })
-      .finally(() => setLoadingCities(false));
-    return () => ctrl.abort();
-  }, [f.country, mode, aud]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const submit = () => {
     const id = ident.trim();
     if (aud === "reels") { signIn({ name: id || "مشهور", role: "reels" }); go("reels-studio"); return; }
     if (aud === "vendor") {
       if (mode === "register") {
-        // submit a pending store application for admin approval (city is the API name)
-        submitStore({ ar: f.store || (ar ? "متجر جديد" : "New store"), en: f.store || "New store", cat: f.cat, city: f.city, owner: (f.fname + " " + f.lname).trim() || (ar ? "غير محدّد" : "Unknown"), cr: undefined });
+        // build a display label for the chosen city/cities ([] = all cities)
+        const cityLabel = f.cities.length === 0
+          ? (ar ? "كل المدن" : "All cities")
+          : f.cities.map((cid) => geo.cities.find((c) => c.id === cid)?.[ar ? "ar" : "en"] || cid).join(ar ? "، " : ", ");
+        // submit a pending store application for admin approval
+        submitStore({ ar: f.store || (ar ? "متجر جديد" : "New store"), en: f.store || "New store", cat: f.cat, city: cityLabel, owner: (f.fname + " " + f.lname).trim() || (ar ? "غير محدّد" : "Unknown"), cr: crFile || undefined });
       }
       signIn({ name: id || f.store || "vendor", role: "vendor" });
-      go(mode === "register" ? "addstore" : "dashboard");
+      // registration is now a single step — go straight to the pending-approval screen
+      go(mode === "register" ? "addstore" : "dashboard", mode === "register" ? "pending" : null);
       return;
     }
     signIn({ name: id || "guest", role: "customer" }); go("home");
@@ -212,10 +197,7 @@ export function Auth({ param, go }: { param: string | null; go: Go }) {
                   <ASelect label={ar ? "البلد" : "Country"} icon="globe" value={f.country} onChange={(e) => { set("country")(e); setF((s) => ({ ...s, city: "" })); }}>
                     {geo.countries.map((c) => <option key={c.id} value={c.id}>{ar ? c.ar : c.en}</option>)}
                   </ASelect>
-                  <ASelect label={ar ? "المدينة" : "City"} icon="pin" value={f.city} onChange={set("city")} disabled={loadingCities || cityList.length === 0}>
-                    <option value="">{loadingCities ? (ar ? "جارٍ جلب المدن…" : "Fetching cities…") : cityList.length === 0 ? (ar ? "لا توجد مدن" : "No cities") : (ar ? "اختيار المدينة (المدن)" : "Select city")}</option>
-                    {cityList.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </ASelect>
+                  <CityMultiSelect value={f.cities} onChange={(cities) => setF((s) => ({ ...s, cities }))} ar={ar} />
                   <AField label={ar ? "موقع الواب" : "Website"} icon="globe" placeholder="https://" value={f.website} onChange={set("website")} cn="num" />
 
                   {/* Categories (المجالات) — pick a category, its sub-categories appear */}

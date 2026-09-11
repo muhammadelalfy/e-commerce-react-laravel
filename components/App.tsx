@@ -96,7 +96,7 @@ export default function App() {
   else if (page === "auctions") body = <Auctions go={go} active={page === "auctions"} />;
   else if (page === "dashboard") body = <Dashboard go={go} />;
   else if (page === "info") body = <Info id={param} go={go} />;
-  else if (page === "addstore") body = <AddStore go={go} />;
+  else if (page === "addstore") body = <AddStore go={go} id={param} />;
   else if (page === "auth") body = <Auth param={param} go={go} />;
   else if (page === "notifications") body = <Notifications />;
   else if (page === "reels-studio") body = <ReelsStudio go={go} />;

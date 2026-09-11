@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تقرير المرحلة السابعة · أوفرز</title>
+<style>
+  :root{--brand:#c8305e;--gold:#f5c518;--ink:#1e3d47;--ink2:#5f6b72;--line:#ece5e2;--bg:#f5f2f0;--surface:#fff;--ok:#2e9d63}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Tajawal","Cairo","Segoe UI",system-ui,sans-serif;line-height:1.9;font-size:16px}
+  .page{max-width:920px;margin:0 auto;padding:48px 34px;background:var(--surface);box-shadow:0 1px 40px rgba(30,61,71,.07);min-height:100vh}
+  .brandbar{height:8px;border-radius:999px;background:linear-gradient(90deg,var(--gold) 0 33%,var(--brand) 33% 66%,var(--ink) 66% 100%);margin-bottom:26px}
+  h1{font-size:30px;font-weight:800;margin:0 0 4px}
+  h1 .sub{display:block;font-size:18px;color:var(--brand);font-weight:700;margin-top:8px}
+  h2{font-size:22px;font-weight:800;margin:40px 0 14px;padding-bottom:8px;border-bottom:3px solid var(--gold)}
+  .meta{background:#fdf3cf;border:1px solid #f0e3a8;border-radius:12px;padding:14px 18px;margin:18px 0 8px;font-size:14.5px}
+  .meta b{color:var(--brand)}
+  .status{display:inline-block;background:#e7f4ec;color:var(--ok);border:1px solid #bfe5cf;font-weight:800;font-size:14px;padding:5px 16px;border-radius:999px;margin-top:10px}
+  .lead{font-size:15.5px;color:var(--ink2);background:#faf6f8;border-inline-start:4px solid var(--brand);border-radius:0 10px 10px 0;padding:14px 18px;margin:18px 0}
+  .note{font-size:13.5px;color:var(--ink2);background:#fbf7ee;border:1px dashed #e6d9b8;border-radius:10px;padding:12px 16px;margin:14px 0}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px}
+  th,td{border:1px solid var(--line);padding:10px 12px;text-align:right;vertical-align:top}
+  th{background:#f3eeec;font-weight:800}
+  tr:nth-child(even) td{background:#faf8f7}
+  ul{padding-inline-start:26px}
+  li{margin:6px 0}
+  .value{font-size:13.5px;color:var(--ok);font-weight:700;margin:6px 0 2px}
+  .value::before{content:"◆ القيمة: "}
+  .summ{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin:18px 0}
+  .summ .box{border:1px solid var(--line);border-radius:12px;padding:16px;text-align:center;background:#faf8f7}
+  .summ .n{font-size:30px;font-weight:800;color:var(--brand);line-height:1}
+  .summ .l{font-size:13px;color:var(--ink2);margin-top:6px}
+  .foot{text-align:center;color:var(--ink2);font-size:14px;margin-top:36px}
+  @media print{body{background:#fff}.page{box-shadow:none;max-width:none;padding:0}}
+  @media (max-width:640px){.summ{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="page">
+<div class="brandbar"></div>
+
+<h1>تقرير المرحلة السابعة — منصّة «أوفرز»<span class="sub">تقرير أعمال موجّه للعميل · الإضافات والتحسينات في هذه المرحلة فقط</span></h1>
+
+<div class="meta">
+<b>التاريخ:</b> 2026-08-27 &nbsp;·&nbsp; <b>النطاق:</b> ما استُجدّ <u>بعد</u> المرحلة السادسة (لا يشمل ما سبق ذكره)
+<br><span class="status">✅ جميع البنود مُنفَّذة ومُتحقَّق منها وتعمل</span>
+</div>
+
+<p class="lead">ركّزت هذه المرحلة على <strong>تنظيم تجربة العروض والكوبونات</strong> (تبويب موحّد للعروض مع فلتر «الأحدث»، وتبويب أكواد الخصم القابلة للنسخ مع إدارة كاملة من لوحة المتجر)، و<strong>تحسين شريط التنقّل والأعلام والخرائط</strong> (أعلام حقيقية، أيقونة خرائط Google، أسماء المدن بالعربية)، و<strong>تلميع تجربة الجوال</strong> (قائمة مصغّرة متحرّكة، تذييل قابل للطيّ، إشعارات متجاوبة). رُتّبت من الأهم للأصغر.</p>
+
+<div class="summ">
+  <div class="box"><div class="n">10</div><div class="l">تحسينات وإضافات</div></div>
+  <div class="box"><div class="n">CRUD</div><div class="l">إدارة كاملة للكوبونات<br>من لوحة المتجر</div></div>
+  <div class="box"><div class="n">6</div><div class="l">أعلام دول الخليج<br>كصور حقيقية</div></div>
+</div>
+
+<h2>1. تبويب «العروض» موحّد + فلتر «الأحدث» بداخله</h2>
+<ul>
+<li>دُمِجت تبويبات العروض المتكرّرة في <strong>تبويب واحد «العروض»</strong> يعرض كل العروض النشطة.</li>
+<li>أُضيف <strong>خيار «الأحدث»</strong> ضمن أدوات الترتيب داخل التبويب لعرض أحدث العروض أولاً — بدل تبويب منفصل.</li>
+<li>بقي تبويب <strong>«٥٠٪ وأكثر»</strong> مستقلاً لعرض العروض ذات الخصم الأكبر فقط.</li>
+</ul>
+<p class="value">تصفّح أبسط للعروض بلا تكرار، مع الوصول السريع للأحدث والأكبر خصماً.</p>
+
+<h2>2. تبويب «أكواد الخصم» — كوبونات قابلة للنسخ</h2>
+<ul>
+<li>أصبح التبويب يعرض <strong>الكوبونات فقط</strong> (وليس منتجات)، والنشطة منها فقط.</li>
+<li>كل كوبون يظهر كبطاقة أنيقة: اسم المتجر · قيمة الخصم · تاريخ الانتهاء · الوصف.</li>
+<li><strong>الضغط على الكود ينسخه تلقائياً</strong> للحافظة مع رسالة تأكيد «تم النسخ» — جاهز للاستخدام عند الدفع.</li>
+</ul>
+<p class="value">استخدام أسهل للكوبونات ونسخ فوري للكود بضغطة واحدة.</p>
+
+<h2>3. إدارة كاملة للكوبونات من لوحة المتجر (CRUD)</h2>
+<ul>
+<li>يستطيع التاجر <strong>الإضافة والتعديل والحذف والتفعيل/الإيقاف</strong> لكوبوناته من لوحته.</li>
+<li>التعديل يفتح النموذج <strong>معبّأً بالقيم الحالية</strong>، والحذف يطلب تأكيداً.</li>
+<li>أي تغيير <strong>ينعكس فوراً على الموقع</strong>: الكوبون الجديد يظهر في «أكواد الخصم»، والمُوقَف أو المحذوف يختفي مباشرة.</li>
+</ul>
+<p class="value">تحكّم كامل للتاجر في عروض الكوبونات، وتزامن لحظي مع واجهة العميل.</p>
+
+<h2>4. أعلام الدول كصور حقيقية</h2>
+<ul>
+<li>استُبدلت رموز الأعلام (إيموجي) بـ<strong>صور أعلام حقيقية دقيقة (SVG)</strong> لدول الخليج الست.</li>
+<li>تظهر الآن في <strong>شارة الدولة أعلى الصفحة</strong> وفي نافذة اختيار الدولة على كل الأنظمة (كان نظام ويندوز يعرض «SA» بدل العلم).</li>
+</ul>
+<p class="value">هوية بصرية أوضح وأكثر احترافية عبر جميع الأجهزة.</p>
+
+<h2>5. أسماء المدن بالعربية</h2>
+<ul>
+<li>أسماء المدن — حتى المجلوبة من مصدر خارجي بالإنجليزية — <strong>تُعرض بالعربية</strong>.</li>
+<li>يعتمد ذلك على قائمة معتمدة للمدن الكبرى، مع <strong>ترجمة تلقائية احتياطية</strong> لبقية المدن بحيث لا يظهر أي اسم إنجليزي في الواجهة العربية.</li>
+</ul>
+<p class="value">تجربة عربية متكاملة في اختيار المدينة.</p>
+
+<h2>6. أيقونة الخرائط + تلميع شريط التنقّل</h2>
+<ul>
+<li>أصبحت أيقونة الخرائط هي <strong>دبّوس خرائط Google الرسمي المعروف</strong> (بألوانه المميّزة).</li>
+<li>أُزيلت الإطارات/الخلفيات خلف شارة الدولة وأيقونة الخرائط، لتظهر <strong>كأيقونات نظيفة فقط</strong>.</li>
+</ul>
+
+<h2>7. القائمة المصغّرة المتحرّكة على الجوال</h2>
+<ul>
+<li>أصبحت قائمة الجوال <strong>نافذة صغيرة متحرّكة</strong> تنسدل مباشرة أسفل زر القائمة — بلا فراغ وبلا تغطية للرأس.</li>
+<li>حركة ظهور أنيقة، وبنود تظهر تباعاً.</li>
+</ul>
+
+<h2>8. حقل البحث بنصّ متحرّك</h2>
+<ul>
+<li>مقدّمة ثابتة «ابحث عن» يتبعها <strong>كلمة متغيّرة تُكتب وتُمحى</strong> (منتج · كاش باك · كوبون خصم · متجر) لجذب الانتباه.</li>
+</ul>
+
+<h2>9. التذييل (Footer) قابل للطيّ على الجوال</h2>
+<ul>
+<li>تحوّلت مجموعات روابط التذييل إلى <strong>أقسام قابلة للطيّ</strong> على الجوال — تذييل أقصر وأنظف — وتبقى مفتوحة على الشاشات الكبيرة.</li>
+</ul>
+
+<h2>10. نافذة الإشعارات متجاوبة على الجوال</h2>
+<ul>
+<li>ضُبطت قائمة الإشعارات لتظهر <strong>بحجم مناسب قرب زر الجرس</strong> دون أن تتجاوز حواف الشاشة على الجوال.</li>
+</ul>
+
+<hr style="border:none;border-top:1px solid var(--line);margin:32px 0">
+
+<h2>ملخّص البنود</h2>
+<table>
+  <thead><tr><th>#</th><th>البند</th><th>الحالة</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>تبويب «العروض» موحّد + فلتر «الأحدث» + تبويب «٥٠٪ وأكثر»</td><td>✅</td></tr>
+    <tr><td>2</td><td>«أكواد الخصم»: كوبونات نشطة فقط قابلة للنسخ بضغطة</td><td>✅</td></tr>
+    <tr><td>3</td><td>إدارة كاملة للكوبونات من لوحة المتجر (إضافة/تعديل/حذف/تفعيل) متزامنة مع الموقع</td><td>✅</td></tr>
+    <tr><td>4</td><td>أعلام الدول كصور SVG حقيقية على كل الأنظمة</td><td>✅</td></tr>
+    <tr><td>5</td><td>أسماء المدن بالعربية (قائمة معتمدة + ترجمة احتياطية)</td><td>✅</td></tr>
+    <tr><td>6</td><td>أيقونة خرائط Google الرسمية + إزالة إطارات الأيقونات</td><td>✅</td></tr>
+    <tr><td>7</td><td>قائمة جوال مصغّرة متحرّكة أسفل الزر مباشرة</td><td>✅</td></tr>
+    <tr><td>8</td><td>حقل بحث بنصّ متحرّك (ابحث عن…)</td><td>✅</td></tr>
+    <tr><td>9</td><td>تذييل قابل للطيّ على الجوال</td><td>✅</td></tr>
+    <tr><td>10</td><td>نافذة إشعارات متجاوبة ومصغّرة على الجوال</td><td>✅</td></tr>
+  </tbody>
+</table>
+
+<div class="note"><b>ملاحظة فنية:</b> جميع التعديلات تم التحقّق منها في الوضعين (فاتح/ليلي) والاتجاهين (عربي/إنجليزي)، واجتاز المشروع فحص الأنواع (TypeScript) بلا أخطاء، ووُثّق منطق الكوبونات وتبويبات الاكتشاف والمدن في مستند متطلّبات الخلفية (SRS).</div>
+
+<div class="foot">منصّة أوفرز · تقرير المرحلة السابعة · 2026-08-27</div>
+
+</div>
+</body>
+</html>
